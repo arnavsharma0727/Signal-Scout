@@ -1,0 +1,29 @@
+ticker: ""
+company_name_en: ""
+exchange: ""
+vertical: ""
+cik: ""
+description: ""
+is_active: true
+priority_tier: 3
+markets:
+  - market_code: ""
+    language_code: ""
+    company_aliases: []
+    products_games_apps_brands: []
+    competitor_aliases: []
+    event_terms:
+      product_launch_or_update: []
+      gaming_or_platform_outage: []
+      monetization_or_pricing: []
+      promotions_or_discounting: []
+      product_availability_or_stockout: []
+      refund_return_quality_or_defect: []
+      player_or_user_engagement: []
+      competitor_substitution: []
+      store_channel_or_distribution: []
+      regulatory_or_reputation: []
+      merchant_creator_or_partner_issue: []
+    source_preferences: []
+    ambiguity_notes: []
+    enabled: true
