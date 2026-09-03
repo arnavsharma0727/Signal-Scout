@@ -1,0 +1,3 @@
+# Source methodology
+
+Documents are preserved with original title, excerpt, URL, publication time, language, market, source type, domain, quality tier, entity-match confidence, and deduplication metadata. Tier weights are transparent prioritization heuristics, not truth probabilities. Tier 1 includes official company, regulator, exchange, filing, and status sources; Tier 2 established news; Tier 3 credible specialist/local sources; Tier 4 community/blog/review/forum sources; Tier 5 weak or unverifiable sources. English comparison means only the sampled English source set configured by the user.

@@ -1,0 +1,3 @@
+# Statistical limitations
+
+Signal Scout is descriptive and triage-oriented. User-selected companies, aliases, markets, source sets, topics, and time windows create selection and coverage bias. Different platforms represent different populations. Local terms can be ambiguous; translations can lose nuance; publication and indexing times can differ. Small samples can produce unstable gaps even after smoothing and minimum thresholds. Syndication can create dependent observations. A locally prominent topic may be immaterial, while a material event may be absent from configured sources. Many scans create chance outliers through multiple testing. No causal or out-of-sample return claim is made.

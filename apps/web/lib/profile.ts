@@ -1,5 +1,5 @@
 import { z } from 'zod';
-export const verticals=['Gaming','Consumer platforms','Retail / e-commerce','Consumer technology'] as const;
+export const verticals=['gaming','consumer_platforms','retail_ecommerce','consumer_technology'] as const;
 export const pairs=['JP:ja','KR:ko','BR:pt','LATAM:es','US:en'];
 export const eventCategories=['product_launch_or_update','gaming_or_platform_outage','monetization_or_pricing','promotions_or_discounting','product_availability_or_stockout','refund_return_quality_or_defect','player_or_user_engagement','competitor_substitution','store_channel_or_distribution','regulatory_or_reputation','merchant_creator_or_partner_issue'] as const;
 const market=z.object({market_code:z.string(),language_code:z.string(),company_aliases:z.array(z.string()),products_games_apps_brands:z.array(z.string()),competitor_aliases:z.array(z.string()),event_terms:z.record(z.array(z.string())),source_preferences:z.array(z.string()),ambiguity_notes:z.array(z.string()),enabled:z.boolean()});
