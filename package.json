@@ -2,6 +2,6 @@
   "name": "signal-scout",
   "private": true,
   "workspaces": ["apps/web"],
-  "scripts": {"dev": "npm --workspace apps/web run dev", "build": "npm --workspace apps/web run build", "test": "npm --workspace apps/web run test", "typecheck": "npm --workspace apps/web run typecheck"},
+  "scripts": {"dev": "npm --workspace apps/web run dev", "build": "npm --workspace apps/web run build", "test": "npm --workspace apps/web run test", "typecheck": "npm --workspace apps/web run typecheck", "import-profiles": "tsx scripts/import_company_profiles.ts"},
   "devDependencies": {"typescript": "^5.7.2"}
 }
