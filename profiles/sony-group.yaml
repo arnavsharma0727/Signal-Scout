@@ -1,0 +1,41 @@
+ticker: "SONY"
+company_name_en: "Sony Group Corporation"
+exchange: "NYSE"
+vertical: "consumer_technology"
+cik: "0000313838"
+description: "Sony Group Corporation, with businesses including Game & Network Services and entertainment technology."
+is_active: true
+priority_tier: 1
+markets:
+  - market_code: "JP"
+    language_code: "ja"
+    company_aliases:
+      - "ソニーグループ"
+      - "ソニー"
+      - "Sony Group"
+    products_games_apps_brands:
+      - "プレイステーション"
+      - "PlayStation"
+      - "PS5"
+      - "PS5 Pro"
+      - "PlayStation Plus"
+      - "PlayStation Store"
+      - "DualSense"
+    competitor_aliases: []
+    event_terms:
+      product_launch_or_update: ["発売", "新製品", "アップデート"]
+      gaming_or_platform_outage: ["障害", "ステータス"]
+      monetization_or_pricing: ["価格", "料金", "値上げ"]
+      promotions_or_discounting: ["セール", "キャンペーン"]
+      product_availability_or_stockout: ["在庫", "入荷"]
+      refund_return_quality_or_defect: ["返金", "不具合", "修理"]
+      player_or_user_engagement: ["プレイヤー", "ユーザー"]
+      competitor_substitution: []
+      store_channel_or_distribution: ["ストア", "販売"]
+      regulatory_or_reputation: ["規制", "問題"]
+      merchant_creator_or_partner_issue: ["パートナー", "提携"]
+    source_preferences:
+      - "https://blog.ja.playstation.com/feed/"
+    ambiguity_notes:
+      - "Sony is a broad group; prefer PlayStation and Game & Network Services terms for gaming-specific matching."
+    enabled: true
