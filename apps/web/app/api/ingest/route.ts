@@ -5,6 +5,7 @@ import {RSSConnector} from '../../../lib/connectors/rss';
 import {BlueskyConnector} from '../../../lib/connectors/bluesky';
 import {HackerNewsConnector} from '../../../lib/connectors/hackernews';
 import {SECEdgarConnector} from '../../../lib/connectors/sec';
+import {safeConnectorError} from '../../../lib/connectors/fetch';
 import type {Connector,NormalizedDocument} from '../../../lib/connectors/types';
 export const runtime='nodejs';
 export async function GET(request:NextRequest){
@@ -47,11 +48,11 @@ async function runIngestion(){
           else result=await connector.fetchDocuments({query,start,end,marketCode:market.market_code,languageCode:market.language_code,companyId:company.id});
           const docs=deduplicate(result.documents);
           if(docs.length){const {error}=await db.from('source_documents').upsert(docs.map(toRow),{onConflict:'content_hash'});if(error)throw error;summary.documentsStored+=docs.length}
-          await db.from('connector_runs').insert({connector_name:connector.name,job_name:'manual-ingest',company_id:company.id,market_code:market.market_code,status:'completed',started_at:started.toISOString(),completed_at:new Date().toISOString(),items_fetched:result.documents.length,items_deduplicated:result.documents.length-docs.length,items_stored:docs.length,api_requests_used:result.requestsUsed,metadata_json:result.metadata});
+          await db.from('connector_runs').insert({connector_name:connector.name,job_name:'scheduled-ingest',company_id:company.id,market_code:market.market_code,status:Array.isArray(result.metadata.failedFeeds)&&result.metadata.failedFeeds.length?'partial':'completed',started_at:started.toISOString(),completed_at:new Date().toISOString(),items_fetched:result.documents.length,items_deduplicated:result.documents.length-docs.length,items_stored:docs.length,api_requests_used:result.requestsUsed,metadata_json:result.metadata});
         }catch(error){
-          const message=errorMessage(error);
-          summary.errors.push(`${connector.name}/${company.ticker}: ${message}`);
-          await db.from('connector_runs').insert({connector_name:connector.name,job_name:'manual-ingest',company_id:company.id,market_code:market.market_code,status:'failed',started_at:started.toISOString(),completed_at:new Date().toISOString(),error_message:message});
+          const errorCode=safeConnectorError(error);
+          summary.errors.push(`${connector.name}/${company.ticker}: ${errorCode}`);
+          await db.from('connector_runs').insert({connector_name:connector.name,job_name:'scheduled-ingest',company_id:company.id,market_code:market.market_code,status:'failed',started_at:started.toISOString(),completed_at:new Date().toISOString(),error_message:errorCode,metadata_json:{error_code:errorCode}});
         }
         summary.runs++;
       }
@@ -63,4 +64,3 @@ function parseJson(v:string):string[]{try{const parsed=JSON.parse(v);return Arra
 function getRssFeeds(marketCode:string){const mapped=parseJson(process.env[`RSS_FEEDS_${marketCode}_JSON`]??'');return mapped.length?mapped:parseJson(process.env.RSS_FEEDS_JSON||'[]')}
 function deduplicate(docs:NormalizedDocument[]){const seen=new Set<string>();return docs.filter(d=>{if(seen.has(d.contentHash))return false;seen.add(d.contentHash);return true})}
 function toRow(d:NormalizedDocument){return {company_id:d.companyId,market_code:d.marketCode,source_type:d.sourceType,source_name:d.sourceName,source_domain:d.sourceDomain,language_code:d.languageCode,country_code:d.countryCode,title_original:d.titleOriginal,excerpt_original:d.excerptOriginal,source_url:d.sourceUrl,canonical_url:d.canonicalUrl,published_at:d.publishedAt,source_quality_tier:d.sourceQualityTier,entity_match_confidence:d.entityMatchConfidence,content_hash:d.contentHash,raw_metadata_json:d.rawMetadata}}
-function errorMessage(error:unknown){if(error instanceof Error)return error.message;if(error&&typeof error==='object'&&'message'in error)return String((error as {message:unknown}).message);return String(error)}

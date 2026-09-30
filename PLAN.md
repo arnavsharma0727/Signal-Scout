@@ -15,6 +15,11 @@ Evolve the live Signal Scout collection MVP into an evidence-first research plat
 
 ## Milestones
 
+## Execution log
+
+- **M0 completed locally and pushed:** commit `cc54f12`. Reconciled product claims with the running collection MVP, removed stale branding/setup note, added privacy/contact pages, documented deployment/source state, added production verification. Local tests/typecheck/build passed. Production check observed 109 documents/24h, 2 domains, no daily metrics table or track-record log; privacy/contact routes were not yet deployed at verification time.
+- **M1 implemented locally:** bounded transient retries with `Retry-After` handling; safe connector error codes and partial RSS run status; source-health view from existing connector run records; exact HN comment permalinks; RSS relative-link resolution and query-secret omission; uncomputed entity matches now remain zero. Official access constraints and key/account gates documented. No migration or account signup needed. 20 tests, typecheck, and production build passed; push/deployed verification pending.
+
 ### M0 — Audit, plan, and product integrity
 
 1. Record this plan before implementation.

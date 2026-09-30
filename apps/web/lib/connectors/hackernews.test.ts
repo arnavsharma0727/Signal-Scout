@@ -12,7 +12,7 @@ describe('HackerNewsConnector',()=>{
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].marketCode).toBe('US');
     expect(result.documents[0].excerptOriginal).toBe('A public comment & response');
-    expect(result.documents[0].sourceUrl).toBe('https://news.ycombinator.com/item?id=123');
+    expect(result.documents[0].sourceUrl).toBe('https://news.ycombinator.com/item?id=comment1');
   });
 
   it('does not mislabel this U.S.-centric source as Korean',async()=>{
