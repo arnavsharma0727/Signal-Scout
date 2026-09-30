@@ -7,6 +7,7 @@ export const EUROPEAN_COMMISSION_RSS =
   "https://ec.europa.eu/commission/presscorner/api/rss?language=en";
 const ALLOWED_HOST = "ec.europa.eu";
 const MAX_FEED_BYTES = 500_000;
+const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 /** Official EU institutional context. Only title, source URL, and date are retained. */
 export class EuropeanCommissionConnector implements Connector {
@@ -38,6 +39,10 @@ export class EuropeanCommissionConnector implements Connector {
     }).parse(xml) as Record<string, any>;
     const rawItems = parsed.rss?.channel?.item ?? [];
     const items = Array.isArray(rawItems) ? rawItems : [rawItems];
+    const windowStart = new Date(Math.max(
+      input.start.getTime(),
+      input.end.getTime() - MAX_AGE_MS,
+    ));
     const documents = items.flatMap((item: Record<string, any>) => {
       const title = typeof item.title === "string" ? item.title.trim() : "";
       const link = typeof item.link === "string" ? item.link : "";
@@ -45,7 +50,7 @@ export class EuropeanCommissionConnector implements Connector {
       const date = dateValue ? new Date(dateValue) : null;
       if (
         !title || !link || !date || !Number.isFinite(date.getTime()) ||
-        date < input.start || date > input.end
+        date < windowStart || date > input.end
       ) return [];
 
       try {

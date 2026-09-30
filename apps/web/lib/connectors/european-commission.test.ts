@@ -5,7 +5,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 const window = {
   query: "inflation OR trade",
-  start: new Date("2026-09-29T00:00:00Z"),
+  start: new Date("2026-09-27T00:00:00Z"),
   end: new Date("2026-10-01T00:00:00Z"),
 };
 
@@ -37,9 +37,9 @@ describe("European Commission Presscorner connector", () => {
     expect(result.requestsUsed).toBe(1);
   });
 
-  it("rejects out-of-window, non-Presscorner, and foreign-host items", async () => {
+  it("rejects items older than 24 hours, non-Presscorner links, and foreign hosts", async () => {
     const xml = `<rss><channel>
-      <item><title>Old item</title><link>https://ec.europa.eu/commission/presscorner/detail/en/old</link><pubDate>Mon, 01 Jan 2024 00:00:00 GMT</pubDate></item>
+      <item><title>Old item</title><link>https://ec.europa.eu/commission/presscorner/detail/en/old</link><pubDate>Mon, 28 Sep 2026 00:00:00 GMT</pubDate></item>
       <item><title>Offsite</title><link>https://example.com/story</link><pubDate>Wed, 30 Sep 2026 12:00:00 GMT</pubDate></item>
       <item><title>Other Commission page</title><link>https://ec.europa.eu/other/page</link><pubDate>Wed, 30 Sep 2026 12:00:00 GMT</pubDate></item>
     </channel></rss>`;
