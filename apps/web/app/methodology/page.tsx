@@ -4,7 +4,7 @@ import { METHODOLOGY } from "../../lib/methodology-config";
 const sections = [
   {
     title: "What is live",
-    body: "Signal Scout is currently an evidence-collection and review prototype. It displays eligible collected source items when available. It does not currently calculate a Korea-versus-U.S. conversation difference, classify stance, rank live leads, or produce investment conclusions. No cleared Korean investor-discussion feed is configured.",
+    body: "Signal Scout is currently an international evidence-collection and review prototype. It displays eligible collected source items and descriptive exact-tag observations when available. It does not currently calculate validated topic trends, classify stance, rank evidence-qualified live leads, or produce investment conclusions. No Korean investor-discussion feed is configured.",
   },
   {
     title: "Collection and sampling limits",
@@ -16,7 +16,7 @@ const sections = [
   },
   {
     title: "Dormant comparative research parameters",
-    body: "The codebase contains helper functions and versioned parameters for a possible future divergence workflow. They are not currently run to publish comparisons or leads. Even if enabled later, minimum local evidence alone cannot establish a cross-market difference; matched windows and source classes, adequate evidence on both sides, deduplication, uncertainty control, and human review would still be required.",
+    body: "The codebase contains helper functions and versioned parameters for a possible future comparative workflow. They are not currently run to publish comparisons or qualified leads. Minimum local evidence alone cannot establish a cross-source difference; matched windows and source classes, adequate evidence on each side, deduplication, uncertainty control, and human review would still be required.",
   },
   {
     title: "Evidence and human review",
@@ -40,6 +40,19 @@ export default function Methodology() {
           </section>
         ))}
       </div>
+      <section className="panel mt-5 p-7">
+        <h2 className="text-xl font-bold">Discussion observations</h2>
+        <p className="mt-3 text-sm leading-6 text-muted">
+          The research queue groups exact Stack Exchange question tags seen on
+          at least two distinct, individually CC BY-SA 4.0-licensed questions in
+          the last 72 hours. The API queries are selected in advance, coverage is
+          limited to the listed communities and languages, and counts describe
+          only collected questions. They are not a baseline-adjusted trend,
+          independent-publisher corroboration, public-opinion measure, or
+          investment lead. Tags and titles remain untranslated; matching across
+          languages is not inferred.
+        </p>
+      </section>
       <section className="panel mt-5 p-7">
         <h2 className="text-xl font-bold">
           Implemented parameters (not a live signal)

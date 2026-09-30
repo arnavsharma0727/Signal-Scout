@@ -3,25 +3,38 @@ import { fetchWithRetry } from "./fetch";
 import type { Connector, ConnectorResult } from "./types";
 
 const endpoint = "https://api.stackexchange.com/2.3/search/advanced";
-const siteQueries = [
-  { site: "economics", terms: ["inflation", "interest rates", "tariffs"] },
-  { site: "money", terms: ["inflation", "interest rates", "ETF"] },
-  { site: "ai", terms: ["AI", "large language model", "GPU"] },
-  { site: "datascience", terms: ["AI", "large language model", "data quality"] },
-  { site: "security", terms: ["ransomware", "data breach", "vulnerability"] },
-] as const;
-const siteLabels: Record<(typeof siteQueries)[number]["site"], string> = {
+const siteQueries: ReadonlyArray<{
+  site: string;
+  languageCode: string;
+  terms: readonly string[];
+}> = [
+  { site: "economics", languageCode: "en", terms: ["inflation", "interest rates", "tariffs"] },
+  { site: "money", languageCode: "en", terms: ["inflation", "interest rates", "ETF"] },
+  { site: "ai", languageCode: "en", terms: ["AI", "large language model", "GPU"] },
+  { site: "datascience", languageCode: "en", terms: ["AI", "large language model", "data quality"] },
+  { site: "security", languageCode: "en", terms: ["ransomware", "data breach", "vulnerability"] },
+  { site: "es.stackoverflow", languageCode: "es", terms: ["inteligencia artificial", "GPU", "modelo de lenguaje"] },
+  { site: "pt.stackoverflow", languageCode: "pt", terms: ["inteligência artificial", "GPU", "modelo de linguagem"] },
+  { site: "ja.stackoverflow", languageCode: "ja", terms: ["生成AI", "LLM", "GPU"] },
+  { site: "ru.stackoverflow", languageCode: "ru", terms: ["искусственный интеллект", "LLM", "GPU"] },
+];
+const siteLabels: Record<string, string> = {
   economics: "Economics Stack Exchange",
   money: "Personal Finance & Money Stack Exchange",
   ai: "Artificial Intelligence Stack Exchange",
   datascience: "Data Science Stack Exchange",
   security: "Information Security Stack Exchange",
+  "es.stackoverflow": "Stack Overflow en español",
+  "pt.stackoverflow": "Stack Overflow em Português",
+  "ja.stackoverflow": "スタック・オーバーフロー",
+  "ru.stackoverflow": "Stack Overflow на русском",
 };
 const licenseUrl = "https://creativecommons.org/licenses/by-sa/4.0/";
 
 type SearchResponse = {
   items?: Array<{
     title?: string;
+    tags?: string[];
     link?: string;
     creation_date?: number;
     content_license?: string;
@@ -46,7 +59,7 @@ export class StackExchangeConnector implements Connector {
     let stoppedForBackoff = false;
     const rejectedUnlicensed = { count: 0 };
 
-    search: for (const { site, terms } of siteQueries) {
+    search: for (const { site, languageCode, terms } of siteQueries) {
       for (const term of terms) {
         const params = new URLSearchParams({
           order: "desc",
@@ -81,7 +94,7 @@ export class StackExchangeConnector implements Connector {
               sourceUrl: item.link,
               title,
               publishedAt,
-              languageCode: "en",
+              languageCode,
               tier: 4,
               entityConfidence: 0,
               raw: {
@@ -91,6 +104,7 @@ export class StackExchangeConnector implements Connector {
                 licenseUrl,
                 site,
                 query: term,
+                tags: item.tags ?? [],
               },
             }),
           );

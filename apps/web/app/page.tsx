@@ -185,59 +185,48 @@ function EmptyPanel() {
   return (
     <div className="panel mt-10 flex min-h-[260px] flex-col justify-between p-7 md:p-8">
       <div>
-        <div className="eyebrow mb-6">Current results</div>
-        <h2 className="max-w-lg text-2xl font-semibold tracking-tight">
-          No matched cross-market evidence yet.
-        </h2>
+        <div className="eyebrow mb-6">Research status</div>
+        <h2 className="max-w-lg text-2xl font-semibold tracking-tight">No evidence-qualified thesis leads yet.</h2>
         <p className="mt-3 max-w-xl leading-7 text-muted">
-          This release does not calculate topic-frequency differences. Google
-          News redirect records are excluded; no direct Korean publisher feed is
-          configured. Hacker News material is withheld from public evidence
-          views while reuse rights are reviewed. No posts, translations, or
-          measurements are fabricated.
+          The available discussion sample is small and query-selected. The
+          research queue surfaces repeated, licensed question tags for human
+          review, but does not call them trends or infer a market thesis. News
+          and discussion remain separate, and missing evidence is not treated as
+          evidence of silence.
         </p>
       </div>
       <div>
-        <Link className="btn btn-primary" href="/sources">
-          Review source setup <ArrowUpRight size={15} />
+        <Link className="btn btn-primary" href="/candidates">
+          Review discussion observations <ArrowUpRight size={15} />
         </Link>
       </div>
     </div>
   );
 }
 function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: import("../lib/time-zones").DisplayTimeZone }) {
-  const markets = [
-    ["INTL", "International · English expert Q&A"],
-    ["KR", "South Korea"],
-    ["US", "United States"],
+  const groups = [
+    { key: "discussion", label: "Online discussion", matches: (d: any) => ["stack-exchange", "bluesky", "hacker-news"].includes(d.source_type) },
+    { key: "news", label: "News and reporting", matches: (d: any) => ["rss", "gdelt"].includes(d.source_type) },
+    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "bluesky", "hacker-news", "rss", "gdelt"].includes(d.source_type) },
   ];
   return (
     <section className="panel mt-5 overflow-hidden">
       <div className="border-b border-line p-6">
         <div className="eyebrow">Recent source evidence · 72 hours</div>
         <p className="mt-2 text-sm text-muted">
-          Up to 60 newest items per market or source group. Original headlines and discussion
-          samples are shown separately; counts are collected samples, not
-          investor-population measures.
+          Recent items are grouped by source class, not country. Original
+          headlines and discussion samples stay separate; counts describe this
+          selected collection only, not what a population believes.
         </p>
       </div>
       <div className="grid md:grid-cols-3">
-        {markets.map(([code, label]) => {
-          const rows = documents.filter((d) => d.market_code === code);
-          const visible =
-            code === "US"
-              ? [
-                  ...rows.filter((d) => d.source_type === "rss").slice(0, 6),
-                  ...rows.filter((d) => d.source_type !== "rss").slice(0, 6),
-                ].sort(
-                  (a, b) =>
-                    Date.parse(b.published_at) - Date.parse(a.published_at),
-                )
-              : rows.slice(0, 12);
+        {groups.map(({ key, label, matches }) => {
+          const rows = documents.filter(matches);
+          const visible = rows.slice(0, 12);
           return (
             <div
               className="border-b border-line p-5 md:border-b-0 md:even:border-l"
-              key={code}
+              key={key}
             >
               <h2 className="mb-4 text-sm font-semibold">
                 {label}{" "}
@@ -247,9 +236,9 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
               </h2>
               {rows.length === 0 ? (
                 <p className="text-sm text-muted">
-                  {code === "US"
-                    ? "No cleared recent items are available; records under rights review are withheld."
-                    : "No recent items collected."}
+                  {key === "news"
+                    ? "No eligible recent headlines are available. Check source health for current outages."
+                    : "No eligible recent items collected."}
                 </p>
               ) : (
                 <ul className="space-y-4">
@@ -261,8 +250,8 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                             ? "MOIS official policy · not investor discussion"
                             : d.source_type === "hacker-news"
                               ? "Hacker News comment"
-                              : d.source_type === "stack-exchange"
-                                ? "Stack Exchange · global English Q&A"
+                            : d.source_type === "stack-exchange"
+                                ? "Stack Exchange · expert Q&A"
                               : "RSS / news"}
                         </span>
                         <span>{d.language_code}</span>

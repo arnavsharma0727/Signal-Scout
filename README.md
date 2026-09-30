@@ -2,14 +2,15 @@
 
 **Compare the conversation. Follow the evidence.**
 
-Signal Scout is an early-stage international research workspace that turns public discussion into linked research context. Its current live discussion source is Stack Exchange English Q&A across Economics, Money, AI, Data Science, and Security. Only individual items explicitly marked CC BY-SA 4.0 are retained, with author and license attribution; titles link to the original question. This is a narrow expert-Q&A sample—not representative consumer, country, or investor opinion.
+Signal Scout is an early-stage international research workspace that turns public discussion into linked research context. Its live discussion connector covers Stack Exchange Economics, Money, AI, Data Science, Security, and Spanish-, Portuguese-, Japanese-, and Russian-language Stack Overflow. Only individual items explicitly marked CC BY-SA 4.0 are retained, with author and license attribution; titles link to the original question. This is a narrow expert-Q&A sample—not representative consumer, country, or investor opinion.
 
 ## Current production scope
 
-- International Stack Exchange discussion evidence, with exact source links, author/site attribution, license, and timestamps for human review. Two production runs have stored eight licensed questions in the last 24 hours across four communities; relevance is limited and some matches are tangential.
+- International Stack Exchange discussion evidence, with exact source links, author/site attribution, license, original language, and timestamps for human review. The connector now searches nine communities with 27 bounded queries/day; the four new non-English sites passed live API probes, but their first production ingestion is pending deployment.
+- The lead-review page groups repeated exact tags from licensed questions in its 72-hour sample into descriptive, linked discussion observations. This is not a trend estimate, semantic translation, or qualified thesis lead.
 - Daily scheduled collection on Vercel; server-side Supabase storage.
-- No live international thesis/lead computation, validated entity relevance or topic classifier, translation, production watchlist signup, alerts, or forward track record.
-- No Korean discussion source or direct publisher news feed is currently active. Google News redirect feeds are rejected; GDELT is disabled after rate limiting; Bluesky is disabled after access failures.
+- No evidence-qualified international thesis lead, validated topic classifier, translation, production watchlist signup, alerts, or forward track record.
+- No Korean discussion source or direct publisher news feed is currently active. Google News redirect feeds are rejected; GDELT is enabled for one global daily query but still failing with HTTP 429; Bluesky is disabled after access failures.
 
 Expert Q&A, general social discussion, regulatory filings, and news are distinct source classes. The app must not pool them as comparable observations. Raw record counts are not measures of attention, belief, awareness, or market behavior.
 

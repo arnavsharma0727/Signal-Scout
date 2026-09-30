@@ -15,6 +15,7 @@ describe("StackExchangeConnector", () => {
               link: "https://economics.stackexchange.com/questions/123/example",
               creation_date: 1790734268,
               content_license: "CC BY-SA 4.0",
+              tags: ["inflation", "economics"],
               owner: {
                 display_name: "Researcher",
                 link: "https://economics.stackexchange.com/users/1/researcher",
@@ -39,8 +40,8 @@ describe("StackExchangeConnector", () => {
       end: new Date("2026-10-01T00:00:00Z"),
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(15);
-    expect(result.requestsUsed).toBe(15);
+    expect(fetchMock).toHaveBeenCalledTimes(27);
+    expect(result.requestsUsed).toBe(27);
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].marketCode).toBe("INTL");
     expect(result.documents[0].titleOriginal).toBe("Is inflation 'transitory'?");
@@ -49,6 +50,48 @@ describe("StackExchangeConnector", () => {
       attributionName: "Researcher",
       contentLicense: "CC BY-SA 4.0",
       licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+      tags: ["inflation", "economics"],
+      site: "economics",
+    });
+    const searchedSites = new Set(
+      fetchMock.mock.calls.map(([url]) => new URL(String(url)).searchParams.get("site")),
+    );
+    expect(searchedSites).toEqual(
+      new Set([
+        "economics", "money", "ai", "datascience", "security",
+        "es.stackoverflow", "pt.stackoverflow", "ja.stackoverflow", "ru.stackoverflow",
+      ]),
+    );
+  });
+
+  it("preserves the language and site for licensed localized questions", async () => {
+    let calls = 0;
+    const fetchMock = vi.fn().mockImplementation(() => {
+      calls++;
+      const items = calls === 16 ? [{
+        title: "¿Cómo implementar un modelo de lenguaje?",
+        link: "https://es.stackoverflow.com/questions/123/example",
+        creation_date: 1790734268,
+        content_license: "CC BY-SA 4.0",
+        owner: { display_name: "Contributor", link: "https://es.stackoverflow.com/users/1" },
+      }] : [];
+      return new Response(JSON.stringify({ items }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await new StackExchangeConnector().fetchDocuments({
+      query: "ignored",
+      start: new Date("2026-09-27T00:00:00Z"),
+      end: new Date("2026-10-01T00:00:00Z"),
+    });
+
+    expect(result.documents[0]).toMatchObject({
+      sourceName: "Stack Overflow en español",
+      languageCode: "es",
+      marketCode: "INTL",
     });
   });
 

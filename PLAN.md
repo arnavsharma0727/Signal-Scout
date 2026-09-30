@@ -75,19 +75,19 @@ Evolve Signal Scout into a working, evidence-first international “word of mout
 4. Add schema-validated topic/stance classification only when evidence and validation support it.
 5. Translation must be cached, marked machine-translated, and displayed alongside originals. No paid model or translation API is enabled without an explicitly approved provider/key and cost limit; otherwise keep translation unavailable and label it clearly.
 
-### M3 — Metrics, Korea-first leads, and lifecycle
+### M3 — International evidence metrics, research leads, and lifecycle
 
-1. Store per-entity, per-market, per-source-class daily unique-cluster counts, independent domains, topic/stance mix, first-seen UTC, effective sample size, and trailing robust baselines.
-2. Implement Korea-first and narrative-divergence candidates with equal windows/classes, minimum sample sizes, lead-lag checks, and Benjamini–Hochberg correction.
-3. Keep unsupported flow/filing lead types disabled until licensed/authorized inputs exist.
-4. Add evidence-linked lead lifecycle, reviewer notes, explicit disconfirming evidence, score components, and versioned scoring constants.
-5. Never publish a score below evidence thresholds; store null/insufficient evidence as such.
+1. Store per-topic, per-community, per-language, and per-source-class daily unique-item counts, source operators, first-seen UTC, and observed-day baselines. Add entity links only when literal evidence supports them.
+2. Generate international research candidates only with reproducible labels, baseline-aware samples, independent source-operator corroboration, and explainable windows; retain country-specific analysis only when the source actually establishes geography.
+3. Keep financial flows, price predictions, buy/sell instructions, and other unsupported investment-action outputs out of scope.
+4. Add evidence-linked lead lifecycle, reviewer notes, explicit counter-evidence, source-quality components, and versioned methods.
+5. Never publish a lead when evidence requirements fail; show descriptive observations and insufficiency explicitly.
 
 ### M4 — Research workflow UI
 
-1. Build a ranked briefing scoped to watchlists, with a clearly separated “all signals” view.
-2. Add evidence-rich lead detail (original plus optional translation, counter-evidence, source links, first-seen timeline, disproof checklist).
-3. Add entity pages, search/filtering, parallel source-class feeds, timezone choice, and an operator source-health page.
+1. Build a topic-first briefing with clearly separated discussion, news, and context feeds; watchlists are optional filters, not the product's organizing premise.
+2. Add evidence-rich lead detail (original-language items, counter-evidence, source/operator links, first-seen timeline, and a disproof checklist).
+3. Add topic/source/language search and filtering, separate source-class feeds, timezone choice, and an operator source-health page.
 4. Generate Methodology from the same constants used by code. Keep neutral, minimal styling and one consistent product name.
 
 ### M5 — User workflow
@@ -97,12 +97,11 @@ Evolve Signal Scout into a working, evidence-first international “word of mout
 3. Add private watchlist UI and CSV import/export. Defer read-only share links until token scope/expiry/revocation is designed; defer notes and rate-limited alerts/digests until privacy, retention, and delivery limits are specified.
 4. Keep public evidence read-only and never expose the service-role key to browser code.
 
-### M6 — Community, flows, prices, and track record
+### M6 — International communities and research quality
 
 1. Evaluate Reddit, Bluesky, StockTwits, Korean community sources, and Korean retail-flow data one at a time. Record licensing, attribution, rate limits, retention, and fallback in `docs/SOURCES.md` before implementation. Legal-review sources stay disabled until reviewed. Kakao/Daum Cafe Search is technically free-quota eligible (published 30,000 calls/day), but its current Developer Terms require prior Kakao approval to publish/translate/use returned data; it remains off pending written permission. Reddit requires explicit API access approval and has strict retention/deletion requirements; it also remains off.
 2. Do not scrape Naver/Toss/DC Inside or bypass access controls. If no permitted Korean forum feed is available, say so plainly.
-3. Add price/flow ingestion only with a display/derived-data license that fits the product and an approved no-cost/paid budget.
-4. Start an append-only prospective lead log. Add backtests only where clean historical source and price data exist; publish sample sizes, confidence intervals, and null results.
+3. Start an append-only prospective research-lead review log with reviewer decisions, evidence sufficiency, counter-evidence, and known coverage gaps. Do not optimize for investment returns or report a performance record.
 
 ### M7 — Hardening and launch gate
 
@@ -111,11 +110,19 @@ Evolve Signal Scout into a working, evidence-first international “word of mout
 3. Run Lighthouse/accessibility and production verification; fix defects or document blocked gates before calling the product complete.
 4. Commit and push each completed milestone; deploy only after the corresponding production check passes.
 
+### International research workflow (active)
+
+- Add permitted, multilingual live discussion coverage and preserve original language, source/community, item-level license, and author attribution.
+- Surface exact, reproducible observations from real eligible records as a human review queue; distinguish these descriptive sample counts from qualified research leads.
+- Do not infer semantic equivalence across languages, market sentiment, causality, or investment action without validated methods and sufficient independent evidence.
+
 ## Release gates and constraints
 
-- The master prompt's 500 relevant documents, 8 publisher domains, 40 entity metrics, translated evidence lead, and historical hit-rate targets are not currently met. The verification script must fail these checks with specific reasons until real authorized coverage and computation exist.
-- Current RSS/Hacker News samples do not establish a Korean-forum vs U.S.-forum comparison. They must not be combined into one divergence metric.
-- No invented translations, posts, records, price data, flows, or track record.
+- A source is usable only when access, reuse/display terms, attribution, privacy, retention, and deletion duties are documented and respected; technical reachability alone is not authorization.
+- A qualified research lead requires multiple independently operated sources, a repeated/observed-time comparison with a real baseline, evidence links, explicit counter-evidence and alternatives, and human review. A single platform's sampled questions may surface descriptive observations, not verified trends.
+- The production verifier must report missing permitted discussion and news coverage, source-operator diversity, observed-day baselines, and evidence-qualified leads separately. It must not hide these gaps behind entity counts or synthetic examples.
+- Do not infer geographic audience, attention, belief, causality, or market impact from source language, site name, or query selection.
+- No invented translations, posts, records, financial flows, buy/sell calls, or performance record.
 - Never enable a paid service, add billing/payment details, accept a license, or transmit new personal contact data without the required explicit approval.
 - Keep all secrets out of source, logs, build output, browser bundles, and Git history.
 - At every milestone end, report: built, verified, failed, and still uncertain.

@@ -3,6 +3,7 @@ import { serverSupabase } from "../../lib/server-supabase";
 import { hasUnclearedHackerNewsEvidence } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
+import { recentDiscussionObservations } from "../../lib/public-data";
 
 export const dynamic = "force-dynamic";
 
@@ -25,6 +26,7 @@ type Lead = {
 
 export default async function Candidates() {
   const timeZone = await getDisplayTimeZone();
+  const observations = await recentDiscussionObservations();
   const db = serverSupabase();
   let leads: Lead[] = [];
   let unavailable = !db;
@@ -83,6 +85,52 @@ export default async function Candidates() {
   }
   return (
     <Page title="Lead review" eyebrow="Research queue">
+      <section className="panel mb-6 p-6" aria-labelledby="discussion-observations-title">
+        <h2 id="discussion-observations-title" className="text-xl font-semibold">
+          Repeated discussion topics
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+          Exact tags on distinct, licensed Stack Exchange questions collected in
+          the last 72 hours. This is a query-selected expert Q&amp;A sample from
+          one platform—not a population trend or a count of independent outlets.
+          Tags remain in their original form; no translation or semantic merge
+          is inferred. Open the source questions before deciding whether a topic
+          merits further research.
+        </p>
+        {observations.length ? (
+          <div className="mt-5 space-y-4">
+            {observations.map((observation) => (
+              <article className="border-t border-line pt-4" key={observation.tag}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="font-semibold">{observation.tag}</h3>
+                  <span className="mono text-xs text-muted">
+                    {observation.questionCount} questions · {observation.communities.length} communities
+                  </span>
+                </div>
+                <ul className="mt-2 space-y-2">
+                  {observation.evidence.map((item) => (
+                    <li key={item.id} className="text-sm leading-6">
+                      <a className="underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">
+                        {item.title}
+                      </a>
+                      <span className="ml-2 text-xs text-muted">
+                        {item.community}
+                        {item.publishedAt ? ` · ${formatTimestamp(item.publishedAt, timeZone)}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted">
+            No topic tag appeared on two or more eligible questions in this
+            window. That describes this narrow sample only; it does not mean a
+            topic is absent from wider discussion.
+          </p>
+        )}
+      </section>
       {unavailable ? (
         <div className="panel p-8">
           <h2 className="text-xl font-semibold">Lead data is not available.</h2>

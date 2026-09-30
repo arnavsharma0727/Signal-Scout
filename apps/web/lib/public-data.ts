@@ -1,6 +1,7 @@
 import 'server-only';
 import {serverSupabase} from './server-supabase';
 import {isPublicEvidenceEligible} from './source-policy';
+import {buildDiscussionObservations} from './discussion-observations';
 
 export async function publishedDivergences(){
   const db=serverSupabase();
@@ -25,4 +26,8 @@ export async function recentSourceDocuments(){
     return data??[];
   }));
   return markets.flat().filter(row=>isPublicEvidenceEligible(row.source_type,row.source_domain)).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
+}
+
+export async function recentDiscussionObservations(){
+  return buildDiscussionObservations(await recentSourceDocuments());
 }

@@ -14,9 +14,12 @@ export default function About() {
           coverage limits; news and discussion are not treated as interchangeable.
         </p>
         <p className="mt-5 leading-7 text-muted">
-          The live discussion sample is currently a small, English-language
-          expert Q&amp;A feed from Stack Exchange. GDELT news discovery is
-          configured but has not yet produced a successful live run. There is
+          Discussion collection targets a small, query-selected expert Q&amp;A
+          sample across English, Spanish, Portuguese, Japanese, and Russian
+          Stack Exchange communities. Source items stay in their original
+          language; no translation or cross-language semantic merge is inferred.
+          GDELT news discovery is configured but has not yet produced a
+          successful live run. There is
           no validated topic classifier, trend detector, or qualified live
           thesis lead yet. Counts do not represent what a country or population
           believes.

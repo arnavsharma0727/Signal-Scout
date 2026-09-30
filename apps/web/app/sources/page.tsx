@@ -71,7 +71,7 @@ export default async function Sources() {
       key: "stack-exchange",
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
-        "Keyless daily search across Economics, Money, AI, Data Science, and Security. Only individual CC BY-SA 4.0 items are retained, with author and license attribution. English expert Q&A is a narrow sample, not country-level investor sentiment.",
+        "Keyless daily search across Economics, Money, AI, Data Science, Security, and Spanish-, Portuguese-, Japanese-, and Russian-language Stack Overflow communities. Only individual CC BY-SA 4.0 items are retained, with author and license attribution. This remains a narrow expert Q&A sample, not representative public opinion.",
     },
     {
       name: "GDELT news",
@@ -141,9 +141,10 @@ export default async function Sources() {
         <div className="eyebrow mb-4">Source configuration and health</div>
         <h1 className="mb-4 text-4xl font-extrabold">Sources</h1>
         <p className="mb-10 max-w-2xl leading-7 text-muted">
-          Configured does not mean recently successful. The only discussion
-          connector currently cleared is a narrow international English expert
-          Q&A source; counts are not representative measures of public opinion.
+          Configured does not mean recently successful. The cleared discussion
+          connector is a narrow, query-selected Stack Exchange sample across
+          five languages; counts are not representative measures of public
+          opinion.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           {health.map(({ source, runs, latest, lastSuccess }) => {
