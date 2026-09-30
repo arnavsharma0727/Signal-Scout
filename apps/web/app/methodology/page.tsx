@@ -65,6 +65,20 @@ export default function Methodology() {
           establish comparative eligibility, and no live leads are scored with
           them.
         </p>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          The dormant matched-comparison helper requires the same entity, topic,
+          classifier version, exact UTC window, and source class on both
+          markets; at least {METHODOLOGY.divergence.minimumUniqueItemsPerMarket}{" "}
+          unique items and{" "}
+          {METHODOLOGY.divergence.minimumIndependentDomainsPerMarket}{" "}
+          independent domains per market; and expected 2×2 table cell counts of
+          at least {METHODOLOGY.divergence.minimumExpectedCellCount} before
+          using its approximate two-proportion test. Benjamini–Hochberg
+          correction uses q ≤ {METHODOLOGY.divergence.falseDiscoveryRateQ}.
+          Timestamp ordering is chronology only, not causality. These are
+          initial implementation guards—not validated operating thresholds—and
+          no live comparison is produced.
+        </p>
       </section>
       <p className="mt-8 text-sm text-muted">
         Signal Scout is a descriptive evidence-collection prototype, not a

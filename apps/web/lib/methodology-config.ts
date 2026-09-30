@@ -1,6 +1,6 @@
 /** Parameters currently used by descriptive aggregation and the dormant divergence helpers. */
 export const METHODOLOGY = {
-  version: "v1.0",
+  version: "v1.1",
   dailyMetrics: {
     minimumUniqueHashesForDescriptiveOnly: 20,
     minimumIndependentDomainsForDescriptiveOnly: 5,
@@ -26,5 +26,9 @@ export const METHODOLOGY = {
     localMinimumTopicEvidence: 0.75,
     localMinimumIndependentSources: 2,
     minimumAverageEntityConfidence: 0.75,
+    minimumUniqueItemsPerMarket: 20,
+    minimumIndependentDomainsPerMarket: 5,
+    minimumExpectedCellCount: 5,
+    falseDiscoveryRateQ: 0.05,
   },
 } as const;
