@@ -1,3 +1,7 @@
-# Methodology
+# Current methodology and limitations
 
-Signal Scout produces research starting points, not conclusions. A candidate becomes a Research Lead only with strong entity matching, a supported event category, verified evidence, a narrow research starting question, an alternative explanation, and a validation step. Research Priority is a reading-triage score: 35% recency, 30% source quality, 20% independent local source concentration, 15% sampled English-source comparison, less ambiguity/duplication penalties. It never uses prices, returns, valuation, ratings, sentiment, or trading data.
+Signal Scout currently collects selected public-source records; it does not yet calculate topic frequency, entity relevance, stance, narrative divergence, or research-priority scores. No translation is generated. The methodology page in the app describes the current implementation rather than a proposed future model.
+
+The stored sample includes configured Korean-language RSS, U.S. RSS, and a narrow U.S.-leaning Hacker News discussion stream. These sources differ in format, audience, and selection process. They must not be pooled into a country-versus-country discussion metric. Source counts are not estimates of investor attention or population opinion.
+
+A future comparison needs comparable source classes and time windows, reviewed bilingual entity/topic matching, deduplication, independent-source coverage, uncertainty reporting, and counter-evidence. It must be validated before being described as a research signal. No historical performance claim is supported by the current data.
