@@ -3,14 +3,15 @@ import path from 'node:path';
 import {parse as parseCsv} from 'csv-parse/sync';
 import YAML from 'yaml';
 import {createClient} from '@supabase/supabase-js';
+import {expandProfileSeeds} from '../apps/web/lib/profile-seed';
 import {validateProfile} from './validate_company_profiles';
 
 function split(value?:string){return value?value.split('|').map(v=>v.trim()).filter(Boolean):[]}
 function parseJson(value:string|undefined,fallback:unknown){try{return value?JSON.parse(value):fallback}catch{return fallback}}
 function readProfiles(file:string):unknown[]{
   const text=fs.readFileSync(file,'utf8'),ext=path.extname(file).toLowerCase();
-  if(ext==='.yaml'||ext==='.yml'){const value=YAML.parse(text);return Array.isArray(value)?value:[value]}
-  if(ext==='.json'){const value=JSON.parse(text);return Array.isArray(value)?value:[value]}
+  if(ext==='.yaml'||ext==='.yml')return expandProfileSeeds(YAML.parse(text));
+  if(ext==='.json')return expandProfileSeeds(JSON.parse(text));
   if(ext==='.csv')return parseCsv(text,{columns:true,skip_empty_lines:true,relax_column_count:true}).map((row:Record<string,string>)=>({
     ...row,krx_code:row.krx_code||'',name_ko:row.name_ko||'',aliases_en:split(row.aliases_en),aliases_ko:split(row.aliases_ko),topics_of_interest:split(row.topics_of_interest),related_entities:parseJson(row.related_entities,'[]'),
     is_active:row.is_active!=='false',priority_tier:Number(row.priority_tier||3),
@@ -19,12 +20,24 @@ function readProfiles(file:string):unknown[]{
   throw new Error(`Unsupported profile format: ${ext}`);
 }
 
+function loadLocalSupabaseCredentials(){
+  if(process.env.SUPABASE_URL&&process.env.SUPABASE_SERVICE_ROLE_KEY)return;
+  const localEnv=path.resolve(process.cwd(),'.env.local');
+  if(!fs.existsSync(localEnv))return;
+  for(const line of fs.readFileSync(localEnv,'utf8').split(/\r?\n/)){
+    const match=line.match(/^\s*(SUPABASE_URL|SUPABASE_SERVICE_ROLE_KEY)\s*=\s*(.*)\s*$/);
+    if(match&&!process.env[match[1]])process.env[match[1]]=match[2].replace(/^(['"])(.*)\1$/,'$2');
+  }
+}
+
 async function main(){
   const file=process.argv[2];
   if(!file){console.error('Usage: npm run import-profiles -- path/to/profiles.yaml [--apply]');process.exit(1)}
   const profiles=readProfiles(file),reports=profiles.map(validateProfile);
-  console.log(JSON.stringify({file,profiles:reports.length,reports},null,2));
+  const invalid=reports.flatMap((report,index)=>report.valid?[]:[{ticker:(profiles[index] as any)?.ticker??'unknown',errors:report.errors,warnings:report.warnings}]);
+  console.log(JSON.stringify({file,profiles:reports.length,valid:reports.length-invalid.length,invalid},null,2));
   if(reports.some(report=>!report.valid)||!process.argv.includes('--apply')){if(!process.argv.includes('--apply'))console.log('Dry run only. Add --apply after fixing validation errors to upsert.');process.exit(reports.some(report=>!report.valid)?1:0)}
+  loadLocalSupabaseCredentials();
   const url=process.env.SUPABASE_URL,key=process.env.SUPABASE_SERVICE_ROLE_KEY;
   if(!url||!key)throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required for --apply');
   const db=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}}),companyIds=new Map<string,string>();
