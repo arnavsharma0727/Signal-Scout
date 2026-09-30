@@ -7,7 +7,7 @@ This document records product questions that need a qualified reviewer. It is no
 - Collection is enabled only on individual server-side source flags. A successful HTTP response is not source permission.
 - Do not scrape Naver, Toss, DC Inside, Kakao/Daum Cafe, or other communities; do not bypass access controls or use undocumented endpoints.
 - Signal Scout is a public, non-authenticated research prototype. It stores source titles, excerpts/comment text, URLs, timestamps, domains, market/language labels, and some API-returned public metadata in Supabase.
-- There is no automated retention/deletion schedule today. Public-source records remain until an operator deletes them. This behavior is disclosed on `/privacy` and is not a launch-ready retention policy.
+- There is no automated retention/expiration schedule. Migration 0012 adds a protected operator-only hard-delete endpoint for verified individual takedowns; it deletes source text and directly linked evidence/derived records, and prevents re-ingestion with SHA-256 fingerprints. Fingerprints and a content-free audit record remain until an operator removes them under an approved schedule. The deletion workflow does not itself establish a lawful retention period or provide public request intake.
 - Google News redirect items are excluded from public pages; no direct Korean publisher or Korean community source is configured.
 - Hacker News collection is fail-closed pending both collection and reuse/display approval; historical HN records remain stored but are withheld from the UI and metrics while rights and retention are reviewed. The official HN API exposes public data, but the current YC Terms of Use restrict commercial use and separately restrict copying/distribution/derivative use of site content absent authorization. Counsel should determine whether the API use and public display of excerpts/links in this app are authorized. Do not market HN coverage as representative or use it without explicit clearance.
 - Kakao/Daum Cafe Search is disabled. Its free request quota does not override the Kakao Developer Terms/Operating Policy prior-approval restriction on publishing, translating, or otherwise providing service data.
@@ -15,7 +15,7 @@ This document records product questions that need a qualified reviewer. It is no
 - MOIS is limited to policy-context records whose item page has a qualifying open-license notice; it must not be described as investor conversation.
 - No paid source, translation, model, market-data feed, billing account, or card has been enabled for this work.
 - Auth and user watchlists are deployed in code but disabled. Production currently has zero Auth users and zero watchlist rows. Public sharing is not implemented.
-- There is no automatic record-expiration or takedown workflow yet. Do not infer an approved retention period from the database's current storage behavior.
+- Automatic record expiration remains absent. The operator takedown endpoint requires a distinct `TAKEDOWN_SECRET` and production migration 0012; verify both before treating the workflow as operational. Do not infer an approved retention period from current database behavior.
 
 ## Decisions required before launch or source enablement
 
@@ -42,7 +42,7 @@ This document records product questions that need a qualified reviewer. It is no
 
 - No Kakao, Reddit, Naver, Toss, DC Inside, or publisher RSS connector may be enabled until source-specific access, reuse, attribution, rate, retention, and deletion terms are recorded in [`SOURCES.md`](SOURCES.md).
 - No paid tier, billing wallet, card, or paid overage may be enabled without separate explicit approval. Free quota is not equivalent to a reuse license.
-- Before a public launch, implement and test source-specific retention plus a takedown/deletion workflow. Current indefinite-until-operator-deletes behavior is a known launch blocker.
+- Before a public launch, obtain a private, reliable user contact channel; implement an intake and response workflow; set source-specific retention/expiration periods; decide retention for takedown fingerprints/audit records; and production-test the operator takedown endpoint. Migration 0012 provides only the protected deletion primitive, not an end-to-end public request process. Indefinite-until-operator-deletes behavior remains a launch blocker.
 - Keep the privacy and methodology pages aligned with actual collection, source coverage, translation, inference, and retention behavior.
 
 ## Primary source references

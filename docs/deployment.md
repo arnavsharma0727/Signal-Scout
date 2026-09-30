@@ -13,6 +13,12 @@ npm run dev
 
 Set local-only values in the root `.env.local`, which must remain ignored by Git. Required server-side settings are `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET`. Source connectors are controlled by server-side flags and feed configuration such as `RSS_ENABLED`, `RSS_FEEDS_KR_JSON`, `RSS_FEEDS_US_JSON`, and `HACKER_NEWS_ENABLED`. RSS must point directly to publisher feeds; Google News redirects are rejected and historical Google News rows are hidden from the public evidence view. Review each publisher's permission before configuring it. Do not use a service-role key or cron secret in any `NEXT_PUBLIC_` variable.
 
+### Source takedown
+
+Migrations `0012_source_takedown.sql` and `0013_takedown_lead_cascade.sql` add an operator-only hard-delete workflow. Before deploying this migration-dependent code, generate a distinct random `TAKEDOWN_SECRET` and configure it as a private server-side Vercel environment variable (and local `.env.local` only if testing locally). Never reuse `CRON_SECRET`, expose the value in a `NEXT_PUBLIC_` variable, or commit it. Until configured, `/api/operator/takedown` deliberately returns 503. Operators submit `POST /api/operator/takedown` with `Authorization: Bearer <TAKEDOWN_SECRET>` and JSON `{ "documentId": "<source UUID>", "reason": "rights_request|privacy_request|operator_review" }`. This endpoint is for trusted operators after verifying a request; it is not a public request intake form.
+
+The database transaction deletes the source item, its attached analyses and entity links, and directly linked research leads; it invalidates affected derived rows and retains only an opaque identifier/reason/outcome audit plus SHA-256 content/URL fingerprints to prevent re-ingestion. The fingerprints are not reversible, but remain personal-data-adjacent identifiers and need counsel-approved retention. This is an on-demand deletion path, not an automatic source-specific expiration schedule. Test on non-production data before processing real takedown requests.
+
 ### Private watchlists and Supabase Auth
 
 The Auth UI, cookie-session refresh, callback, private watchlist CRUD, and CSV import/export are implemented, but Auth is **disabled by default**. To enable after configuring a production-capable Auth provider, provide these server-only variables in `.env.local` / Vercel:
