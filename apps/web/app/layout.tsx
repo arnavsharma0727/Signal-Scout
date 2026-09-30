@@ -5,9 +5,9 @@ import { getDisplayTimeZone } from "../lib/display-timezone";
 import { TIME_ZONE_OPTIONS } from "../lib/time-zones";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "Signal Scout — Korea–U.S. Conversation Monitor",
+  title: "Signal Scout — International Conversation Research",
   description:
-    "A source-aware research workspace for comparing Korean and U.S. market conversations.",
+    "A source-aware workspace for turning public online discussion and reporting into evidence-linked research questions.",
 };
 export default async function RootLayout({
   children,

@@ -81,8 +81,8 @@ export default async function Home() {
           />
           <Info
             icon={<Globe2 />}
-            title="Two markets"
-            text="International sources are shown separately and never assigned a country without evidence."
+            title="International coverage"
+            text="Sources are shown with their actual reach; no country or audience is inferred without evidence."
             href="/methodology"
           />
           <Info
