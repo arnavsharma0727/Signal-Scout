@@ -90,6 +90,14 @@ export default async function Sources() {
         "Optional, visitor-triggered request to mastodon.social’s public hashtag API; up to 20 public posts from that instance’s incomplete federated view. Content remains author-owned and no blanket license is implied. The app displays posts transiently with author/origin-server links and honors content warnings; no posts are stored or analyzed. Not a global timeline or representative measure.",
     },
     {
+      name: "Wikimedia · article talk pages",
+      key: "wikimedia-talk",
+      enabled: true,
+      onDemand: true,
+      detail:
+        "Visitor-triggered search of namespace-1 talk pages in five language editions; archived pages are excluded and snippets are shown transiently only for pages edited in the last 90 days. Each result links to its page history so visitors can check contributors and the applicable license. The edit date can predate the matched snippet. Editorial collaboration is not general forum or investor attention; results are not stored or counted as leads.",
+    },
+    {
       name: "GDELT news",
       key: "gdelt",
       enabled: process.env.GDELT_ENABLED === "true",

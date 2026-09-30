@@ -54,6 +54,16 @@ export default function Privacy() {
             post's body is not shown in the app.
           </p>
           <p>
+            Explore can search one selected Wikipedia language edition for
+            namespace-1 article talk pages. The topic goes directly from your
+            browser to that wiki's public API; Signal Scout does not receive
+            or store the query or returned snippets. The wiki receives the
+            request and associated network data under its own policies. Only
+            matching pages edited in the previous 90 days are displayed, with
+            links to the page history for contributor attribution. Search
+            snippets may contain older text from a recently edited page.
+          </p>
+          <p>
             The app is hosted by Vercel and uses Supabase for server-side data
             storage. These providers process requests and stored data to operate
             the service under their own terms and privacy policies. Server
