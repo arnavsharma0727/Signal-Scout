@@ -1,3 +1,5 @@
+import {isPublicEvidenceEligible} from './source-policy';
+
 export type EvidenceRow = {
   company_id: string;
   source_documents: {
@@ -37,6 +39,7 @@ export function aggregateDailyMetrics(rows: EvidenceRow[], date: string): DailyM
   for (const row of rows) {
     const doc = row.source_documents;
     if (!doc?.market_code || !doc.source_type || !doc.published_at) continue;
+    if (!isPublicEvidenceEligible(doc.source_type, doc.source_domain)) continue;
     const published = new Date(doc.published_at);
     if (!Number.isFinite(published.getTime()) || published < windowStart || published >= new Date(currentDate.getTime() + 24 * 60 * 60 * 1000)) continue;
     const day = published.toISOString().slice(0, 10);

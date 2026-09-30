@@ -13,6 +13,18 @@ describe('aggregateDailyMetrics', () => {
     expect(metrics.map(x => `${x.market_code}/${x.source_type}`).sort()).toEqual(['KR/news', 'US/news']);
   });
 
+  it('does not aggregate records withheld from public evidence', () => {
+    const rows: EvidenceRow[] = [
+      { company_id: 'c1', source_documents: { market_code: 'US', source_type: 'hacker-news', published_at: '2026-09-30T12:00:00Z', content_hash: 'hn', source_domain: 'news.ycombinator.com' } },
+      { company_id: 'c1', source_documents: { market_code: 'KR', source_type: 'rss', published_at: '2026-09-30T12:00:00Z', content_hash: 'google', source_domain: 'news.google.com' } },
+      { company_id: 'c1', source_documents: { market_code: 'US', source_type: 'rss', published_at: '2026-09-30T12:00:00Z', content_hash: 'allowed', source_domain: 'publisher.example' } },
+    ];
+    const metrics = aggregateDailyMetrics(rows, '2026-09-30');
+    expect(metrics).toHaveLength(1);
+    expect(metrics[0].market_code).toBe('US');
+    expect(metrics[0].document_count).toBe(1);
+  });
+
   it('uses distinct content hashes and reports domain effective sample size', () => {
     const rows: EvidenceRow[] = Array.from({ length: 20 }, (_, index) => ({
       company_id: 'c1',

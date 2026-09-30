@@ -9,3 +9,11 @@ export function hasUnclearedHackerNewsEvidence(
 ): boolean {
   return sourceTypes.includes(HACKER_NEWS_SOURCE_TYPE);
 }
+
+/** Sources withheld from public research must not enter public-facing evidence aggregates. */
+export function isPublicEvidenceEligible(sourceType: string | null | undefined, sourceDomain: string | null | undefined): boolean {
+  if (sourceType === HACKER_NEWS_SOURCE_TYPE) return false;
+  const domain = sourceDomain?.trim().toLocaleLowerCase().replace(/^www\./, '');
+  if (domain === 'news.google.com') return false;
+  return true;
+}

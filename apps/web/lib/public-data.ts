@@ -1,5 +1,6 @@
 import 'server-only';
 import {serverSupabase} from './server-supabase';
+import {isPublicEvidenceEligible} from './source-policy';
 
 export async function publishedDivergences(){
   const db=serverSupabase();
@@ -14,7 +15,7 @@ export async function recentSourceDocuments(){
   const since=new Date(Date.now()-72*60*60*1000).toISOString();
   const markets=await Promise.all(['KR','US'].map(async market=>{
     const {data}=await db.from('source_documents')
-      .select('id,market_code,source_type,source_name,language_code,title_original,excerpt_original,source_url,published_at,discovered_at')
+      .select('id,market_code,source_type,source_name,source_domain,language_code,title_original,excerpt_original,source_url,published_at,discovered_at')
       .eq('market_code',market)
       .neq('source_type','hacker-news')
       .neq('source_domain','news.google.com')
@@ -23,5 +24,5 @@ export async function recentSourceDocuments(){
       .limit(60);
     return data??[];
   }));
-  return markets.flat().sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
+  return markets.flat().filter(row=>isPublicEvidenceEligible(row.source_type,row.source_domain)).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
 }

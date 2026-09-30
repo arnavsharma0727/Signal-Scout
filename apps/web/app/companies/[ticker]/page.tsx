@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import {notFound} from 'next/navigation';
 import {serverSupabase} from '../../../lib/server-supabase';
+import {isPublicEvidenceEligible} from '../../../lib/source-policy';
 
 export const dynamic='force-dynamic';
 
@@ -17,7 +18,7 @@ export default async function CompanyResearch({params}:{params:Promise<{ticker:s
     db.from('entity_links').select('relationship_type,target_company_id,companies!entity_links_target_company_id_fkey(ticker,company_name_en)').eq('source_company_id',company.id),
     db.from('source_documents').select('id,market_code,source_type,source_name,source_domain,language_code,title_original,excerpt_original,source_url,published_at').eq('company_id',company.id).neq('source_type','hacker-news').neq('source_domain','news.google.com').order('published_at',{ascending:false}).limit(40),
   ]);
-  const documents=((rawDocuments??[]) as Document[]).filter(doc=>doc.source_url&&doc.title_original);
+  const documents=((rawDocuments??[]) as Document[]).filter(doc=>doc.source_url&&doc.title_original&&isPublicEvidenceEligible(doc.source_type,doc.source_domain));
   const relationships=relatedRows??[];
   const byMarket=(code:string)=>documents.filter(doc=>doc.market_code===code);
   return <Shell><div className="eyebrow">{company.exchange} · {company.ticker}{company.krx_code?` · KRX ${company.krx_code}`:''}</div><h1 className="mt-3 text-4xl font-extrabold tracking-tight">{company.company_name_en}</h1>{company.name_ko&&<p className="mt-2 text-lg text-muted" lang="ko">{company.name_ko}</p>}<p className="mt-4 max-w-3xl leading-7 text-muted">{company.description}</p><p className="mt-4 text-xs uppercase tracking-wider text-muted">Enabled profile coverage: {(markets??[]).map(m=>`${m.market_code} · ${m.language_code}`).join(' / ')||'none'}</p>

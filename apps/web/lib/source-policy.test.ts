@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasUnclearedHackerNewsEvidence, isHackerNewsIngestionEnabled } from './source-policy';
+import { hasUnclearedHackerNewsEvidence, isHackerNewsIngestionEnabled, isPublicEvidenceEligible } from './source-policy';
 
 describe('source rights gate', () => {
   it('keeps Hacker News ingestion off unless both collection and rights are explicitly enabled', () => {
@@ -13,5 +13,12 @@ describe('source rights gate', () => {
     expect(hasUnclearedHackerNewsEvidence(['news', 'forum'])).toBe(false);
     expect(hasUnclearedHackerNewsEvidence(['news', 'hacker-news'])).toBe(true);
     expect(hasUnclearedHackerNewsEvidence([null, undefined])).toBe(false);
+  });
+
+  it('excludes uncleared HN and Google News redirects from public evidence', () => {
+    expect(isPublicEvidenceEligible('hacker-news', 'news.ycombinator.com')).toBe(false);
+    expect(isPublicEvidenceEligible('rss', 'news.google.com')).toBe(false);
+    expect(isPublicEvidenceEligible('rss', 'WWW.NEWS.GOOGLE.COM')).toBe(false);
+    expect(isPublicEvidenceEligible('rss', 'publisher.example')).toBe(true);
   });
 });
