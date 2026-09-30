@@ -19,7 +19,11 @@ export async function fetchWithRetry(url:string|URL,init:RequestInit={},options:
     const retryAfter=response?.headers.get('retry-after');
     const seconds=retryAfter?Number(retryAfter):NaN;
     const retryDate=retryAfter&&!Number.isFinite(seconds)?Date.parse(retryAfter):NaN;
-    const requestedDelay=Number.isFinite(seconds)?Math.max(0,seconds*1000):Number.isFinite(retryDate)?Math.max(0,retryDate-Date.now()):250*2**(attempt-1);
+    // GDELT asks clients to leave at least five seconds between requests.
+    // Its 429 response may omit Retry-After, so don't hammer it with
+    // sub-second generic retries.
+    const fallbackDelay=response?.status===429?5000:250*2**(attempt-1);
+    const requestedDelay=Number.isFinite(seconds)?Math.max(0,seconds*1000):Number.isFinite(retryDate)?Math.max(0,retryDate-Date.now()):fallbackDelay;
     if(requestedDelay>10000)throw new SourceRequestError('RETRY_AFTER_WINDOW_EXCEEDED');
     const delay=requestedDelay;
     await new Promise(resolve=>setTimeout(resolve,delay));

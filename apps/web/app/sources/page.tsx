@@ -79,7 +79,7 @@ export default async function Sources() {
       enabled: process.env.GDELT_ENABLED === "true",
       detail:
         process.env.GDELT_ENABLED === "true"
-          ? "Configured; previous runs encountered rate limiting."
+          ? "One global query per daily ingestion, capped at 50 results and paced to GDELT’s five-second guidance. This is news discovery metadata, not forum discussion; reuse is cited to the GDELT Project."
           : "Disabled after HTTP 429 rate limiting.",
     },
     {
