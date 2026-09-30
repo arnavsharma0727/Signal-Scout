@@ -28,6 +28,26 @@ try {
   else fail('ingestion endpoint protected', `Expected 401/403, got HTTP ${response.status}`);
 } catch (error) { fail('ingestion endpoint protected', error.message); }
 
+try {
+  const response = await fetch(`${base}/api/metrics/recompute`, {method:'POST',signal:AbortSignal.timeout(10000)});
+  if (response.status === 401 || response.status === 403) pass('metrics recompute endpoint protected', `Unauthenticated request returned HTTP ${response.status}`);
+  else fail('metrics recompute endpoint protected', `Expected 401/403, got HTTP ${response.status}`);
+} catch (error) { fail('metrics recompute endpoint protected', error.message); }
+
+try {
+  const response = await fetch(`${base}/sources`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
+  const page = await response.text();
+  if (response.ok && page.includes('Disabled unless collection and display rights are explicitly cleared')) pass('uncleared Hacker News source is visibly disabled','rights approval gate is shown');
+  else fail('uncleared Hacker News source is visibly disabled',`HTTP ${response.status}; rights gate copy missing`);
+} catch (error) { fail('uncleared Hacker News source is visibly disabled',error.message); }
+
+try {
+  const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
+  const page = await response.text();
+  if (response.ok && page.includes('Hacker News material is withheld from public evidence views while reuse rights are reviewed.') && !page.includes('The remaining U.S.-leaning Hacker News sample is shown below')) pass('public briefing withholds uncleared source material','source disclosure is current');
+  else fail('public briefing withholds uncleared source material',`HTTP ${response.status}; rights disclosure is missing or stale`);
+} catch (error) { fail('public briefing withholds uncleared source material',error.message); }
+
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 async function rest(path, method='GET', prefer='count=exact') {
