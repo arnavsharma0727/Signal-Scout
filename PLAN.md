@@ -8,7 +8,7 @@ Evolve the live Signal Scout collection MVP into an evidence-first research plat
 
 - Stack: Next.js 15 App Router, TypeScript, Supabase Postgres, Vercel Hobby deployment and daily Cron.
 - Production: `https://signal-scout-xi-ruby.vercel.app/`; protected ingestion endpoint; private Supabase credentials and Cron secret are configured in Vercel, not Git.
-- Database: migrations 0001–0008 are applied to the production Supabase project. `metrics_daily` exists with RLS; the production recompute endpoint is protected. Fifty-two bilingual entity/instrument profiles are seeded alongside the legacy broad `MARKET-TALK` profile; none currently has eligible public evidence linked.
+- Database: migrations 0001–0010 are applied to the production Supabase project. `metrics_daily` exists with RLS; the production recompute endpoint is protected. Watchlists now require an Auth owner and have owner-only RLS; the production project currently has zero Auth users and zero watchlist rows. Fifty-two bilingual entity/instrument profiles are seeded alongside the legacy broad `MARKET-TALK` profile; none currently has eligible public evidence linked.
 - Latest baseline before publisher-feed rejection: 205 documents total: 15 KR RSS, 14 US RSS, and 176 Hacker News comments; latest 24-hour view had 109 records. Inspection confirmed both RSS configurations used `news.google.com`; sample article HEAD requests stayed on Google News (HTTP 204), not publisher domains. Those rows are now hidden publicly and new collection from that aggregator is rejected.
 - Important gaps: 52 active bilingual company/instrument profiles are now seeded. No Korean community or publisher-news feed is cleared; a separate MOIS official-policy context connector is being added, but it is not forum sentiment. There is no authorized translation, lead computation, or prospective track record. Source health is visible, but records/feeds are not representative coverage. GDELT currently returns 429 and is disabled; Bluesky returned 403 and is disabled. Historical HN records are stored but hidden while rights are reviewed; there is currently no cleared public discussion source.
 - Preserve the existing uncommitted `apps/web/tsconfig.tsbuildinfo` change. Never read, stage, print, or commit `.env.local` or Vercel credentials.
@@ -36,6 +36,7 @@ Evolve the live Signal Scout collection MVP into an evidence-first research plat
 - **M7 RLS audit / policy fix (production verified):** pushed as `c846dc1`; migration `0009_private_server_reads.sql` applied to Supabase, now at migration 0009. `pg_policies` shows only the two intended public profile-read policies. RLS is confirmed enabled on 17 private/derived tables with zero `public` policies. Simulated `anon` and `authenticated` role queries show 53 companies and 106 enabled market profiles, but 0 source documents, 0 leads, and 0 daily metrics. `verify:prod` still returns 14/20: all nine checked public routes return 200, both internal endpoints return 401, the HN rights gate holds, and only the six actual source/data/track-record gates fail. No frontend deployment was required because the app uses the server-only service-role client; no browser Supabase client exists.
 - **M6 source review (pushed in `4aa963b`):** official NAVER migration/terms, SBS and Kyunghyang RSS restrictions, Kakao prior-approval gate, Reddit explicit-approval gate, and the limited use of MOFA RSS as official-policy context are recorded in `docs/SOURCES.md`. No connector was enabled, no paid service was used, and no permission request was submitted.
 - **M7 HN fail-closed hardening (pushed in `7bed0e0`, deployed in `80406e5`):** production environment names confirm `HACKER_NEWS_ENABLED` exists but no `HACKER_NEWS_RIGHTS_APPROVED` flag is set. Therefore collection is disabled in code despite the legacy flag. Historical HN records remain stored but are not exposed by public evidence, metrics, or leads pending source-rights/retention review.
+- **M5 private watchlist database foundation (production schema applied; UI/Auth pending):** migration `0010_user_owned_watchlists.sql` was dry-run and applied via the linked Supabase CLI. Before applying, production was verified to contain zero `auth.users`, `watchlists`, and `watchlist_companies` rows. Watchlists now require `user_id → auth.users`, are private by default, cannot be made public by authenticated clients, cascade-delete memberships, and have owner-only read/write policies; membership inserts also require an active company. Public/anon policies remain absent. The Auth UI, verified session handling, CSV workflow, sharing, notes, and alerting are not implemented. Public email sign-up is gated until a production-capable SMTP provider or configured OAuth provider exists; Supabase's default shared sender is not suitable for general users. No credentials or SMTP changes were made.
 
 ### M0 — Audit, plan, and product integrity
 
@@ -78,9 +79,10 @@ Evolve the live Signal Scout collection MVP into an evidence-first research plat
 
 ### M5 — User workflow
 
-1. Add Supabase Auth only after RLS and access-control review.
-2. Add private watchlists, CSV import/export, read-only share links, notes, and rate-limited alerts/digests.
-3. Keep public evidence read-only and never expose the service-role key to browser code.
+1. **Database foundation deployed:** migration 0010 assigns every watchlist to an Auth user and enforces owner-only access, private-only status, and active-company membership inserts.
+2. Configure a production-capable Auth method (verified SMTP or OAuth) and redirect allowlist; then add Supabase Auth using server-validated sessions and complete cross-user access-control tests before opening signup.
+3. Add private watchlist UI and CSV import/export. Defer read-only share links until token scope/expiry/revocation is designed; defer notes and rate-limited alerts/digests until privacy, retention, and delivery limits are specified.
+4. Keep public evidence read-only and never expose the service-role key to browser code.
 
 ### M6 — Community, flows, prices, and track record
 
