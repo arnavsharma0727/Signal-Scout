@@ -39,6 +39,6 @@ export default async function WatchlistsPage({ searchParams }: { searchParams: P
 }
 
 function watchlistError(code: string) {
-  const messages: Record<string, string> = { name: 'Use a name of 1–80 characters.', create: 'Could not create that watchlist.', ticker: 'Enter a valid ticker.', notfound: 'That watchlist or active profile was not found.', add: 'Could not add the profile.', file: 'Choose a CSV file under 100 KB for an owned watchlist.', csv: 'CSV must include a ticker column and up to 200 valid ticker rows.', import: 'The CSV import could not be saved.' };
+  const messages: Record<string, string> = { name: 'Use a name of 1–80 characters.', create: 'Could not create that watchlist.', ticker: 'Enter a valid ticker.', notfound: 'That watchlist or active profile was not found.', add: 'Could not add the profile.', file: 'Choose a CSV file under 100 KB for an owned watchlist.', csv: 'CSV must include a ticker column and up to 200 valid ticker rows.', import: 'The CSV import could not be saved.', rate: 'This account has reached its hourly limit for that action. Please try again later.', 'rate-unavailable': 'The usage limit could not be checked, so this action was not performed. Please try again later.' };
   return messages[code] ?? 'The requested watchlist change could not be completed.';
 }

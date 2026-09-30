@@ -9,6 +9,9 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const { data: list } = await db.from('watchlists').select('id,name').eq('id', id).maybeSingle();
   if (!list) return new NextResponse('Not found', { status: 404 });
+  const { data: allowed, error: limitError } = await db.rpc('consume_watchlist_rate_limit', { p_action: 'export_csv' });
+  if (limitError) return new NextResponse('Export temporarily unavailable', { status: 503, headers: { 'Cache-Control': 'private, no-store' } });
+  if (allowed !== true) return new NextResponse('Hourly export limit reached', { status: 429, headers: { 'Cache-Control': 'private, no-store', 'Retry-After': '3600' } });
   const { data: rows, error } = await db.from('watchlist_companies').select('company:companies(ticker,company_name_en)').eq('watchlist_id', id);
   if (error) return new NextResponse('Export unavailable', { status: 500 });
   const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;

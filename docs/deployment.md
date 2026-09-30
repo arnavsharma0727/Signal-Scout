@@ -26,6 +26,8 @@ In Supabase Auth URL Configuration, allow the exact callback URL `https://signal
 
 Watchlist data is read/written through the authenticated server client and owner-scoped RLS. CSV imports accept active profile tickers only (maximum 200 rows / 100 KB); exports are private and non-cacheable. Lists cannot be made public; share links, notes, and alerts are not implemented.
 
+Watchlist mutations use a Supabase Postgres per-user hourly quota (10 create, 10 delete, 200 membership changes, 6 CSV imports, 30 CSV exports). Migration `0011_watchlist_action_limits.sql` must be applied before deploying the corresponding server actions. These quotas do not rate-limit anonymous page reads.
+
 ## Production
 
 Add the same required settings in the Vercel project's private Environment Variables UI for the intended deployment environments. Vercel Cron authenticates using the configured `CRON_SECRET`. Never put credentials in source files, build logs, client-side variables, screenshots, or GitHub. Supabase migrations are maintained in `supabase/migrations`; apply reviewed migrations to the intended project before deploying code that depends on them.

@@ -5,12 +5,17 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { authConfigured, authServerClient } from '../../lib/supabase-auth-server';
 
-async function requireUser() {
+async function requireUser(action?: 'create' | 'delete' | 'member_write' | 'import_csv') {
   if (!authConfigured()) redirect('/login?error=disabled');
   const db = await authServerClient();
   if (!db) redirect('/login?error=disabled');
   const { data: { user }, error } = await db.auth.getUser();
   if (error || !user) redirect('/login');
+  if (action) {
+    const { data: allowed, error: limitError } = await db.rpc('consume_watchlist_rate_limit', { p_action: action });
+    if (limitError) redirect('/watchlists?error=rate-unavailable');
+    if (allowed !== true) redirect('/watchlists?error=rate');
+  }
   return { db, user };
 }
 
@@ -21,7 +26,7 @@ export async function signOut() {
 }
 
 export async function createWatchlist(formData: FormData) {
-  const { db, user } = await requireUser();
+  const { db, user } = await requireUser('create');
   const name = String(formData.get('name') ?? '').trim();
   if (!name || name.length > 80) redirect('/watchlists?error=name');
   const { error } = await db.from('watchlists').insert({ name, user_id: user.id, is_public: false });
@@ -30,7 +35,7 @@ export async function createWatchlist(formData: FormData) {
 }
 
 export async function addTicker(formData: FormData) {
-  const { db } = await requireUser();
+  const { db } = await requireUser('member_write');
   const watchlistId = String(formData.get('watchlist_id') ?? '');
   const ticker = String(formData.get('ticker') ?? '').trim().toUpperCase();
   if (!/^[A-Z0-9._-]{1,24}$/.test(ticker)) redirect('/watchlists?error=ticker');
@@ -48,7 +53,7 @@ export async function addTicker(formData: FormData) {
 }
 
 export async function removeTicker(formData: FormData) {
-  const { db } = await requireUser();
+  const { db } = await requireUser('member_write');
   const watchlistId = String(formData.get('watchlist_id') ?? '');
   const companyId = String(formData.get('company_id') ?? '');
   await db.from('watchlist_companies').delete().eq('watchlist_id', watchlistId).eq('company_id', companyId);
@@ -56,14 +61,14 @@ export async function removeTicker(formData: FormData) {
 }
 
 export async function deleteWatchlist(formData: FormData) {
-  const { db } = await requireUser();
+  const { db } = await requireUser('delete');
   const watchlistId = String(formData.get('watchlist_id') ?? '');
   await db.from('watchlists').delete().eq('id', watchlistId);
   revalidatePath('/watchlists');
 }
 
 export async function importTickers(formData: FormData) {
-  const { db } = await requireUser();
+  const { db } = await requireUser('import_csv');
   const watchlistId = String(formData.get('watchlist_id') ?? '');
   const file = formData.get('file');
   const { data: list } = await db.from('watchlists').select('id').eq('id', watchlistId).maybeSingle();
