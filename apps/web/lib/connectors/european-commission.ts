@@ -69,6 +69,7 @@ export class EuropeanCommissionConnector implements Connector {
           raw: {
             publisher: "European Commission",
             license: "CC-BY-4.0",
+            licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
             attributionRequired: true,
             sourceTermsUrl: "https://commission.europa.eu/legal-notice_en",
             contentPolicy: "title-link-date-only",

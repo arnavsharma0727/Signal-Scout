@@ -251,7 +251,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                       <div className="flex justify-between gap-3 text-[10px] uppercase tracking-wider text-muted">
                         <span>
                           {d.source_type === "official-policy"
-                            ? "MOIS official policy · not investor discussion"
+                            ? "Official institutional context · not public discussion"
                             : d.source_type === "hacker-news"
                               ? "Hacker News comment"
                             : d.source_type === "stack-exchange"
@@ -283,6 +283,16 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                           {" · "}
                           <a className="underline" href={d.raw_metadata_json?.licenseUrl ?? "https://creativecommons.org/licenses/by-sa/4.0/"} target="_blank" rel="noreferrer">CC BY-SA 4.0</a>
                           {" · title shown unmodified"}
+                        </p>
+                      )}
+                      {d.source_type === "official-policy" && (
+                        <p className="mt-1 text-[10px] leading-4 text-muted">
+                          <span className="font-medium">{d.raw_metadata_json?.publisher ?? d.source_name}</span>
+                          {d.raw_metadata_json?.license === "CC-BY-4.0" && (
+                            <> · <a className="underline" href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer">CC BY 4.0</a></>
+                          )}
+                          {d.raw_metadata_json?.license === "KOGL-Type-1" && " · KOGL Type 1"}
+                          {" · headline shown unmodified"}
                         </p>
                       )}
                       <time
