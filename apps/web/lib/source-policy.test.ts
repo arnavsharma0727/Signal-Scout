@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasUnclearedHackerNewsEvidence, isHackerNewsIngestionEnabled, isPublicEvidenceEligible } from './source-policy';
+import { hasUnclearedHackerNewsEvidence, isHackerNewsIngestionEnabled, isPublicEvidenceEligible, matchesStackExchangeTitleQuery } from './source-policy';
 
 describe('source rights gate', () => {
   it('keeps Hacker News ingestion off unless both collection and rights are explicitly enabled', () => {
@@ -20,5 +20,12 @@ describe('source rights gate', () => {
     expect(isPublicEvidenceEligible('rss', 'news.google.com')).toBe(false);
     expect(isPublicEvidenceEligible('rss', 'WWW.NEWS.GOOGLE.COM')).toBe(false);
     expect(isPublicEvidenceEligible('rss', 'publisher.example')).toBe(true);
+  });
+
+  it('requires every recorded Stack Exchange query term to appear as a title token', () => {
+    expect(matchesStackExchangeTitleQuery('How does AI affect inflation?', 'AI')).toBe(true);
+    expect(matchesStackExchangeTitleQuery('AI and interest rates', 'interest rates')).toBe(true);
+    expect(matchesStackExchangeTitleQuery('Artificial intelligence', 'AI')).toBe(false);
+    expect(matchesStackExchangeTitleQuery('Question title', undefined)).toBe(false);
   });
 });

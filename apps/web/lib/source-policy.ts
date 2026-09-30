@@ -17,3 +17,14 @@ export function isPublicEvidenceEligible(sourceType: string | null | undefined, 
   if (domain === 'news.google.com') return false;
   return true;
 }
+
+/** Hide legacy Stack Exchange rows whose pre-fix API query did not constrain titles. */
+export function matchesStackExchangeTitleQuery(title: string | null | undefined, query: unknown): boolean {
+  if (!title || typeof query !== "string") return false;
+  const tokens = (value: string) =>
+    value.normalize("NFKC").toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  const expected = tokens(query);
+  if (!expected.length) return false;
+  const titleTokens = new Set(tokens(title));
+  return expected.every((token) => titleTokens.has(token));
+}

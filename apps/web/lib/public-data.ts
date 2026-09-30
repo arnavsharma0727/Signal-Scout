@@ -1,6 +1,6 @@
 import 'server-only';
 import {serverSupabase} from './server-supabase';
-import {isPublicEvidenceEligible} from './source-policy';
+import {isPublicEvidenceEligible, matchesStackExchangeTitleQuery} from './source-policy';
 import {buildDiscussionObservations} from './discussion-observations';
 
 export async function publishedDivergences(){
@@ -25,7 +25,13 @@ export async function recentSourceDocuments(){
       .limit(60);
     return data??[];
   }));
-  return markets.flat().filter(row=>isPublicEvidenceEligible(row.source_type,row.source_domain)).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
+  return markets.flat().filter(row=>
+    isPublicEvidenceEligible(row.source_type,row.source_domain) &&
+    (row.source_type !== 'stack-exchange' || matchesStackExchangeTitleQuery(
+      row.title_original,
+      row.raw_metadata_json?.query,
+    ))
+  ).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
 }
 
 export async function recentDiscussionObservations(){
