@@ -40,10 +40,18 @@ function utc(
   return formatTimestamp(value, timeZone);
 }
 
+type SourceConfig = {
+  name: string;
+  key: string;
+  enabled: boolean;
+  detail: string;
+  onDemand?: boolean;
+};
+
 export default async function Sources() {
   const timeZone = await getDisplayTimeZone();
   const db = serverSupabase();
-  const sources = [
+  const sources: SourceConfig[] = [
     {
       name: "RSS / Atom",
       key: "rss",
@@ -72,6 +80,14 @@ export default async function Sources() {
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
         "Keyless daily collection across nine communities plus one-query-at-a-time live Explore search. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. This remains expert Q&A, not representative public opinion; on-demand results are not stored.",
+    },
+    {
+      name: "Mastodon · public hashtag timeline",
+      key: "mastodon-public",
+      enabled: true,
+      onDemand: true,
+      detail:
+        "Optional, visitor-triggered request to mastodon.social’s public hashtag API; up to 20 public posts from that instance’s incomplete federated view. Content remains author-owned and no blanket license is implied. The app displays posts transiently with author/origin-server links and honors content warnings; no posts are stored or analyzed. Not a global timeline or representative measure.",
     },
     {
       name: "GDELT news",
@@ -155,6 +171,7 @@ export default async function Sources() {
               ? Math.round((errors / runs.length) * 100)
               : null;
             const stale =
+              !source.onDemand &&
               source.enabled &&
               (!lastSuccess ||
                 Date.now() -
@@ -162,13 +179,15 @@ export default async function Sources() {
                     lastSuccess.completed_at ?? lastSuccess.started_at,
                   ) >
                   48 * 60 * 60 * 1000);
-            const status = !source.enabled
-              ? "off"
-              : stale
-                ? "stale"
-                : latest?.status === "failed"
-                  ? "error"
-                  : "current";
+            const status = source.onDemand
+              ? "on demand"
+              : !source.enabled
+                ? "off"
+                : stale
+                  ? "stale"
+                  : latest?.status === "failed"
+                    ? "error"
+                    : "current";
             return (
               <div className="panel p-6" key={source.name}>
                 <div className="flex items-center justify-between gap-4">
@@ -178,7 +197,11 @@ export default async function Sources() {
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-muted">{source.detail}</p>
-                <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-line pt-3 text-xs">
+                {source.onDemand ? (
+                  <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
+                    Visitor-triggered only. No database records or automated run-health history.
+                  </p>
+                ) : <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-2 border-t border-line pt-3 text-xs">
                   <dt className="text-muted">Last success</dt>
                   <dd>
                     {lastSuccess
@@ -198,7 +221,7 @@ export default async function Sources() {
                       ? "no runs"
                       : `${rate}% (${errors}/${runs.length})`}
                   </dd>
-                </dl>
+                </dl>}
               </div>
             );
           })}

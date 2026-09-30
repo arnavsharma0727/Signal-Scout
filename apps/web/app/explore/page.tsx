@@ -1,4 +1,5 @@
 import Link from "next/link";
+import MastodonSearch from "./mastodon-search";
 import TopicSearch from "./topic-search";
 
 export const metadata = { title: "Explore live discussion | Signal Scout" };
@@ -19,10 +20,12 @@ export default function ExplorePage() {
           and inspect the original discussion.
         </p>
         <TopicSearch />
+        <MastodonSearch />
         <aside className="mt-8 border-t border-line pt-5 text-xs leading-5 text-muted">
-          The search runs directly in your browser against the Stack Exchange public API. Signal Scout
-          does not receive or store your query or these results. Only items explicitly marked CC BY-SA
-          4.0 are shown, with author, community, original question, and license attribution.{" "}
+          Searches run directly in your browser against the selected provider. Signal Scout does not
+          receive or store on-demand queries or results. Stack Exchange results are limited to items
+          explicitly marked CC BY-SA 4.0. Mastodon posts remain the authors’ content and are shown
+          transiently with their original links; no blanket content license is implied.{" "}
           <Link className="underline text-ink" href="/sources">Source details</Link> ·{" "}
           <Link className="underline text-ink" href="/privacy">Privacy</Link>
         </aside>

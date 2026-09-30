@@ -45,6 +45,15 @@ export default function Privacy() {
             and attribution.
           </p>
           <p>
+            Explore can also request a public hashtag timeline directly from
+            mastodon.social. That provider receives the hashtag and the
+            visitor's network request; Signal Scout's server does not receive
+            or persist the query, returned posts, author handles, or post text.
+            Public posts are temporarily displayed in the browser with author
+            and original-post links. Content warnings are respected; a warned
+            post's body is not shown in the app.
+          </p>
+          <p>
             The app is hosted by Vercel and uses Supabase for server-side data
             storage. These providers process requests and stored data to operate
             the service under their own terms and privacy policies. Server

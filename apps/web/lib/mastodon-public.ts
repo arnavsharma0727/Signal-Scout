@@ -1,0 +1,104 @@
+export type MastodonPublicPost = {
+  id: string;
+  url: string;
+  createdAt: string;
+  contentHtml: string;
+  contentWarning: string;
+  language: string | null;
+  authorName: string;
+  authorHandle: string;
+  authorUrl: string;
+  originServer: string;
+  accountMarkedAutomated: boolean;
+};
+
+type ApiPost = {
+  id?: string;
+  url?: string | null;
+  created_at?: string;
+  visibility?: string;
+  content?: string;
+  spoiler_text?: string;
+  language?: string | null;
+  reblog?: unknown;
+  account?: {
+    display_name?: string;
+    acct?: string;
+    url?: string;
+    bot?: boolean;
+  };
+};
+
+const API_ORIGIN = "https://mastodon.social";
+
+/** Read one public hashtag timeline directly from Mastodon; never persists posts. */
+export async function searchPublicHashtag(
+  input: string,
+  fetcher: typeof fetch = fetch,
+  now = Date.now(),
+): Promise<MastodonPublicPost[]> {
+  const hashtag = input.trim().replace(/^#+/, "");
+  if (!/^[\p{L}\p{N}_-]{1,50}$/u.test(hashtag)) {
+    throw new Error("Enter a hashtag with 1–50 letters, numbers, underscores, or hyphens.");
+  }
+
+  const response = await fetcher(
+    `${API_ORIGIN}/api/v1/timelines/tag/${encodeURIComponent(hashtag)}?limit=20`,
+    { headers: { accept: "application/json" } },
+  );
+  if (response.status === 401) {
+    throw new Error("This instance no longer allows public timeline access. No login or workaround is attempted.");
+  }
+  if (response.status === 404) {
+    throw new Error("That hashtag is not available on this instance.");
+  }
+  if (response.status === 429) {
+    throw new Error("Mastodon is rate-limiting requests. Try again later.");
+  }
+  if (!response.ok) throw new Error("The public timeline is temporarily unavailable.");
+
+  const posts = (await response.json()) as ApiPost[];
+  if (!Array.isArray(posts)) return [];
+
+  return posts.flatMap((post) => {
+    const postUrl = safeHttpsUrl(post.url);
+    const authorUrl = safeHttpsUrl(post.account?.url);
+    const createdAt = post.created_at ? new Date(post.created_at) : null;
+    const acct = post.account?.acct;
+    if (
+      post.visibility !== "public" ||
+      post.reblog ||
+      !post.id ||
+      !postUrl ||
+      !authorUrl ||
+      !createdAt ||
+      !Number.isFinite(createdAt.getTime()) ||
+      createdAt.getTime() > now ||
+      !acct ||
+      typeof post.content !== "string"
+    ) return [];
+
+    return [{
+      id: post.id,
+      url: postUrl,
+      createdAt: createdAt.toISOString(),
+      contentHtml: post.content,
+      contentWarning: typeof post.spoiler_text === "string" ? post.spoiler_text : "",
+      language: typeof post.language === "string" ? post.language : null,
+      authorName: post.account?.display_name?.trim() || acct,
+      authorHandle: acct,
+      authorUrl,
+      originServer: new URL(postUrl).hostname,
+      accountMarkedAutomated: post.account?.bot === true,
+    }];
+  });
+}
+
+function safeHttpsUrl(value: string | null | undefined) {
+  try {
+    const url = new URL(value ?? "");
+    return url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
