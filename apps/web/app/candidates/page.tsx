@@ -104,7 +104,11 @@ export default async function Candidates() {
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold">{observation.tag}</h3>
                   <span className="mono text-xs text-muted">
-                    {observation.questionCount} questions · {observation.communities.length} communities
+                    {observation.questionCount}{" "}
+                    {observation.questionCount === 1 ? "question" : "questions"}
+                    {" · "}
+                    {observation.communities.length}{" "}
+                    {observation.communities.length === 1 ? "community" : "communities"}
                   </span>
                 </div>
                 <ul className="mt-2 space-y-2">
