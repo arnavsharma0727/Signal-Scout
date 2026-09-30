@@ -7,6 +7,7 @@ import {HackerNewsConnector} from '../../../lib/connectors/hackernews';
 import {SECEdgarConnector} from '../../../lib/connectors/sec';
 import {safeConnectorError} from '../../../lib/connectors/fetch';
 import {matchEntityText} from '../../../lib/entity-matching';
+import {recomputeEntityDailyMetrics} from '../../../lib/recompute-metrics';
 import type {Connector,NormalizedDocument} from '../../../lib/connectors/types';
 export const runtime='nodejs';
 export async function GET(request:NextRequest){
@@ -32,7 +33,7 @@ async function runIngestion(){
   if(process.env.BLUESKY_ENABLED==='true')connectors.push(new BlueskyConnector());
   if(process.env.HACKER_NEWS_ENABLED==='true')connectors.push(new HackerNewsConnector());
   if(process.env.SEC_USER_AGENT)connectors.push(new SECEdgarConnector());
-  const summary={companies:companies?.length??0,documentsStored:0,runs:0,errors:[] as string[]};
+  const summary={companies:companies?.length??0,documentsStored:0,runs:0,metricsWritten:0,errors:[] as string[]};
   for(const company of companies??[]){
     const {data:markets}=await db.from('company_market_profiles').select('*').eq('company_id',company.id).eq('enabled',true);
     for(const market of markets??[]){
@@ -68,6 +69,7 @@ async function runIngestion(){
       }
     }
   }
+  try{summary.metricsWritten=(await recomputeEntityDailyMetrics(db)).metricsWritten}catch{summary.errors.push('daily_metrics: recomputation failed')}
   return NextResponse.json(summary);
 }
 function parseJson(v:string):string[]{try{const parsed=JSON.parse(v);return Array.isArray(parsed)?parsed.filter(x=>typeof x==='string'):[]}catch{return []}}

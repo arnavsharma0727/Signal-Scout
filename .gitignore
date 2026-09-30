@@ -4,6 +4,8 @@ out
 .env
 .env.local
 coverage
+!apps/web/app/coverage/
+!apps/web/app/coverage/**
 .DS_Store
 supabase/.temp
 profiles/*.local.yaml

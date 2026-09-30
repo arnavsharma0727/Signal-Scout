@@ -14,7 +14,7 @@ if ((!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) && exi
   }
 }
 
-for (const route of ['/', '/about', '/companies', '/candidates', '/methodology', '/sources', '/privacy', '/contact']) {
+for (const route of ['/', '/about', '/companies', '/coverage', '/candidates', '/methodology', '/sources', '/privacy', '/contact']) {
   try {
     const response = await fetch(`${base}${route}`, {redirect:'follow', signal:AbortSignal.timeout(15000)});
     if (response.ok) pass(`route ${route}`, `HTTP ${response.status}`);
@@ -54,9 +54,10 @@ if (!url || !key) {
     const unresolved=await rest('source_documents?select=id&or=(source_domain.is.null,source_domain.eq.)');
     if(unresolved.count===0)pass('zero documents missing publisher domain','all records have a resolved domain');else fail('zero documents missing publisher domain',`${unresolved.count??'unknown'} unresolved records`);
     try {
-      const metrics = await rest('metrics_daily?select=id&metric_date=eq.'+new Date().toISOString().slice(0,10));
-      if (metrics.count >= 40) pass('>=40 computed entity metrics today', `${metrics.count} metrics`); else fail('>=40 computed entity metrics today', `${metrics.count ?? 'unknown'} metrics; requires 40`);
-    } catch { fail('>=40 computed entity metrics today', 'metrics_daily table or daily metric computation is not available'); }
+      const metrics = await rest('metrics_daily?select=company_id,market_code,source_type&metric_date=eq.'+new Date().toISOString().slice(0,10));
+      const entities = new Set((metrics.data ?? []).map(row => row.company_id).filter(Boolean));
+      if (entities.size >= 40) pass('>=40 entities with computed metrics today', `${entities.size} distinct entities across ${metrics.count} market/source-class metrics`); else fail('>=40 entities with computed metrics today', `${entities.size} distinct entities across ${metrics.count ?? 'unknown'} metrics; requires 40 entities`);
+    } catch { fail('>=40 entities with computed metrics today', 'metrics_daily table or daily metric computation is not available'); }
     try {
       const leads = await rest('research_leads?select=id,verified_evidence_json,alternative_explanations_json&status=eq.active');
       if (leads.count > 0 && leads.data?.every(x=>x.verified_evidence_json && x.alternative_explanations_json)) pass('active leads have evidence and counter-evidence', `${leads.count} leads`);
