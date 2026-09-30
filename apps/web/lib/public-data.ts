@@ -16,6 +16,7 @@ export async function recentSourceDocuments(){
     const {data}=await db.from('source_documents')
       .select('id,market_code,source_type,source_name,language_code,title_original,excerpt_original,source_url,published_at,discovered_at')
       .eq('market_code',market)
+      .neq('source_type','hacker-news')
       .neq('source_domain','news.google.com')
       .gte('published_at',since)
       .order('published_at',{ascending:false})

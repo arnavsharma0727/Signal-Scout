@@ -27,6 +27,7 @@ export default async function CoveragePage() {
   if (db) {
     const { data, error } = await db.from('metrics_daily')
       .select('metric_date,company_id,market_code,source_type,document_count,unique_content_hash_count,independent_domain_count,effective_domain_sample_size,first_seen_in_window_utc,baseline_observed_days,trailing_30d_document_median,trailing_30d_document_mad,evidence_status,companies(ticker,company_name_en)')
+      .neq('source_type','hacker-news')
       .order('metric_date', { ascending: false }).order('company_id').limit(300);
     unavailable = Boolean(error);
     rows = (data ?? []) as unknown as Metric[];

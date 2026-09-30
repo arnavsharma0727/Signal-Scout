@@ -8,6 +8,7 @@ import {SECEdgarConnector} from '../../../lib/connectors/sec';
 import {safeConnectorError} from '../../../lib/connectors/fetch';
 import {matchEntityText} from '../../../lib/entity-matching';
 import {recomputeEntityDailyMetrics} from '../../../lib/recompute-metrics';
+import {isHackerNewsIngestionEnabled} from '../../../lib/source-policy';
 import type {Connector,NormalizedDocument} from '../../../lib/connectors/types';
 export const runtime='nodejs';
 export async function GET(request:NextRequest){
@@ -31,7 +32,7 @@ async function runIngestion(){
   const connectors:Connector[]=[];
   if(process.env.GDELT_ENABLED==='true')connectors.push(new GDELTConnector());
   if(process.env.BLUESKY_ENABLED==='true')connectors.push(new BlueskyConnector());
-  if(process.env.HACKER_NEWS_ENABLED==='true')connectors.push(new HackerNewsConnector());
+  if(isHackerNewsIngestionEnabled())connectors.push(new HackerNewsConnector());
   if(process.env.SEC_USER_AGENT)connectors.push(new SECEdgarConnector());
   const summary={companies:companies?.length??0,documentsStored:0,runs:0,metricsWritten:0,errors:[] as string[]};
   for(const company of companies??[]){

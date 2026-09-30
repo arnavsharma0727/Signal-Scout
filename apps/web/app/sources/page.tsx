@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import {serverSupabase} from '../../lib/server-supabase';
+import {isHackerNewsIngestionEnabled} from '../../lib/source-policy';
 
 export const dynamic='force-dynamic';
 
@@ -10,7 +11,7 @@ export default async function Sources(){
   const db=serverSupabase();
   const sources=[
     {name:'RSS / Atom',key:'rss',enabled:process.env.RSS_ENABLED==='true'&&enabledFeeds(),detail:enabledFeeds()?'Direct publisher feeds only; review each publisher’s terms before use.':'No direct publisher feeds configured. Google News redirect feeds are rejected; records linked only to news.google.com are excluded from the public evidence feed.'},
-    {name:'Hacker News comments',key:'hacker-news',enabled:process.env.HACKER_NEWS_ENABLED==='true',detail:'Public API sample; a narrow U.S.-leaning discussion sample, not a matched Korea/U.S. forum comparison. Public display and reuse rights are under review; do not treat this as an approved representative source.'},
+    {name:'Hacker News comments',key:'hacker-news',enabled:isHackerNewsIngestionEnabled(),detail:'Disabled unless collection and display rights are explicitly cleared. This is a narrow U.S.-leaning sample, not a matched Korea/U.S. forum comparison; prior records are withheld from public evidence views while rights remain under review.'},
     {name:'GDELT news',key:'gdelt',enabled:process.env.GDELT_ENABLED==='true',detail:process.env.GDELT_ENABLED==='true'?'Configured; previous runs encountered rate limiting.':'Disabled after HTTP 429 rate limiting.'},
     {name:'Bluesky public posts',key:'bluesky',enabled:process.env.BLUESKY_ENABLED==='true',detail:process.env.BLUESKY_ENABLED==='true'?'Configured; previous runs encountered access failures.':'Disabled after HTTP 403 access failures.'},
     {name:'SEC EDGAR',key:'sec-edgar',enabled:Boolean(process.env.SEC_USER_AGENT),detail:'Official U.S. filing metadata; not part of the current homepage evidence stream. Requires a declared User-Agent and fair-access limits.'},

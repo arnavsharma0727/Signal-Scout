@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { serverSupabase } from '../../../lib/server-supabase';
+import { hasUnclearedHackerNewsEvidence } from '../../../lib/source-policy';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ export default async function DivergenceDetail({ params }: { params: Promise<{ i
   const { data: linkedData, error: linkedError } = await db.from('research_lead_documents').select('relationship_type,source_documents!inner(id,title_original,excerpt_original,source_url,source_name,source_domain,market_code,source_type,published_at)').eq('research_lead_id', id);
   if (linkedError) return <Unavailable />;
   const links = (linkedData ?? []) as unknown as LinkRow[];
+  if (hasUnclearedHackerNewsEvidence(links.map(row => row.source_documents?.source_type))) notFound();
   const supporting = links.filter(row => !isCounter(row.relationship_type) && row.source_documents);
   const counter = links.filter(row => isCounter(row.relationship_type) && row.source_documents);
   return <div className="min-h-screen"><header className="shell flex h-20 items-center justify-between border-b border-line"><Link href="/" className="font-extrabold">SIGNAL SCOUT</Link><Link href="/candidates" className="text-sm text-muted">← Lead review</Link></header><main className="shell py-14"><div className="eyebrow mb-4">Evidence-linked research prompt · {lead.market_code ?? 'Market not specified'}{lead.event_category ? ` · ${lead.event_category}` : ''}</div><h1 className="max-w-4xl text-4xl font-extrabold tracking-tight">{lead.topic || lead.companies?.company_name_en || 'Research lead'}</h1>{lead.companies&&<p className="mt-3 text-sm text-muted">{lead.companies.ticker} · {lead.companies.company_name_en}</p>}{lead.first_detected_at&&<time className="mt-2 block text-xs text-muted" dateTime={lead.first_detected_at}>First recorded {formatUtc(lead.first_detected_at)}</time>}
