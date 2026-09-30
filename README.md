@@ -4,18 +4,17 @@
 
 Signal Scout is a research workspace for comparing public Korean-language and U.S. news and discussion samples. It helps a researcher notice differences in topic frequency or framing, inspect the underlying sources, and ask better questions. It is about understanding people and information environments—not screening stocks or generating trades.
 
-The public first-run experience is an honest empty state until the database schema, tracked research profiles, and authorized sources are configured. Development-only sample content is synthetic and is never shown in production. Source coverage is partial and platform-demographic biases are substantial; the app must not claim to represent either population.
+The production MVP collects a limited sample of public Korean-language news and U.S. news/discussion for human review. It shows source evidence, not computed cross-market topic divergence. Development-only sample content is synthetic and is never shown in production. Source coverage is partial and platform-demographic biases are substantial; the app must not claim to represent either population.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Browser[Next.js read-only web app] --> API[Public read API]
-  API --> DB[(Supabase Postgres + RLS)]
-  Jobs[Supabase Cron / protected jobs] --> Edge[Edge Functions]
-  Edge --> Connectors[Authorized connector adapters]
+  Browser[Research web app] --> Server[Next.js server]
+  Server --> DB[(Supabase Postgres)]
+  Cron[Vercel daily cron] --> Guard[Protected ingestion route]
+  Guard --> Connectors[Authorized public-source adapters]
   Connectors --> DB
-  CLI[Protected local CLI] --> Edge
 ```
 
 ## Quick start
@@ -25,7 +24,7 @@ npm install
 npm run dev
 ```
 
-Import only real, user-supplied research profiles with `scripts/import_company_profiles.ts`. See [profile import](docs/company-profile-import.md), [architecture](docs/architecture.md), and [data sources](docs/data-sources.md). Copy `.env.example` to a local environment; never commit secrets.
+The default watch compares configured source samples for a broad market-conversation query; it is not a company screen. The homepage links each collected item back to its original source. The current release does not calculate topic-frequency differences or represent Korean/U.S. investor populations.
 
 ## Product thesis
 
@@ -51,7 +50,7 @@ Results are subject to user-selection bias, source-coverage bias, platform-demog
 
 ## Development
 
-`npm test` runs the neutral, non-content unit tests. `npm run typecheck` checks TypeScript. Docker and Supabase setup are documented in [deployment](docs/deployment.md). Scheduled jobs are disabled until sources, credentials, and budgets are configured. Import a real YAML, CSV, or JSON profile with the protected local scripts after dry-run validation; never commit `.env.local`.
+`npm test` runs connector and methodology unit tests. `npm run typecheck` checks TypeScript. Production ingestion is scheduled once daily on Vercel Hobby and requires a private `CRON_SECRET`. Keep `.env.local` untracked and use server-only Supabase credentials.
 
 ## Source compliance and security
 
@@ -59,6 +58,6 @@ Use only documented, authorized GDELT, SEC EDGAR, RSS/Atom, Bluesky, Hacker News
 
 ## Roadmap
 
-Next: configure a legally authorized Korean public-conversation source, deploy the database migrations, set private production environment variables, add provenance-aware topic classification, and validate comparison quality with real users. Search-attention normalization remains schema-only until a free, authorized trend source with historical observations is configured.
+Next: add a legally authorized Korean public-conversation source, implement and validate the bilingual topic-classification/comparison pipeline, then test its research utility with real users. Search-attention normalization remains schema-only until a free, authorized trend source with historical observations is configured.
 
 Research only — not investment advice or a trading recommendation.

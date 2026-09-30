@@ -7,8 +7,20 @@ import {HackerNewsConnector} from '../../../lib/connectors/hackernews';
 import {SECEdgarConnector} from '../../../lib/connectors/sec';
 import type {Connector,NormalizedDocument} from '../../../lib/connectors/types';
 export const runtime='nodejs';
+export async function GET(request:NextRequest){
+  if(!isAuthorized(request))return NextResponse.json({error:'Unauthorized'},{status:401});
+  return runIngestion();
+}
 export async function POST(request:NextRequest){
-  if(request.headers.get('x-cron-secret')!==process.env.CRON_INTERNAL_SECRET)return NextResponse.json({error:'Unauthorized'},{status:401});
+  if(!isAuthorized(request))return NextResponse.json({error:'Unauthorized'},{status:401});
+  return runIngestion();
+}
+function isAuthorized(request:NextRequest){
+  const secret=process.env.CRON_SECRET;
+  if(!secret)return false;
+  return request.headers.get('authorization')===`Bearer ${secret}`||request.headers.get('x-cron-secret')===secret;
+}
+async function runIngestion(){
   const db=serverSupabase();if(!db)return NextResponse.json({error:'Supabase server configuration is missing'},{status:503});
   const start=new Date(Date.now()-72*60*60*1000),end=new Date();
   const {data:companies,error:companyError}=await db.from('companies').select('id,ticker,cik,is_active').eq('is_active',true);
