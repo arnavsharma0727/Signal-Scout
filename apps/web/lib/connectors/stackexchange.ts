@@ -3,8 +3,20 @@ import { fetchWithRetry } from "./fetch";
 import type { Connector, ConnectorResult } from "./types";
 
 const endpoint = "https://api.stackexchange.com/2.3/search/advanced";
-const sites = ["economics", "money"] as const;
-const terms = ["inflation", "interest rates", "AI"] as const;
+const siteQueries = [
+  { site: "economics", terms: ["inflation", "interest rates", "tariffs"] },
+  { site: "money", terms: ["inflation", "interest rates", "ETF"] },
+  { site: "ai", terms: ["AI", "large language model", "GPU"] },
+  { site: "datascience", terms: ["AI", "large language model", "data quality"] },
+  { site: "security", terms: ["ransomware", "data breach", "vulnerability"] },
+] as const;
+const siteLabels: Record<(typeof siteQueries)[number]["site"], string> = {
+  economics: "Economics Stack Exchange",
+  money: "Personal Finance & Money Stack Exchange",
+  ai: "Artificial Intelligence Stack Exchange",
+  datascience: "Data Science Stack Exchange",
+  security: "Information Security Stack Exchange",
+};
 const licenseUrl = "https://creativecommons.org/licenses/by-sa/4.0/";
 
 type SearchResponse = {
@@ -34,7 +46,7 @@ export class StackExchangeConnector implements Connector {
     let stoppedForBackoff = false;
     const rejectedUnlicensed = { count: 0 };
 
-    search: for (const site of sites) {
+    search: for (const { site, terms } of siteQueries) {
       for (const term of terms) {
         const params = new URLSearchParams({
           order: "desc",
@@ -65,7 +77,7 @@ export class StackExchangeConnector implements Connector {
             makeDocument({
               marketCode: "INTL",
               sourceType: "stack-exchange",
-              sourceName: `Stack Exchange · ${site}`,
+              sourceName: siteLabels[site],
               sourceUrl: item.link,
               title,
               publishedAt,
@@ -100,8 +112,10 @@ export class StackExchangeConnector implements Connector {
       documents: unique,
       requestsUsed,
       metadata: {
-        sites,
-        terms,
+        sites: siteQueries.map(({ site }) => site),
+        terms: siteQueries.flatMap(({ site, terms }) =>
+          terms.map((term) => ({ site, term })),
+        ),
         resultCount: unique.length,
         rejectedUnlicensed: rejectedUnlicensed.count,
         stoppedForBackoff,

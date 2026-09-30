@@ -205,6 +205,7 @@ async function runIngestion() {
             company_id: company.id,
             market_code: market.market_code,
             status:
+              result.metadata.stoppedForBackoff === true ||
               Array.isArray(result.metadata.failedFeeds) &&
               result.metadata.failedFeeds.length
                 ? "partial"

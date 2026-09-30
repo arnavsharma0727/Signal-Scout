@@ -39,16 +39,35 @@ describe("StackExchangeConnector", () => {
       end: new Date("2026-10-01T00:00:00Z"),
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(6);
-    expect(result.requestsUsed).toBe(6);
+    expect(fetchMock).toHaveBeenCalledTimes(15);
+    expect(result.requestsUsed).toBe(15);
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].marketCode).toBe("INTL");
     expect(result.documents[0].titleOriginal).toBe("Is inflation 'transitory'?");
-    expect(result.documents[0].sourceName).toBe("Stack Exchange · economics");
+    expect(result.documents[0].sourceName).toBe("Economics Stack Exchange");
     expect(result.documents[0].rawMetadata).toMatchObject({
       attributionName: "Researcher",
       contentLicense: "CC BY-SA 4.0",
       licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
     });
+  });
+
+  it("stops before another API request when the requested backoff is long", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ items: [], backoff: 30 }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await new StackExchangeConnector().fetchDocuments({
+      query: "ignored",
+      start: new Date("2026-09-27T00:00:00Z"),
+      end: new Date("2026-10-01T00:00:00Z"),
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.metadata.stoppedForBackoff).toBe(true);
   });
 });

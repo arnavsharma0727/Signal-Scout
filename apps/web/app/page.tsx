@@ -216,7 +216,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
       <div className="border-b border-line p-6">
         <div className="eyebrow">Recent source evidence · 72 hours</div>
         <p className="mt-2 text-sm text-muted">
-          Up to 60 newest items per market. Original headlines and discussion
+          Up to 60 newest items per market or source group. Original headlines and discussion
           samples are shown separately; counts are collected samples, not
           investor-population measures.
         </p>
@@ -282,6 +282,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                       )}
                       {d.source_type === "stack-exchange" && (
                         <p className="mt-1 text-[10px] leading-4 text-muted">
+                          <span className="font-medium">{d.source_name}</span>{" · "}
                           By {d.raw_metadata_json?.attributionName ?? "Stack Exchange contributor"}
                           {d.raw_metadata_json?.attributionUrl && (
                             <> · <a className="underline" href={d.raw_metadata_json.attributionUrl} target="_blank" rel="noreferrer">author profile</a></>

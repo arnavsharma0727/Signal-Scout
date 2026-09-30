@@ -67,11 +67,11 @@ export default async function Sources() {
         "Disabled unless collection and display rights are explicitly cleared. This is a narrow U.S.-leaning sample, not a matched Korea/U.S. forum comparison; prior records are withheld from public evidence views while rights remain under review.",
     },
     {
-      name: "Stack Exchange · Economics and Money",
+      name: "Stack Exchange · international Q&A",
       key: "stack-exchange",
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
-        "Keyless daily search. Only individual CC BY-SA 4.0 items are retained, with author and license attribution. International English expert Q&A is a narrow sample, not country-level investor sentiment.",
+        "Keyless daily search across Economics, Money, AI, Data Science, and Security. Only individual CC BY-SA 4.0 items are retained, with author and license attribution. English expert Q&A is a narrow sample, not country-level investor sentiment.",
     },
     {
       name: "GDELT news",

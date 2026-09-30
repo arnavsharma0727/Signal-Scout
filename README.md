@@ -2,17 +2,16 @@
 
 **Compare the conversation. Follow the evidence.**
 
-Signal Scout is an early-stage evidence-collection app. Its visible production evidence is currently a narrow U.S.-leaning sample of public Hacker News comments; direct Korean publisher feeds are not configured. Legacy Google News redirect records are excluded from the public UI. It does not currently compare topic frequency, classify sentiment or stance, translate Korean content, or produce investment conclusions.
+Signal Scout is an early-stage international research workspace that turns public discussion into linked research context. Its current live discussion source is Stack Exchange English Q&A across Economics, Money, AI, Data Science, and Security. Only individual items explicitly marked CC BY-SA 4.0 are retained, with author and license attribution; titles link to the original question. This is a narrow expert-Q&A sample—not representative consumer, country, or investor opinion.
 
 ## Current production scope
 
-- Narrow U.S.-leaning sample of public Hacker News comments. No direct Korean publisher/news/forum feed is currently active.
-- Original source links and available source timestamps for human review.
+- International Stack Exchange discussion evidence, with exact source links, author attribution, license, and timestamps for human review. The first production run stored two licensed questions; sample relevance is limited and is being widened.
 - Daily scheduled collection on Vercel; server-side Supabase storage.
-- No live divergence score, entity relevance ranking, translation, watchlists, alerts, or validated track record.
-- Google News redirect feeds are rejected because they do not identify publisher domains. GDELT is disabled after rate limiting; Bluesky is disabled after access failures. There is no Korean forum connector at present.
+- No live international thesis/lead computation, validated entity relevance or topic classifier, translation, production watchlist signup, alerts, or forward track record.
+- No Korean discussion source or direct publisher news feed is currently active. Google News redirect feeds are rejected; GDELT is disabled after rate limiting; Bluesky is disabled after access failures.
 
-News articles and discussion comments are distinct source classes. The app must not pool them as comparable observations. Raw record counts are not measures of attention, belief, awareness, or market behavior.
+Expert Q&A, general social discussion, regulatory filings, and news are distinct source classes. The app must not pool them as comparable observations. Raw record counts are not measures of attention, belief, awareness, or market behavior.
 
 ## Run locally
 
