@@ -53,20 +53,21 @@ export default async function Home() {
       <main className="shell pb-20 pt-12">
         <div className="max-w-3xl">
           <div className="eyebrow mb-4">
-            Research workspace · South Korea / United States
+            International research workspace · public conversation + sources
           </div>
           <h1>
-            Korean and U.S.
+            From conversation
             <br />
-            market conversations.
+            to research thesis.
           </h1>
           <p className="mt-5 max-w-2xl leading-7 text-muted">
-            Inspect a limited set of public-source material and follow each item
-            to its original context.
+            Follow live, public discussion and reporting into evidence-linked
+            research questions. Coverage is source-specific—not a measure of
+            what everyone thinks.
           </p>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
             Collected samples only; the current release does not calculate
-            cross-market topic differences.
+            topic leads unless source volume and evidence thresholds are met.
           </p>
         </div>
         {preview ? <PreviewPanel rows={rows} /> : <EmptyPanel />}
@@ -81,7 +82,7 @@ export default async function Home() {
           <Info
             icon={<Globe2 />}
             title="Two markets"
-            text="No direct Korean publisher feed is active; the current public discussion sample is U.S.-leaning only."
+            text="International sources are shown separately and never assigned a country without evidence."
             href="/methodology"
           />
           <Info
@@ -206,6 +207,7 @@ function EmptyPanel() {
 }
 function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: import("../lib/time-zones").DisplayTimeZone }) {
   const markets = [
+    ["INTL", "International · English expert Q&A"],
     ["KR", "South Korea"],
     ["US", "United States"],
   ];
@@ -219,7 +221,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
           investor-population measures.
         </p>
       </div>
-      <div className="grid md:grid-cols-2">
+      <div className="grid md:grid-cols-3">
         {markets.map(([code, label]) => {
           const rows = documents.filter((d) => d.market_code === code);
           const visible =
@@ -259,6 +261,8 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                             ? "MOIS official policy · not investor discussion"
                             : d.source_type === "hacker-news"
                               ? "Hacker News comment"
+                              : d.source_type === "stack-exchange"
+                                ? "Stack Exchange · global English Q&A"
                               : "RSS / news"}
                         </span>
                         <span>{d.language_code}</span>
@@ -274,6 +278,17 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                       {d.excerpt_original && (
                         <p className="mt-1 line-clamp-3 text-xs leading-5 text-muted">
                           {d.excerpt_original}
+                        </p>
+                      )}
+                      {d.source_type === "stack-exchange" && (
+                        <p className="mt-1 text-[10px] leading-4 text-muted">
+                          By {d.raw_metadata_json?.attributionName ?? "Stack Exchange contributor"}
+                          {d.raw_metadata_json?.attributionUrl && (
+                            <> · <a className="underline" href={d.raw_metadata_json.attributionUrl} target="_blank" rel="noreferrer">author profile</a></>
+                          )}
+                          {" · "}
+                          <a className="underline" href={d.raw_metadata_json?.licenseUrl ?? "https://creativecommons.org/licenses/by-sa/4.0/"} target="_blank" rel="noreferrer">CC BY-SA 4.0</a>
+                          {" · title shown unmodified"}
                         </p>
                       )}
                       <time

@@ -67,6 +67,13 @@ export default async function Sources() {
         "Disabled unless collection and display rights are explicitly cleared. This is a narrow U.S.-leaning sample, not a matched Korea/U.S. forum comparison; prior records are withheld from public evidence views while rights remain under review.",
     },
     {
+      name: "Stack Exchange · Economics and Money",
+      key: "stack-exchange",
+      enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
+      detail:
+        "Keyless daily search. Only individual CC BY-SA 4.0 items are retained, with author and license attribution. International English expert Q&A is a narrow sample, not country-level investor sentiment.",
+    },
+    {
       name: "GDELT news",
       key: "gdelt",
       enabled: process.env.GDELT_ENABLED === "true",
@@ -134,9 +141,9 @@ export default async function Sources() {
         <div className="eyebrow mb-4">Source configuration and health</div>
         <h1 className="mb-4 text-4xl font-extrabold">Sources</h1>
         <p className="mb-10 max-w-2xl leading-7 text-muted">
-          Configured does not mean recently successful. Korean-side discussion
-          sources are not currently available, and counts are collected
-          records—not representative measures of investor opinion.
+          Configured does not mean recently successful. The only discussion
+          connector currently cleared is a narrow international English expert
+          Q&A source; counts are not representative measures of public opinion.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           {health.map(({ source, runs, latest, lastSuccess }) => {

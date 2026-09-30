@@ -6,6 +6,7 @@ import { BlueskyConnector } from "../../../lib/connectors/bluesky";
 import { HackerNewsConnector } from "../../../lib/connectors/hackernews";
 import { SECEdgarConnector } from "../../../lib/connectors/sec";
 import { MOISPressReleaseConnector } from "../../../lib/connectors/mois";
+import { StackExchangeConnector } from "../../../lib/connectors/stackexchange";
 import { safeConnectorError } from "../../../lib/connectors/fetch";
 import { matchEntityText } from "../../../lib/entity-matching";
 import { recomputeEntityDailyMetrics } from "../../../lib/recompute-metrics";
@@ -73,6 +74,12 @@ async function runIngestion() {
     for (const market of markets ?? []) {
       const marketConnectors = [...connectors];
       if (
+        process.env.STACK_EXCHANGE_ENABLED === "true" &&
+        company.ticker === "MARKET-TALK" &&
+        market.market_code === "US"
+      )
+        marketConnectors.push(new StackExchangeConnector());
+      if (
         process.env.MOIS_PRESS_RELEASES_ENABLED === "true" &&
         company.ticker === "MARKET-TALK" &&
         market.market_code === "KR"
@@ -107,6 +114,13 @@ async function runIngestion() {
               end,
               marketCode: "KR",
               languageCode: "ko",
+            });
+          else if (connector instanceof StackExchangeConnector)
+            result = await connector.fetchDocuments({
+              query,
+              start,
+              end,
+              languageCode: "en",
             });
           else
             result = await connector.fetchDocuments({

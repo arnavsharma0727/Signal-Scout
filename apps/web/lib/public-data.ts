@@ -13,9 +13,9 @@ export async function recentSourceDocuments(){
   const db=serverSupabase();
   if(!db)return [];
   const since=new Date(Date.now()-72*60*60*1000).toISOString();
-  const markets=await Promise.all(['KR','US'].map(async market=>{
+  const markets=await Promise.all(['KR','US','INTL'].map(async market=>{
     const {data}=await db.from('source_documents')
-      .select('id,market_code,source_type,source_name,source_domain,language_code,title_original,excerpt_original,source_url,published_at,discovered_at')
+      .select('id,market_code,source_type,source_name,source_domain,language_code,title_original,excerpt_original,source_url,published_at,discovered_at,raw_metadata_json')
       .eq('market_code',market)
       .neq('source_type','hacker-news')
       .neq('source_domain','news.google.com')
