@@ -43,7 +43,7 @@ This document records product questions that need a qualified reviewer. It is no
 
 ## Operational release gates
 
-- No Kakao, Reddit, Naver, Toss, DC Inside, or publisher RSS connector may be enabled until source-specific access, reuse, attribution, rate, retention, and deletion terms are recorded in [`SOURCES.md`](SOURCES.md).
+- No Kakao, Reddit, Naver, Toss, DC Inside, or third-party publisher RSS connector may be enabled until source-specific access, reuse, attribution, rate, retention, and deletion terms are recorded in [`SOURCES.md`](SOURCES.md). The European Commission Presscorner feed is the reviewed exception: only EU-owned titles, links, dates, and attribution metadata are retained under the Commission's CC BY 4.0 default reuse notice; item-level exceptions and third-party works must remain excluded.
 - No paid tier, billing wallet, card, or paid overage may be enabled without separate explicit approval. Free quota is not equivalent to a reuse license.
 - Before a public launch, obtain a private, reliable user contact channel; implement an intake and response workflow; set source-specific retention/expiration periods; decide retention for takedown fingerprints/audit records; and production-test the operator takedown endpoint. Migration 0012 provides only the protected deletion primitive, not an end-to-end public request process. Indefinite-until-operator-deletes behavior remains a launch blocker.
 - Keep the privacy and methodology pages aligned with actual collection, source coverage, translation, inference, and retention behavior.

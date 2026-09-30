@@ -98,6 +98,13 @@ export default async function Sources() {
         "Visitor-triggered search of namespace-1 talk pages in five language editions; archived pages are excluded and snippets are shown transiently only for pages edited in the last 90 days. Each result links to its page history so visitors can check contributors and the applicable license. The edit date can predate the matched snippet. Editorial collaboration is not general forum or investor attention; results are not stored or counted as leads.",
     },
     {
+      name: "European Commission Presscorner · official context",
+      key: "european-commission-presscorner",
+      enabled: true,
+      detail:
+        "Daily keyless English RSS collection from the European Commission. Only headlines, dates, and original links are retained; attribution is attached under the Commission’s CC BY 4.0 default reuse notice, except items carrying a different notice. This is official institutional context, not independent reporting, public discussion, or a measure of attention.",
+    },
+    {
       name: "GDELT news",
       key: "gdelt",
       enabled: process.env.GDELT_ENABLED === "true",
