@@ -26,11 +26,11 @@ describe("searchPublicHashtag", () => {
       { ...post, id: "unsafe", url: "javascript:alert(1)" },
     ]), { status: 200 }));
 
-    const results = await searchPublicHashtag("#public-conversation", fetchMock, Date.parse("2026-10-01T00:00:00Z"));
+    const results = await searchPublicHashtag("#public-conversation", fetchMock, Date.parse("2026-10-01T00:00:00Z"), "mstdn.jp");
     const url = new URL(fetchMock.mock.calls[0][0]);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    expect(url.hostname).toBe("mastodon.social");
+    expect(url.hostname).toBe("mstdn.jp");
     expect(url.pathname).toBe("/api/v1/timelines/tag/public-conversation");
     expect(url.searchParams.get("limit")).toBe("20");
     expect(results).toHaveLength(1);
@@ -49,6 +49,13 @@ describe("searchPublicHashtag", () => {
   it("rejects invalid hashtags without making a request", async () => {
     const fetchMock = vi.fn();
     await expect(searchPublicHashtag("bad/tag", fetchMock)).rejects.toThrow("1–50 letters");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects arbitrary server names before making a request", async () => {
+    const fetchMock = vi.fn();
+    await expect(searchPublicHashtag("economics", fetchMock, Date.now(), "attacker.example" as never))
+      .rejects.toThrow("Choose a supported public Mastodon server");
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

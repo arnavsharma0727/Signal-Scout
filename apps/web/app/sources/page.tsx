@@ -82,12 +82,12 @@ export default async function Sources() {
         "Keyless daily collection across nine communities plus one-query-at-a-time live Explore search. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. This remains expert Q&A, not representative public opinion; on-demand results are not stored.",
     },
     {
-      name: "Mastodon · public hashtag timeline",
+      name: "Mastodon · public hashtag timelines (4 server views)",
       key: "mastodon-public",
       enabled: true,
       onDemand: true,
       detail:
-        "Optional, visitor-triggered request to mastodon.social’s public hashtag API; up to 20 public posts from that instance’s incomplete federated view. Content remains author-owned and no blanket license is implied. The app displays posts transiently with author/origin-server links and honors content warnings; no posts are stored or analyzed. Not a global timeline or representative measure.",
+        "Optional, visitor-triggered request to one of four public Mastodon servers; up to 20 public posts from that server’s incomplete federated view. The server is not a country proxy and views may overlap. Content remains author-owned and no blanket license is implied. The app displays posts transiently with author/origin-server links and honors content warnings; no posts are stored or analyzed. Not a global timeline or representative measure.",
     },
     {
       name: "Wikimedia · article talk pages",

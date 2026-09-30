@@ -29,21 +29,31 @@ type ApiPost = {
   };
 };
 
-const API_ORIGIN = "https://mastodon.social";
+export const MASTODON_INSTANCES = [
+  { host: "mastodon.social", label: "mastodon.social" },
+  { host: "mastodon.online", label: "mastodon.online" },
+  { host: "mstdn.jp", label: "mstdn.jp" },
+  { host: "mastodon.world", label: "mastodon.world" },
+] as const;
+export type MastodonInstance = (typeof MASTODON_INSTANCES)[number]["host"];
 
 /** Read one public hashtag timeline directly from Mastodon; never persists posts. */
 export async function searchPublicHashtag(
   input: string,
   fetcher: typeof fetch = fetch,
   now = Date.now(),
+  instance: MastodonInstance = "mastodon.social",
 ): Promise<MastodonPublicPost[]> {
   const hashtag = input.trim().replace(/^#+/, "");
   if (!/^[\p{L}\p{N}_-]{1,50}$/u.test(hashtag)) {
     throw new Error("Enter a hashtag with 1–50 letters, numbers, underscores, or hyphens.");
   }
+  if (!MASTODON_INSTANCES.some((candidate) => candidate.host === instance)) {
+    throw new Error("Choose a supported public Mastodon server.");
+  }
 
   const response = await fetcher(
-    `${API_ORIGIN}/api/v1/timelines/tag/${encodeURIComponent(hashtag)}?limit=20`,
+    `https://${instance}/api/v1/timelines/tag/${encodeURIComponent(hashtag)}?limit=20`,
     { headers: { accept: "application/json" } },
   );
   if (response.status === 401) {

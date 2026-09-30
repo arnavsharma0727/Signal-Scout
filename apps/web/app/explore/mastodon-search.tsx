@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { MastodonPublicPost, searchPublicHashtag } from "../../lib/mastodon-public";
+import { MASTODON_INSTANCES, MastodonInstance, MastodonPublicPost, searchPublicHashtag } from "../../lib/mastodon-public";
 
 function plainText(html: string) {
   const withBreaks = html.replace(/<\s*\/(p|div|li)\s*>/gi, "\n").replace(/<\s*br\s*\/?>/gi, "\n");
@@ -11,6 +11,7 @@ function plainText(html: string) {
 
 export default function MastodonSearch() {
   const [tag, setTag] = useState("");
+  const [instance, setInstance] = useState<MastodonInstance>("mastodon.social");
   const [posts, setPosts] = useState<MastodonPublicPost[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,7 @@ export default function MastodonSearch() {
     setError("");
     setSearched(true);
     try {
-      setPosts(await searchPublicHashtag(tag));
+      setPosts(await searchPublicHashtag(tag, fetch, Date.now(), instance));
     } catch (cause) {
       setPosts([]);
       setError(cause instanceof Error ? cause.message : "The public timeline is temporarily unavailable.");
@@ -37,10 +38,11 @@ export default function MastodonSearch() {
       <div className="eyebrow">Live public social posts · Mastodon federated view</div>
       <h2 className="mt-2 text-xl font-semibold">Explore a hashtag</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        One request returns up to 20 newest public posts known to mastodon.social for that hashtag.
+        One request returns up to 20 newest public posts known to the selected server for that hashtag.
         The fediverse has no complete global timeline; server, moderation, language, and hashtag choices
-        shape what appears. Results can include relays, RSS syndication, and automated accounts; a record
-        count does not measure how many people discussed a topic.
+        shape what appears. Posts can overlap across servers and can include relays, RSS syndication, and
+        automated accounts. Server choice is not a country proxy, and counts do not measure how many
+        people discussed a topic.
       </p>
       <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
         <label className="sr-only" htmlFor="mastodon-hashtag">Hashtag</label>
@@ -54,8 +56,17 @@ export default function MastodonSearch() {
           placeholder="e.g. climate, economics, AI"
           required
         />
+        <label className="sr-only" htmlFor="mastodon-instance">Mastodon server</label>
+        <select
+          id="mastodon-instance"
+          className="rounded border border-line bg-white px-3 py-2.5 outline-none focus:border-ink"
+          value={instance}
+          onChange={(event) => setInstance(event.target.value as MastodonInstance)}
+        >
+          {MASTODON_INSTANCES.map((server) => <option key={server.host} value={server.host}>{server.label}</option>)}
+        </select>
         <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
-          {loading ? "Loading…" : "Load public posts"}
+          {loading ? "Loading…" : "Load server sample"}
         </button>
       </form>
       {error && <p role="alert" className="mt-4 text-sm">{error}</p>}
