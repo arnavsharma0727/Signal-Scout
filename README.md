@@ -6,7 +6,7 @@ Signal Scout is an early-stage international research workspace that turns publi
 
 ## Current production scope
 
-- International Stack Exchange discussion evidence, with exact source links, author attribution, license, and timestamps for human review. The first production run stored two licensed questions; sample relevance is limited and is being widened.
+- International Stack Exchange discussion evidence, with exact source links, author/site attribution, license, and timestamps for human review. Two production runs have stored eight licensed questions in the last 24 hours across four communities; relevance is limited and some matches are tangential.
 - Daily scheduled collection on Vercel; server-side Supabase storage.
 - No live international thesis/lead computation, validated entity relevance or topic classifier, translation, production watchlist signup, alerts, or forward track record.
 - No Korean discussion source or direct publisher news feed is currently active. Google News redirect feeds are rejected; GDELT is disabled after rate limiting; Bluesky is disabled after access failures.
