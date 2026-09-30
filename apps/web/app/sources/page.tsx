@@ -71,7 +71,7 @@ export default async function Sources() {
       key: "stack-exchange",
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
-        "Keyless daily search across Economics, Money, AI, Data Science, Security, and Spanish-, Portuguese-, Japanese-, and Russian-language Stack Overflow communities. Only individual CC BY-SA 4.0 items are retained, with author and license attribution. This remains a narrow expert Q&A sample, not representative public opinion.",
+        "Keyless daily collection across nine communities plus one-query-at-a-time live Explore search. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. This remains expert Q&A, not representative public opinion; on-demand results are not stored.",
     },
     {
       name: "GDELT news",

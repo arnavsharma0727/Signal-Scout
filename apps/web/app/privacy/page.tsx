@@ -36,6 +36,15 @@ export default function Privacy() {
             collection details.
           </p>
           <p>
+            The live Explore search sends the topic and selected community
+            directly from your browser to the Stack Exchange public API. Signal
+            Scout's server does not receive or store that query or those search
+            results. Stack Exchange receives the API request and may process its
+            associated technical data under its own policies. The browser
+            temporarily displays only results marked CC BY-SA 4.0, with links
+            and attribution.
+          </p>
+          <p>
             The app is hosted by Vercel and uses Supabase for server-side data
             storage. These providers process requests and stored data to operate
             the service under their own terms and privacy policies. Server

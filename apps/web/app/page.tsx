@@ -16,6 +16,7 @@ import {
 export const dynamic = "force-dynamic";
 const nav = [
   ["Briefing", "/"],
+  ["Explore", "/explore"],
   ["Profiles", "/companies"],
   ["Coverage", "/coverage"],
   ["Lead review", "/candidates"],
@@ -69,6 +70,9 @@ export default async function Home() {
             Collected samples only; the current release does not calculate
             topic leads unless source volume and evidence thresholds are met.
           </p>
+          <Link className="btn btn-primary mt-6" href="/explore">
+            Explore live discussion <ArrowUpRight size={15} />
+          </Link>
         </div>
         {preview ? <PreviewPanel rows={rows} /> : <EmptyPanel />}
         <EvidencePanel documents={evidence} timeZone={timeZone} />

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Evolve Signal Scout into a working, evidence-first international “word of mouth to thesis” product using free live online discussion and news sources where access, terms, privacy, retention, and attribution permit. Expand beyond Korea/U.S. comparisons; ingest real signals, derive transparent evidence-linked research leads without fabricating data, preserve source restrictions and secrets, and deploy verified milestones. Clearly label source coverage and uncertainty; do not pay for services or accept licenses/terms on the user's behalf.
+Build Signal Scout as a working international communications-intelligence product: turn live online conversation and trusted sources into evidence-linked, human-reviewable research theses—the “word of mouth to thesis” workflow. This is not a stock analyzer and is not limited to Korea/U.S. comparisons. Broaden source and language coverage worldwide, while separating forums, news, and official context; preserving provenance, source-specific rights, privacy, retention, and uncertainty; and never fabricating signals. Prefer free sources, do not pay for services or accept licenses/terms on the user's behalf, protect secrets, and deploy only verified milestones.
 
 ## Current baseline (2026-09-30)
 
@@ -15,6 +15,21 @@ Evolve Signal Scout into a working, evidence-first international “word of mout
 - **International scope pivot (2026-09-30):** prioritize free live global sources. A keyless Stack Exchange API probe succeeded and returned explicitly CC BY-SA 4.0 licensed Economics Q&A; an item-level-licensed connector is being added with author/license attribution and no country assignment. GDELT still returns 429. Lemmy API works but user-post reuse is not blanket-licensed, so do not persist its post text absent clearance.
 
 ## Milestones
+
+### Product direction (current)
+
+Signal Scout is organized around topics and communications, not company profiles or country-pair scorecards. Company/entity watchlists are optional research filters. The central workflow is: discover live items → group auditable evidence → surface a descriptive signal only when its source and sample support it → let a person investigate alternatives and counter-evidence → record a thesis for review. A “lead” is a research prompt, never a buy/sell recommendation.
+
+1. **Broaden permitted live evidence:** add independently operated, multilingual discussion and direct-publisher news sources with working production ingestion. Public endpoints and free quotas are not sufficient by themselves; verify access, display/reuse, attribution, and retention requirements for each source. Keep source operators and source classes visible.
+2. **Turn records into useful signals:** build topic-first views, original-language evidence links, source/language/time coverage, and transparent observed-volume baselines. Do not infer geography from language or equate raw post counts with public attention.
+3. **Create a defensible thesis workflow:** cluster and compare only where language handling, source overlap, time windows, sample sizes, baselines, and independent-source corroboration are adequate. Include counter-evidence, alternatives, known blind spots, and reviewer notes; otherwise show “insufficient evidence.”
+4. **Ship for real users:** keep the UI restrained and clear, make source health and data freshness visible, complete privacy/retention and deletion controls, test access boundaries, and deploy a verified public build.
+
+### Explicit non-goals
+
+- No stock-picking, buy/sell calls, return forecasts, or investment-performance claims.
+- No scraping around authentication, rate limits, robots policies, paywalls, or source restrictions; no paid APIs or card details.
+- No country, sentiment, or trend claims based only on a platform's language, a single post, a single operator, or an unbaselined sample.
 
 ## Execution log
 
