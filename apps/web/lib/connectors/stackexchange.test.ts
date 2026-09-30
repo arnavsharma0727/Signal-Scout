@@ -42,6 +42,11 @@ describe("StackExchangeConnector", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(27);
     expect(result.requestsUsed).toBe(27);
+    for (const [url] of fetchMock.mock.calls) {
+      const params = new URL(String(url)).searchParams;
+      expect(params.get("title")).toBeTruthy();
+      expect(params.has("intitle")).toBe(false);
+    }
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].marketCode).toBe("INTL");
     expect(result.documents[0].titleOriginal).toBe("Is inflation 'transitory'?");

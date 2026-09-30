@@ -66,7 +66,7 @@ export class StackExchangeConnector implements Connector {
           sort: "creation",
           site,
           pagesize: "50",
-          intitle: term,
+          title: term,
           fromdate: String(Math.floor(input.start.getTime() / 1000)),
           todate: String(Math.floor(input.end.getTime() / 1000)),
         });

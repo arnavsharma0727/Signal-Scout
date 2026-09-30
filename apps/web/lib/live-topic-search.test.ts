@@ -30,7 +30,8 @@ describe("searchLiveDiscussion", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const requestUrl = new URL(fetchMock.mock.calls[0][0]);
     expect(requestUrl.searchParams.get("site")).toBe("economics");
-    expect(requestUrl.searchParams.get("intitle")).toBe("inflation");
+    expect(requestUrl.searchParams.get("title")).toBe("inflation");
+    expect(requestUrl.searchParams.has("intitle")).toBe(false);
     expect(requestUrl.searchParams.get("origin")).toBe("*");
     expect(requestUrl.searchParams.get("pagesize")).toBe("25");
     expect(result).toHaveLength(1);

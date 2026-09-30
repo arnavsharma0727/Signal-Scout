@@ -56,7 +56,7 @@ export async function searchLiveDiscussion(
     order: "desc",
     sort: "relevance",
     site: community.site,
-    intitle: query,
+    title: query,
     pagesize: "25",
     fromdate: String(Math.floor((now - 30 * 24 * 60 * 60 * 1000) / 1000)),
     todate: String(Math.floor(now / 1000)),
