@@ -12,6 +12,7 @@ This document records product questions that need a qualified reviewer. It is no
 - Hacker News collection is fail-closed pending both collection and reuse/display approval; historical HN records remain stored but are withheld from the UI and metrics while rights and retention are reviewed. The official HN API exposes public data, but the current YC Terms of Use restrict commercial use and separately restrict copying/distribution/derivative use of site content absent authorization. Counsel should determine whether the API use and public display of excerpts/links in this app are authorized. Do not market HN coverage as representative or use it without explicit clearance.
 - Kakao/Daum Cafe Search is disabled. Its free request quota does not override the Kakao Developer Terms/Operating Policy prior-approval restriction on publishing, translating, or otherwise providing service data.
 - Reddit is disabled pending explicit API access approval and implementation of OAuth, data refresh/removal, and deletion obligations.
+- YouTube Data API comments are only a candidate source, not a forum substitute or cleared feed. Its current default quota is limited, returned data has a 30-day refresh/deletion requirement, and derived analytics require an explicitly approved analytics use case/amendment and compliance review. No API project/key, policy acceptance, or audit request has been created.
 - MOIS is limited to policy-context records whose item page has a qualifying open-license notice; it must not be described as investor conversation.
 - No paid source, translation, model, market-data feed, billing account, or card has been enabled for this work.
 - Auth and user watchlists are deployed in code but disabled. Production currently has zero Auth users and zero watchlist rows. Public sharing is not implemented.
@@ -29,7 +30,8 @@ This document records product questions that need a qualified reviewer. It is no
 8. For personal/community data: what identifiers and user-generated content may be collected, whether minimization or pseudonymization is required, and what notice/consent is appropriate?
 9. For user accounts: privacy notice scope, account/data deletion, operational access, breach response, and any applicable cross-border processing terms for Supabase/Vercel.
 10. For future translations or derived summaries: source-specific permission, retained originals, machine-translation disclosure, accuracy review, and user correction/takedown process.
-11. For future alerts, prices, or flows: delivery consent, financial-data licensing/redistribution terms, and whether product presentation creates regulatory or other obligations.
+11. For public video comments: does the planned cross-market frequency/content analysis qualify under the provider's approved analytics use case, and can the required refresh/deletion obligations be met for text and associated user data?
+12. For future alerts, prices, or flows: delivery consent, financial-data licensing/redistribution terms, and whether product presentation creates regulatory or other obligations.
 
 ## Engineering follow-up
 

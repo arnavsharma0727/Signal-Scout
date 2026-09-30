@@ -32,7 +32,10 @@ function enabledFeeds() {
     return false;
   }
 }
-function utc(value: string | null, timeZone: import("../../lib/time-zones").DisplayTimeZone) {
+function utc(
+  value: string | null,
+  timeZone: import("../../lib/time-zones").DisplayTimeZone,
+) {
   if (!value) return "not recorded";
   return formatTimestamp(value, timeZone);
 }
@@ -78,8 +81,15 @@ export default async function Sources() {
       enabled: process.env.BLUESKY_ENABLED === "true",
       detail:
         process.env.BLUESKY_ENABLED === "true"
-          ? "Configured; previous runs encountered access failures."
-          : "Disabled after HTTP 403 access failures.",
+          ? "The documented public AppView endpoint is configured, but requests have returned HTTP 403. It remains off pending authorized access, reuse rights, and deletion/retention review."
+          : "Disabled after the documented public AppView endpoint returned HTTP 403; no access-control workaround is used.",
+    },
+    {
+      name: "YouTube public comments (candidate)",
+      key: "youtube-comments",
+      enabled: false,
+      detail:
+        "Not implemented. Requires a Google API key; the default free quota is limited, API data must be refreshed or deleted within 30 days, and derived analytics require approved use-case terms. Selected video comments are not a representative investor-forum sample.",
     },
     {
       name: "SEC EDGAR",
