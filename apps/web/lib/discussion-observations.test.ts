@@ -32,8 +32,11 @@ describe("buildDiscussionObservations", () => {
     expect(result[0].evidence).toHaveLength(2);
   });
 
-  it("excludes singletons, unlicensed content, and other sources", () => {
-    expect(buildDiscussionObservations([row()])).toEqual([]);
+  it("keeps singleton tags descriptive and excludes unlicensed content and other sources", () => {
+    expect(buildDiscussionObservations([row()])[0]).toMatchObject({
+      tag: "inflation",
+      questionCount: 1,
+    });
     expect(buildDiscussionObservations([
       row({ raw_metadata_json: { contentLicense: "CC BY-SA 3.0", tags: ["inflation"] } }),
       row({ id: "q2", source_type: "gdelt" }),

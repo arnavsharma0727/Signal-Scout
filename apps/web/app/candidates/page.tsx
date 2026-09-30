@@ -87,11 +87,11 @@ export default async function Candidates() {
     <Page title="Lead review" eyebrow="Research queue">
       <section className="panel mb-6 p-6" aria-labelledby="discussion-observations-title">
         <h2 id="discussion-observations-title" className="text-xl font-semibold">
-          Repeated discussion topics
+          Observed discussion topics
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-          Exact tags on distinct, licensed Stack Exchange questions collected in
-          the last 72 hours. This is a query-selected expert Q&amp;A sample from
+          Exact tags on licensed Stack Exchange questions collected in the last
+          72 hours. This is a query-selected expert Q&amp;A sample from
           one platform—not a population trend or a count of independent outlets.
           Tags remain in their original form; no translation or semantic merge
           is inferred. Open the source questions before deciding whether a topic
@@ -125,9 +125,9 @@ export default async function Candidates() {
           </div>
         ) : (
           <p className="mt-4 text-sm text-muted">
-            No topic tag appeared on two or more eligible questions in this
-            window. That describes this narrow sample only; it does not mean a
-            topic is absent from wider discussion.
+            No eligible tagged questions were collected in this window. That
+            describes this narrow sample only; it does not mean discussion is
+            absent elsewhere.
           </p>
         )}
       </section>
@@ -147,7 +147,8 @@ export default async function Candidates() {
           <p className="mt-3 max-w-xl leading-7 text-muted">
             A lead appears only after the database contains verified evidence,
             alternative explanations, and at least one linked source record.
-            Current samples do not support a cross-market lead.
+            Current samples do not support an evidence-qualified international
+            research lead.
           </p>
           <Link className="btn mt-6" href="/">
             Review collected source evidence

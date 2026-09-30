@@ -6,8 +6,8 @@ Signal Scout is an early-stage international research workspace that turns publi
 
 ## Current production scope
 
-- International Stack Exchange discussion evidence, with exact source links, author/site attribution, license, original language, and timestamps for human review. The connector now searches nine communities with 27 bounded queries/day; the four new non-English sites passed live API probes, but their first production ingestion is pending deployment.
-- The lead-review page groups repeated exact tags from licensed questions in its 72-hour sample into descriptive, linked discussion observations. This is not a trend estimate, semantic translation, or qualified thesis lead.
+- International Stack Exchange discussion evidence, with exact source links, author/site attribution, license, original language, tags, and timestamps for human review. The connector searches nine communities with at most 27 bounded queries/day. Its first multilingual production run stored 24 items in the rolling 24-hour view without connector errors; the homepage displayed English, Spanish, and Russian items. Portuguese and Japanese sites also passed live keyless licensed-item probes.
+- The lead-review page groups exact tags from licensed questions in its 72-hour sample into descriptive, linked discussion observations. Singletons remain visible; this is not a trend estimate, semantic translation, or qualified thesis lead.
 - Daily scheduled collection on Vercel; server-side Supabase storage.
 - No evidence-qualified international thesis lead, validated topic classifier, translation, production watchlist signup, alerts, or forward track record.
 - No Korean discussion source or direct publisher news feed is currently active. Google News redirect feeds are rejected; GDELT is enabled for one global daily query but still failing with HTTP 429; Bluesky is disabled after access failures.

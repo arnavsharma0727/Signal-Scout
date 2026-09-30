@@ -28,12 +28,12 @@ export default function Privacy() {
             ordinary server and hosting logs when you visit.
           </p>
           <p>
-            The collection database stores public-source items selected by
-            configured feeds and connectors. Depending on the source, records
-            can include titles, excerpts or public comment text, source URLs,
-            publication/fetch times, market and language labels, source
-            names/domains, and publicly returned author handles or metadata. We
-            keep a link to the original source where available.
+            The current discussion connector stores selected Stack Exchange
+            question titles, links, publication times, community/language, tags,
+            and the public author name/profile needed for attribution. It does
+            not retain question or answer bodies. Other configured source types
+            may have different fields, so check the source registry for current
+            collection details.
           </p>
           <p>
             The app is hosted by Vercel and uses Supabase for server-side data

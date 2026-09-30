@@ -43,11 +43,11 @@ export default function Methodology() {
       <section className="panel mt-5 p-7">
         <h2 className="text-xl font-bold">Discussion observations</h2>
         <p className="mt-3 text-sm leading-6 text-muted">
-          The research queue groups exact Stack Exchange question tags seen on
-          at least two distinct, individually CC BY-SA 4.0-licensed questions in
-          the last 72 hours. The API queries are selected in advance, coverage is
-          limited to the listed communities and languages, and counts describe
-          only collected questions. They are not a baseline-adjusted trend,
+          The research queue lists exact Stack Exchange question tags found on
+          individually CC BY-SA 4.0-licensed questions in the last 72 hours,
+          including tags seen once. The API queries are selected in advance,
+          coverage is limited to the listed communities and languages, and
+          counts describe only collected questions. They are not a trend,
           independent-publisher corroboration, public-opinion measure, or
           investment lead. Tags and titles remain untranslated; matching across
           languages is not inferred.

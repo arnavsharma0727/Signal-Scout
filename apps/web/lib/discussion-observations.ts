@@ -55,7 +55,6 @@ export function buildDiscussionObservations(
   }
 
   return [...groups.entries()]
-    .filter(([, group]) => group.length >= 2)
     .map(([tag, group]) => {
       const ordered = group.sort(
         (a, b) => Date.parse(b.published_at ?? "") - Date.parse(a.published_at ?? ""),
