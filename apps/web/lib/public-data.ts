@@ -12,10 +12,14 @@ export async function recentSourceDocuments(){
   const db=serverSupabase();
   if(!db)return [];
   const since=new Date(Date.now()-72*60*60*1000).toISOString();
-  const {data}=await db.from('source_documents')
-    .select('id,market_code,source_type,source_name,language_code,title_original,excerpt_original,source_url,published_at,discovered_at')
-    .gte('published_at',since)
-    .order('published_at',{ascending:false})
-    .limit(60);
-  return data??[];
+  const markets=await Promise.all(['KR','US'].map(async market=>{
+    const {data}=await db.from('source_documents')
+      .select('id,market_code,source_type,source_name,language_code,title_original,excerpt_original,source_url,published_at,discovered_at')
+      .eq('market_code',market)
+      .gte('published_at',since)
+      .order('published_at',{ascending:false})
+      .limit(60);
+    return data??[];
+  }));
+  return markets.flat().sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
 }
