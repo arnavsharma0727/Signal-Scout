@@ -79,7 +79,7 @@ export default async function Sources() {
       key: "stack-exchange",
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
-        "Keyless daily collection across nine communities plus one-query-at-a-time live Explore search. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. This remains expert Q&A, not representative public opinion; on-demand results are not stored.",
+        "Keyless daily collection across nine communities plus one-query-at-a-time live Explore search. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. This remains expert Q&A, not representative public opinion; on-demand results are not stored.",
     },
     {
       name: "Mastodon · public hashtag timeline",
@@ -206,6 +206,12 @@ export default async function Sources() {
                   <dd>
                     {lastSuccess
                       ? utc(lastSuccess.completed_at, timeZone)
+                      : "none recorded"}
+                  </dd>
+                  <dt className="text-muted">Latest run result</dt>
+                  <dd>
+                    {latest
+                      ? `${latest.status} · ${latest.items_stored ?? 0} stored`
                       : "none recorded"}
                   </dd>
                   <dt className="text-muted">Records stored / 24h</dt>
