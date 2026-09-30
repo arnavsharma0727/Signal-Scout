@@ -14,3 +14,7 @@ Migrations 0008–0009 lock down operator and evidence tables. Migration [`0010_
 ## Authentication deployment gate
 
 Migrations 0001–0010 are applied in production. Migration 0010's precondition check found zero users, lists, or memberships, and the post-apply migration ledger reports 0010. The app now includes cookie-backed SSR Auth, server-validated user checks, callback/login/logout, owner-scoped watchlists, and private CSV import/export. It remains disabled until `SUPABASE_AUTH_ENABLED=true`, `SUPABASE_ANON_KEY`, the production app origin, Supabase callback allowlisting, and a production-capable email/OAuth provider are configured. The Supabase shared email sender is limited to 2 emails/hour and project-team recipients; it is not suitable for general public signup. Once a real provider is available, test isolation with two accounts before opening signup. Never place a service-role credential in a browser bundle.
+
+## Dependency review
+
+On 2026-09-30, `npm audit` reported vulnerable `csv-parse` 5.x, Next.js's nested PostCSS, and development-only Vitest/Vite/esbuild. Upgraded to `csv-parse` 7.0.3, Next.js 16.3.8, and Vitest 4.1.11. The PostCSS issues were in Next 15's pinned build-time dependency; Next 16.3.8 resolves to PostCSS 8.5.23. A regression test covers hostile duplicate `__proto__` CSV headers. Local full audit and production-only audit both report zero vulnerabilities. Re-run `npm audit` as part of dependency updates; audit cleanliness is point-in-time, not a guarantee.

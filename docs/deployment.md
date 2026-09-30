@@ -4,6 +4,8 @@ Signal Scout is deployed as a Next.js app on Vercel and stores collected source 
 
 ## Local development
 
+Next.js 16 requires Node.js 20.9 or newer. Use an active LTS release (the current Vercel production builder must be verified on deployment).
+
 ```bash
 npm install
 npm run dev
@@ -37,6 +39,7 @@ npm test
 npm run typecheck
 npm run build
 npm run verify:prod
+npm audit
 ```
 
 `verify:prod` checks public routes, confirms ingestion rejects unauthenticated requests, and queries product data gates when server credentials are available locally. It never logs credential values. A nonzero exit is expected until minimum coverage, computed metrics, evidence-backed leads, and prospective track-record requirements are genuinely met. Do not fabricate records to make the check pass.

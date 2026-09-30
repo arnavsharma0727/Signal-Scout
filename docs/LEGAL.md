@@ -1,17 +1,23 @@
 # Launch and counsel review checklist
 
-This document records product questions that need a qualified reviewer. It is not legal advice, a legal opinion, or a statement that any source has granted Signal Scout a license.
+This document records product questions that need a qualified reviewer. It is not legal advice, a legal opinion, or a statement that any source has granted Signal Scout a license. Product counsel should review these questions before Signal Scout enables broader collection, user signup, public sharing, translations, or monetization.
 
-## Current product facts
+## Current operational posture
 
+- Collection is enabled only on individual server-side source flags. A successful HTTP response is not source permission.
+- Do not scrape Naver, Toss, DC Inside, Kakao/Daum Cafe, or other communities; do not bypass access controls or use undocumented endpoints.
 - Signal Scout is a public, non-authenticated research prototype. It stores source titles, excerpts/comment text, URLs, timestamps, domains, market/language labels, and some API-returned public metadata in Supabase.
-- There is no automated retention/deletion schedule today. Public-source records remain until an operator deletes them. This is disclosed on `/privacy` and is not a launch-ready retention policy.
+- There is no automated retention/deletion schedule today. Public-source records remain until an operator deletes them. This behavior is disclosed on `/privacy` and is not a launch-ready retention policy.
 - Google News redirect items are excluded from public pages; no direct Korean publisher or Korean community source is configured.
-- Hacker News Search is enabled in the current deployed release as a narrow U.S.-leaning discovery sample. A local, not-yet-deployed code change now requires a separate rights-approval flag before collection and withholds HN-linked evidence, metrics, and leads from public views. The official HN API exposes public data, but the current YC Terms of Use restrict commercial use and separately restrict copying/distribution/derivative use of site content absent authorization. Counsel should determine whether the API use and public display of short excerpts/links in this app are authorized. Do not market HN coverage as representative or use it without explicit clearance.
+- Hacker News collection is fail-closed pending both collection and reuse/display approval; historical HN records remain stored but are withheld from the UI and metrics while rights and retention are reviewed. The official HN API exposes public data, but the current YC Terms of Use restrict commercial use and separately restrict copying/distribution/derivative use of site content absent authorization. Counsel should determine whether the API use and public display of excerpts/links in this app are authorized. Do not market HN coverage as representative or use it without explicit clearance.
 - Kakao/Daum Cafe Search is disabled. Its free request quota does not override the Kakao Developer Terms/Operating Policy prior-approval restriction on publishing, translating, or otherwise providing service data.
 - Reddit is disabled pending explicit API access approval and implementation of OAuth, data refresh/removal, and deletion obligations.
+- MOIS is limited to policy-context records whose item page has a qualifying open-license notice; it must not be described as investor conversation.
+- No paid source, translation, model, market-data feed, billing account, or card has been enabled for this work.
+- Auth and user watchlists are deployed in code but disabled. Production currently has zero Auth users and zero watchlist rows. Public sharing is not implemented.
+- There is no automatic record-expiration or takedown workflow yet. Do not infer an approved retention period from the database's current storage behavior.
 
-## Counsel questions before broader sharing or monetization
+## Decisions required before launch or source enablement
 
 1. For each source, may Signal Scout query, store, normalize, display short text excerpts, create aggregate counts, and expose source links to unauthenticated visitors? Which activities require written permission or attribution wording?
 2. Do YC/Hacker News terms authorize this product's API-derived public excerpts and aggregate analysis, particularly if the project later becomes commercial? What content, if any, should be removed pending review?
@@ -20,12 +26,23 @@ This document records product questions that need a qualified reviewer. It is no
 5. What Korean privacy, copyright, database-right, cross-border transfer, and platform terms apply to collection, storage, processing, and display of Korean-language forum/news content in a U.S.-hosted service?
 6. Does any planned scoring, alerts, or product description create investment-adviser, broker, financial-promotion, or other regulated-activity concerns? Keep the product descriptive and non-personalized unless reviewed.
 7. Which user-facing terms, privacy notices, retention disclosures, takedown process, and operator contact process are required before sharing beyond a small private test?
+8. For personal/community data: what identifiers and user-generated content may be collected, whether minimization or pseudonymization is required, and what notice/consent is appropriate?
+9. For user accounts: privacy notice scope, account/data deletion, operational access, breach response, and any applicable cross-border processing terms for Supabase/Vercel.
+10. For future translations or derived summaries: source-specific permission, retained originals, machine-translation disclosure, accuracy review, and user correction/takedown process.
+11. For future alerts, prices, or flows: delivery consent, financial-data licensing/redistribution terms, and whether product presentation creates regulatory or other obligations.
+
+## Engineering follow-up
+
+- Establish source-specific expiration and deletion jobs only after the approved retention schedule is written to `docs/SOURCES.md` and implemented as testable connector policy.
+- Add an auditable takedown path that suppresses content immediately and deletes or retains only the minimum required provenance according to counsel's direction.
+- Before public Auth signup, configure a production email/OAuth provider, publish the corresponding privacy disclosures, and complete two-account isolation tests.
+- Keep sources fail-closed whenever a permission, terms, retention, or attribution decision is unresolved.
 
 ## Operational release gates
 
 - No Kakao, Reddit, Naver, Toss, DC Inside, or publisher RSS connector may be enabled until source-specific access, reuse, attribution, rate, retention, and deletion terms are recorded in [`SOURCES.md`](SOURCES.md).
 - No paid tier, billing wallet, card, or paid overage may be enabled without separate explicit approval. Free quota is not equivalent to a reuse license.
-- Before a public launch, implement and test source-specific retention plus a takedown/deletion workflow. The current indefinite-until-operator-deletes behavior is a known launch blocker.
+- Before a public launch, implement and test source-specific retention plus a takedown/deletion workflow. Current indefinite-until-operator-deletes behavior is a known launch blocker.
 - Keep the privacy and methodology pages aligned with actual collection, source coverage, translation, inference, and retention behavior.
 
 ## Primary source references
