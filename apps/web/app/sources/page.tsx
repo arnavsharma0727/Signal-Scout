@@ -11,6 +11,7 @@ export default async function Sources(){
   const db=serverSupabase();
   const sources=[
     {name:'RSS / Atom',key:'rss',enabled:process.env.RSS_ENABLED==='true'&&enabledFeeds(),detail:enabledFeeds()?'Direct publisher feeds only; review each publisher’s terms before use.':'No direct publisher feeds configured. Google News redirect feeds are rejected; records linked only to news.google.com are excluded from the public evidence feed.'},
+    {name:'Korea MOIS official releases',key:'mois-official-policy',enabled:process.env.MOIS_PRESS_RELEASES_ENABLED==='true',detail:'Optional no-key government-policy context, not investor discussion. Each linked article must show the KOGL Type 1 attribution license; only title, source link, and date are retained.'},
     {name:'Hacker News comments',key:'hacker-news',enabled:isHackerNewsIngestionEnabled(),detail:'Disabled unless collection and display rights are explicitly cleared. This is a narrow U.S.-leaning sample, not a matched Korea/U.S. forum comparison; prior records are withheld from public evidence views while rights remain under review.'},
     {name:'GDELT news',key:'gdelt',enabled:process.env.GDELT_ENABLED==='true',detail:process.env.GDELT_ENABLED==='true'?'Configured; previous runs encountered rate limiting.':'Disabled after HTTP 429 rate limiting.'},
     {name:'Bluesky public posts',key:'bluesky',enabled:process.env.BLUESKY_ENABLED==='true',detail:process.env.BLUESKY_ENABLED==='true'?'Configured; previous runs encountered access failures.':'Disabled after HTTP 403 access failures.'},

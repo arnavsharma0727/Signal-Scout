@@ -1,6 +1,8 @@
 # Data sources
 
 Optional connectors are disabled by default: user-provided APIs, documented free GDELT endpoints, official SEC EDGAR, supplied RSS/Atom feeds, and authorized Naver Search/DataLab APIs. For Korean conversation research, read [Korean source strategy](korean-source-strategy.md). Arbitrary HTML scraping, Google Trends, paywall circumvention, anti-bot bypasses, and unauthorized APIs are prohibited. Connector status and freshness are surfaced without revealing secrets.
+
+The optional Korea MOIS press-release connector is separate from publisher and community feeds. It uses the ministry's documented RSS endpoint without a key; it checks each recent linked article for the MOIS KOGL Type 1 mark and persists only title, original URL, publication time, and license metadata. It provides official-policy context, not market conversation or sentiment. Keep it disabled unless explicitly enabled through `MOIS_PRESS_RELEASES_ENABLED`; see the per-source terms and primary citations in [SOURCES.md](SOURCES.md).
 # Current production status
 
 The deployed environment had Google News RSS search redirects configured for Korean-language and U.S. news plus a limited Hacker News public-comment sample on the U.S. side. Because those RSS item links did not resolve to publisher domains, new Google News feeds are now rejected and legacy rows are hidden from public evidence. No direct Korean publisher feed is currently configured; the remaining visible sample is narrow U.S.-leaning Hacker News. Samples are incomplete and are not representative.

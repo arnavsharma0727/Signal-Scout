@@ -5,6 +5,7 @@ import {RSSConnector} from '../../../lib/connectors/rss';
 import {BlueskyConnector} from '../../../lib/connectors/bluesky';
 import {HackerNewsConnector} from '../../../lib/connectors/hackernews';
 import {SECEdgarConnector} from '../../../lib/connectors/sec';
+import {MOISPressReleaseConnector} from '../../../lib/connectors/mois';
 import {safeConnectorError} from '../../../lib/connectors/fetch';
 import {matchEntityText} from '../../../lib/entity-matching';
 import {recomputeEntityDailyMetrics} from '../../../lib/recompute-metrics';
@@ -39,6 +40,7 @@ async function runIngestion(){
     const {data:markets}=await db.from('company_market_profiles').select('*').eq('company_id',company.id).eq('enabled',true);
     for(const market of markets??[]){
       const marketConnectors=[...connectors];
+      if(process.env.MOIS_PRESS_RELEASES_ENABLED==='true'&&company.ticker==='MARKET-TALK'&&market.market_code==='KR')marketConnectors.push(new MOISPressReleaseConnector());
       const rssFeeds=getRssFeeds(market.market_code);
       if(process.env.RSS_ENABLED==='true'&&rssFeeds.length)marketConnectors.push(new RSSConnector(rssFeeds));
       const aliases=[...(market.company_aliases_json??[]),...(market.products_games_apps_brands_json??[])].filter(Boolean).slice(0,12);
@@ -48,6 +50,7 @@ async function runIngestion(){
         try{
           let result;
           if(connector instanceof SECEdgarConnector){if(!company.cik)continue;result=await connector.fetchCompanyFilings(company.cik,company.id,start,end)}
+          else if(connector instanceof MOISPressReleaseConnector)result=await connector.fetchDocuments({query:'반도체 OR 경제 OR 수출 OR 금융 OR 미국 OR 무역',start,end,marketCode:'KR',languageCode:'ko'});
           else result=await connector.fetchDocuments({query,start,end,marketCode:market.market_code,languageCode:market.language_code,companyId:company.ticker==='MARKET-TALK'?undefined:company.id});
           const macroContext=company.ticker==='MARKET-TALK';
           const matches=macroContext?[]:result.documents.map(document=>({document,match:matchEntityText(`${document.titleOriginal} ${document.excerptOriginal??''}`,{positive:[...(market.company_aliases_json??[]),...(market.products_games_apps_brands_json??[])],negative:market.negative_aliases_json??[]})})).filter(item=>item.match.matched&&item.match.alias);
