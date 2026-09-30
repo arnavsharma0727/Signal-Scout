@@ -30,6 +30,8 @@ Watchlist data is read/written through the authenticated server client and owner
 
 Add the same required settings in the Vercel project's private Environment Variables UI for the intended deployment environments. Vercel Cron authenticates using the configured `CRON_SECRET`. Never put credentials in source files, build logs, client-side variables, screenshots, or GitHub. Supabase migrations are maintained in `supabase/migrations`; apply reviewed migrations to the intended project before deploying code that depends on them.
 
+The current production project is deployed manually from this linked checkout. A GitHub auto-deploy connection attempt failed because Vercel could not access `arnavsharma0727/Signal-Scout`; do not assume a Git push deployed the site. To enable automatic deployments, grant the Vercel GitHub App access to this repository in the Vercel/GitHub integration settings, then verify a harmless commit creates a production deployment before relying on it. Until verified, use `npx vercel deploy --prod --yes` from the repository root after pushing and inspect the deployment's `READY` status.
+
 The current schedule is once daily (Vercel Hobby-compatible). Connector response codes and configuration do not by themselves establish successful or legally permitted collection; review freshness and source terms separately.
 
 ## Checks
