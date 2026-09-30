@@ -17,4 +17,7 @@ describe('RSS connector provenance',()=>{
   it('accepts only HTTP(S) feed endpoints',()=>{
     expect(new RSSConnector(['file:///etc/passwd']).validateConfiguration().valid).toBe(false);
   });
+  it('rejects Google News aggregation feeds as non-publisher sources',()=>{
+    expect(new RSSConnector(['https://news.google.com/rss/search?q=example']).validateConfiguration().valid).toBe(false);
+  });
 });

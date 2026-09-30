@@ -7,8 +7,8 @@ export class RSSConnector implements Connector {
   name='rss';
   constructor(private feeds:string[]){}
   validateConfiguration(){
-    const invalid=this.feeds.some(value=>{try{return !['http:','https:'].includes(new URL(value).protocol)}catch{return true}});
-    const errors=invalid?['Invalid RSS URL']:this.feeds.length?[]:['No RSS feeds configured'];
+    const invalid=this.feeds.some(value=>{try{const url=new URL(value);return !['http:','https:'].includes(url.protocol)||isAggregatorHost(url.hostname)}catch{return true}});
+    const errors=invalid?['Only direct publisher HTTP(S) RSS feeds are accepted']:this.feeds.length?[]:['No RSS feeds configured'];
     return {valid:errors.length===0,errors};
   }
   async fetchDocuments(input:Parameters<Connector['fetchDocuments']>[0]):Promise<ConnectorResult>{
@@ -19,6 +19,7 @@ export class RSSConnector implements Connector {
       let feedDomain='unknown';
       try{
         feedDomain=new URL(feed).hostname;
+        if(isAggregatorHost(feedDomain)){failures.push(`${feedDomain}:redirect-aggregator`);continue}
         const response=await fetchWithRetry(feed,{headers:{accept:'application/rss+xml, application/atom+xml, application/xml'}});
         requestsUsed++;
         const parsed=parser.parse(await response.text()) as Record<string,any>;
@@ -44,3 +45,5 @@ export class RSSConnector implements Connector {
     return {documents,requestsUsed:this.feeds.length,metadata:{feeds:this.feeds.length,successfulFeeds:requestsUsed,failedFeeds:failures.map(value=>value.split(':')[0]),resultCount:documents.length}};
   }
 }
+
+function isAggregatorHost(host:string){return host.toLowerCase()==='news.google.com'||host.toLowerCase().endsWith('.news.google.com')}

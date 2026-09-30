@@ -9,7 +9,7 @@ npm install
 npm run dev
 ```
 
-Set local-only values in the root `.env.local`, which must remain ignored by Git. Required server-side settings are `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET`. Source connectors are controlled by server-side flags and feed configuration such as `RSS_ENABLED`, `RSS_FEEDS_KR_JSON`, `RSS_FEEDS_US_JSON`, and `HACKER_NEWS_ENABLED`. Do not use a service-role key or cron secret in any `NEXT_PUBLIC_` variable.
+Set local-only values in the root `.env.local`, which must remain ignored by Git. Required server-side settings are `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET`. Source connectors are controlled by server-side flags and feed configuration such as `RSS_ENABLED`, `RSS_FEEDS_KR_JSON`, `RSS_FEEDS_US_JSON`, and `HACKER_NEWS_ENABLED`. RSS must point directly to publisher feeds; Google News redirects are rejected and historical Google News rows are hidden from the public evidence view. Review each publisher's permission before configuring it. Do not use a service-role key or cron secret in any `NEXT_PUBLIC_` variable.
 
 ## Production
 

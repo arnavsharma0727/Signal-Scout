@@ -41,15 +41,18 @@ if (!url || !key) {
   fail('database-backed gates', 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or keep them in local .env.local); credentials are never printed.');
 } else {
   try {
-    const recent = await rest('source_documents?select=id,market_code,source_type,source_domain,published_at&published_at=gte.'+new Date(Date.now()-24*60*60*1000).toISOString());
-    if (recent.count >= 500) pass('>=500 source documents in last 24h', `${recent.count} records`); else fail('>=500 source documents in last 24h', `${recent.count ?? 'unknown'} records; requires 500`);
-    const coverage = await rest('source_documents?select=market_code,source_type,source_domain&published_at=gte.'+new Date(Date.now()-24*60*60*1000).toISOString());
-    const rows = coverage.data || [];
-    const domains = new Set(rows.map(x=>x.source_domain).filter(Boolean));
-    const markets = new Set(rows.map(x=>x.market_code).filter(Boolean));
-    const classes = new Set(rows.map(x=>x.source_type).filter(Boolean));
+    const since=new Date(Date.now()-24*60*60*1000).toISOString();
+    const relevant=await rest(`document_entities?select=document_id,source_documents!inner(market_code,source_type,source_domain,published_at)&source_documents.published_at=gte.${encodeURIComponent(since)}`);
+    const rows=relevant.data??[];
+    const documents=new Map(rows.map(row=>[row.document_id,row.source_documents]));
+    if (documents.size >= 500) pass('>=500 entity-relevant source documents in last 24h', `${documents.size} unique linked documents`); else fail('>=500 entity-relevant source documents in last 24h', `${documents.size} unique linked documents; requires 500`);
+    const domains = new Set([...documents.values()].map(x=>x.source_domain).filter(Boolean));
+    const markets = new Set([...documents.values()].map(x=>x.market_code).filter(Boolean));
+    const classes = new Set([...documents.values()].map(x=>x.source_type).filter(Boolean));
     if (domains.size >= 8) pass('>=8 independent source domains', `${domains.size} domains`); else fail('>=8 independent source domains', `${domains.size} domains; requires 8`);
     if (markets.size >= 2 && classes.size >= 2) pass('multi-market/source-class coverage', `${markets.size} markets, ${classes.size} source classes`); else fail('multi-market/source-class coverage', `${markets.size} markets, ${classes.size} source classes; requires at least 2 of each`);
+    const unresolved=await rest('source_documents?select=id&or=(source_domain.is.null,source_domain.eq.)');
+    if(unresolved.count===0)pass('zero documents missing publisher domain','all records have a resolved domain');else fail('zero documents missing publisher domain',`${unresolved.count??'unknown'} unresolved records`);
     try {
       const metrics = await rest('metrics_daily?select=id&metric_date=eq.'+new Date().toISOString().slice(0,10));
       if (metrics.count >= 40) pass('>=40 computed entity metrics today', `${metrics.count} metrics`); else fail('>=40 computed entity metrics today', `${metrics.count ?? 'unknown'} metrics; requires 40`);

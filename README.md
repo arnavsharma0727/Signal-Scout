@@ -2,15 +2,15 @@
 
 **Compare the conversation. Follow the evidence.**
 
-Signal Scout is an early-stage evidence-collection app for inspecting a limited sample of Korean-language and U.S. public news and discussion. It does not currently compare topic frequency, classify sentiment or stance, translate Korean content, or produce investment conclusions. The samples are incomplete and do not represent either country's population or investors.
+Signal Scout is an early-stage evidence-collection app. Its visible production evidence is currently a narrow U.S.-leaning sample of public Hacker News comments; direct Korean publisher feeds are not configured. Legacy Google News redirect records are excluded from the public UI. It does not currently compare topic frequency, classify sentiment or stance, translate Korean content, or produce investment conclusions.
 
 ## Current production scope
 
-- Korean and U.S. RSS/Atom items, plus a narrow U.S.-leaning sample of public Hacker News comments.
+- Narrow U.S.-leaning sample of public Hacker News comments. No direct Korean publisher/news/forum feed is currently active.
 - Original source links and available source timestamps for human review.
 - Daily scheduled collection on Vercel; server-side Supabase storage.
 - No live divergence score, entity relevance ranking, translation, watchlists, alerts, or validated track record.
-- GDELT is disabled after rate limiting; Bluesky is disabled after access failures. There is no Korean forum connector at present.
+- Google News redirect feeds are rejected because they do not identify publisher domains. GDELT is disabled after rate limiting; Bluesky is disabled after access failures. There is no Korean forum connector at present.
 
 News articles and discussion comments are distinct source classes. The app must not pool them as comparable observations. Raw record counts are not measures of attention, belief, awareness, or market behavior.
 

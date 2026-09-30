@@ -6,6 +6,7 @@ import {BlueskyConnector} from '../../../lib/connectors/bluesky';
 import {HackerNewsConnector} from '../../../lib/connectors/hackernews';
 import {SECEdgarConnector} from '../../../lib/connectors/sec';
 import {safeConnectorError} from '../../../lib/connectors/fetch';
+import {matchEntityText} from '../../../lib/entity-matching';
 import type {Connector,NormalizedDocument} from '../../../lib/connectors/types';
 export const runtime='nodejs';
 export async function GET(request:NextRequest){
@@ -45,9 +46,18 @@ async function runIngestion(){
         try{
           let result;
           if(connector instanceof SECEdgarConnector){if(!company.cik)continue;result=await connector.fetchCompanyFilings(company.cik,company.id,start,end)}
-          else result=await connector.fetchDocuments({query,start,end,marketCode:market.market_code,languageCode:market.language_code,companyId:company.id});
-          const docs=deduplicate(result.documents);
-          if(docs.length){const {error}=await db.from('source_documents').upsert(docs.map(toRow),{onConflict:'content_hash'});if(error)throw error;summary.documentsStored+=docs.length}
+          else result=await connector.fetchDocuments({query,start,end,marketCode:market.market_code,languageCode:market.language_code,companyId:company.ticker==='MARKET-TALK'?undefined:company.id});
+          const macroContext=company.ticker==='MARKET-TALK';
+          const matches=macroContext?[]:result.documents.map(document=>({document,match:matchEntityText(`${document.titleOriginal} ${document.excerptOriginal??''}`,{positive:[...(market.company_aliases_json??[]),...(market.products_games_apps_brands_json??[])],negative:market.negative_aliases_json??[]})})).filter(item=>item.match.matched&&item.match.alias);
+          const evidence=macroContext?result.documents:matches.map(item=>item.document);
+          result.metadata={...result.metadata,candidatesReceived:result.documents.length,relevantMatches:evidence.length,macroContext};
+          const docs=deduplicate(evidence);
+          if(docs.length){
+            const {data:stored,error}=await db.from('source_documents').upsert(docs.map(toRow),{onConflict:'content_hash'}).select('id,content_hash');
+            if(error)throw error;
+            summary.documentsStored+=docs.length;
+            if(!macroContext&&stored?.length){const aliasByHash=new Map(matches.map(item=>[item.document.contentHash,item.match.alias!]));const links=stored.flatMap(row=>{const alias=aliasByHash.get(row.content_hash);return alias?[{document_id:row.id,company_id:company.id,match_method:'literal_alias',matched_alias:alias,match_confidence:null}]:[]});if(links.length){const {error:linkError}=await db.from('document_entities').upsert(links,{onConflict:'document_id,company_id'});if(linkError)throw linkError}}
+          }
           await db.from('connector_runs').insert({connector_name:connector.name,job_name:'scheduled-ingest',company_id:company.id,market_code:market.market_code,status:Array.isArray(result.metadata.failedFeeds)&&result.metadata.failedFeeds.length?'partial':'completed',started_at:started.toISOString(),completed_at:new Date().toISOString(),items_fetched:result.documents.length,items_deduplicated:result.documents.length-docs.length,items_stored:docs.length,api_requests_used:result.requestsUsed,metadata_json:result.metadata});
         }catch(error){
           const errorCode=safeConnectorError(error);
@@ -63,4 +73,4 @@ async function runIngestion(){
 function parseJson(v:string):string[]{try{const parsed=JSON.parse(v);return Array.isArray(parsed)?parsed.filter(x=>typeof x==='string'):[]}catch{return []}}
 function getRssFeeds(marketCode:string){const mapped=parseJson(process.env[`RSS_FEEDS_${marketCode}_JSON`]??'');return mapped.length?mapped:parseJson(process.env.RSS_FEEDS_JSON||'[]')}
 function deduplicate(docs:NormalizedDocument[]){const seen=new Set<string>();return docs.filter(d=>{if(seen.has(d.contentHash))return false;seen.add(d.contentHash);return true})}
-function toRow(d:NormalizedDocument){return {company_id:d.companyId,market_code:d.marketCode,source_type:d.sourceType,source_name:d.sourceName,source_domain:d.sourceDomain,language_code:d.languageCode,country_code:d.countryCode,title_original:d.titleOriginal,excerpt_original:d.excerptOriginal,source_url:d.sourceUrl,canonical_url:d.canonicalUrl,published_at:d.publishedAt,source_quality_tier:d.sourceQualityTier,entity_match_confidence:d.entityMatchConfidence,content_hash:d.contentHash,raw_metadata_json:d.rawMetadata}}
+function toRow(d:NormalizedDocument){return {market_code:d.marketCode,source_type:d.sourceType,source_name:d.sourceName,source_domain:d.sourceDomain,language_code:d.languageCode,country_code:d.countryCode,title_original:d.titleOriginal,excerpt_original:d.excerptOriginal,source_url:d.sourceUrl,canonical_url:d.canonicalUrl,published_at:d.publishedAt,source_quality_tier:d.sourceQualityTier,entity_match_confidence:d.entityMatchConfidence,content_hash:d.contentHash,raw_metadata_json:d.rawMetadata}}
