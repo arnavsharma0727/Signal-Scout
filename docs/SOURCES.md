@@ -1,5 +1,13 @@
 # Source registry and access review
 
+## Wikinews multilingual community reporting (on demand)
+
+Explore can search one selected Wikinews language edition directly from the visitor's browser. It requests at most 20 main-namespace matches, asks only for page titles and last-edit timestamps (no snippets or article bodies), and discards results outside the prior 30 days. The API's per-edition `rightsinfo` is checked at runtime; if it is missing or is not a Creative Commons BY/BY-SA license, that edition's results are withheld. Citations link to the original Wikinews article and the returned license. Results remain in browser memory and are never added to ingestion, analytics, or persistent leads.
+
+Wikinews is community-written reporting, not a general discussion forum, a representative public-opinion sample, or independent from the Wikimedia family. Language edition does not establish contributor or audience geography; result volume can be sparse and the 30-day filter can correctly yield no items. This adds multilingual community reporting for human review, not a validated thesis or independent-news corroboration.
+
+References: [MediaWiki Search API](https://www.mediawiki.org/wiki/API:Search/en), [Wikimedia reuse guidance for Wikinews](https://meta.wikimedia.org/wiki/How_to_use_or_reuse_our_content), [Wikimedia Terms of Use and content licenses](https://foundation.wikimedia.org/wiki/Terms_of_Use?useformat=mobile).
+
 ## The Conversation licensed expert analysis
 
 The daily ingestion checks six direct English-language Atom feeds: Australia, the U.S., the U.K., Canada, Africa, and New Zealand. A feed entry is accepted only when it carries an explicit Creative Commons attribution/no-derivatives rights statement, an author byline and publication date, and an original article link on the publisher's HTTPS host. Signal Scout retains only the headline unchanged, author names for attribution, date, original link, feed-edition label, and exact feed rights text; Atom summaries and article bodies are discarded. The source is licensed expert analysis—not online conversation, breaking-news coverage, or independent cross-publisher corroboration. Editions belong to one publisher network; edition labels do not establish reader location or population audience.
