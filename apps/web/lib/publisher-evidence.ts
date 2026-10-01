@@ -14,10 +14,12 @@ type StoredPublisherRow = {
 
 const GV_LICENSE = "https://creativecommons.org/licenses/by/3.0/";
 const CC_BY_4 = "https://creativecommons.org/licenses/by/4.0/";
+const CC_BY_SA_4 = "https://creativecommons.org/licenses/by-sa/4.0/";
 const OPERATOR_LABELS: Record<string, string> = {
   "global-voices": "Global Voices",
   "the-conversation": "The Conversation",
   "typst-forum": "Typst Forum",
+  "fedora-discussion": "Fedora Discussion",
 };
 
 /** Convert only reviewed, recent, title-and-attribution-only publisher records to public brief evidence. */
@@ -71,6 +73,17 @@ export function toPublisherEvidence(
     licenseUrl = CC_BY_4;
     sourceOperatorKey = "typst-forum";
     context = "Narrow software community; not market sentiment";
+  } else if (row.source_type === "licensed-forum" && host === "discussion.fedoraproject.org" &&
+      row.source_domain === host && meta.publisher === "Fedora Discussion" &&
+      meta.licenseUrl === CC_BY_SA_4 && meta.titleUnmodified === true &&
+      meta.topicBodyAndRepliesDiscarded === true && meta.profileDetailsDiscarded === true &&
+      typeof meta.author === "string" && meta.author.trim()) {
+    evidenceClass = "community forum";
+    attribution = meta.author.trim().slice(0, 120);
+    licenseName = "CC BY-SA 4.0";
+    licenseUrl = CC_BY_SA_4;
+    sourceOperatorKey = "fedora-discussion";
+    context = "Selected Fedora/Linux community; not a population or investor sample";
   } else {
     return null;
   }

@@ -12,6 +12,7 @@ import { TheConversationConnector } from "../../../lib/connectors/the-conversati
 import { GlobalVoicesConnector } from "../../../lib/connectors/global-voices";
 import { WikimediaTalkConnector } from "../../../lib/connectors/wikimedia-talk";
 import { TypstForumConnector } from "../../../lib/connectors/typst-forum";
+import { FedoraDiscussionConnector } from "../../../lib/connectors/fedora-discussion";
 import { safeConnectorError } from "../../../lib/connectors/fetch";
 import { matchEntityText } from "../../../lib/entity-matching";
 import { recomputeEntityDailyMetrics } from "../../../lib/recompute-metrics";
@@ -133,6 +134,11 @@ async function runIngestion() {
         market.market_code === "US"
       )
         marketConnectors.push(new TypstForumConnector());
+      if (
+        company.ticker === "MARKET-TALK" &&
+        market.market_code === "US"
+      )
+        marketConnectors.push(new FedoraDiscussionConnector());
       const rssFeeds = getRssFeeds(market.market_code);
       // Publisher feeds are global research context, not company-specific
       // evidence. Run each configured market feed only for the macro profile.
@@ -207,6 +213,14 @@ async function runIngestion() {
               start,
               end,
               marketCode: "INTL",
+            });
+          else if (connector instanceof FedoraDiscussionConnector)
+            result = await connector.fetchDocuments({
+              query: "latest licensed community topics",
+              start,
+              end,
+              marketCode: "INTL",
+              languageCode: "en",
             });
           else if (connector instanceof StackExchangeConnector)
             result = await connector.fetchDocuments({

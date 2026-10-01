@@ -24,6 +24,10 @@ export function knownSourceOperator(source: EvidenceSource): string | null {
   if (source.source_type === "stack-exchange") return "stack-exchange";
   if (source.source_type === "licensed-forum" && domain === "forum.typst.app" && metadata.publisher === "Typst Forum")
     return "typst-forum";
+  if (source.source_type === "licensed-forum" && domain === "discussion.fedoraproject.org" &&
+      metadata.publisher === "Fedora Discussion" &&
+      metadata.licenseUrl === "https://creativecommons.org/licenses/by-sa/4.0/")
+    return "fedora-discussion";
   if (source.source_type === "licensed-analysis" && domain === "theconversation.com" && metadata.publisher === "The Conversation")
     return "the-conversation";
   if (source.source_type === "licensed-reporting" && isSubdomainOf(domain, "globalvoices.org") && metadata.publisher === "Global Voices")

@@ -67,4 +67,24 @@ describe("reviewed publisher evidence", () => {
     expect(toPublisherEvidence({ ...row, published_at: "2026-10-02T00:00:00Z" }, now)).toBeNull();
     expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, licenseUrl: "https://example.org/" } }, now)).toBeNull();
   });
+
+  it("accepts only licensed, attributed Fedora Discussion titles without reply content", () => {
+    const row = {
+      id: "fedora-1", source_type: "licensed-forum", source_name: "Fedora Discussion · community forum",
+      source_domain: "discussion.fedoraproject.org", language_code: "en", title_original: "A Linux topic",
+      source_url: "https://discussion.fedoraproject.org/t/linux-topic/1234", published_at: recent,
+      raw_metadata_json: {
+        publisher: "Fedora Discussion", author: "member_name",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+        titleUnmodified: true, topicBodyAndRepliesDiscarded: true, profileDetailsDiscarded: true,
+      },
+    };
+    expect(toPublisherEvidence(row, now)).toMatchObject({
+      evidenceClass: "community forum", attribution: "member_name",
+      licenseName: "CC BY-SA 4.0", sourceOperatorKey: "fedora-discussion",
+      sourceOperatorLabel: "Fedora Discussion",
+    });
+    expect(toPublisherEvidence({ ...row, source_url: "https://fedoraproject.org/t/linux-topic/1234" }, now)).toBeNull();
+    expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, topicBodyAndRepliesDiscarded: false } }, now)).toBeNull();
+  });
 });

@@ -19,6 +19,8 @@ describe("research lead source-operator gate", () => {
   it("counts Typst and Stack Exchange as distinct operators only when their reviewed domains and publisher metadata agree", () => {
     expect(knownSourceOperator({ source_type: "licensed-forum", source_domain: "forum.typst.app", raw_metadata_json: { publisher: "Typst Forum" } })).toBe("typst-forum");
     expect(knownSourceOperator({ source_type: "licensed-forum", source_domain: "forum.typst.app", raw_metadata_json: { publisher: "Other forum" } })).toBeNull();
+    expect(knownSourceOperator({ source_type: "licensed-forum", source_domain: "discussion.fedoraproject.org", raw_metadata_json: { publisher: "Fedora Discussion", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/" } })).toBe("fedora-discussion");
+    expect(knownSourceOperator({ source_type: "licensed-forum", source_domain: "discussion.fedoraproject.org", raw_metadata_json: { publisher: "Fedora Discussion", licenseUrl: "https://example.org/" } })).toBeNull();
     expect(knownSourceOperator({ source_type: "licensed-forum", source_domain: "evil.example", raw_metadata_json: { publisher: "Typst Forum" } })).toBeNull();
   });
 
