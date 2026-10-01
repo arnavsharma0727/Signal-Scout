@@ -19,6 +19,7 @@ export type DiscussionReportingOverlap = {
   questionCount: number;
   questionCommunities: string[];
   reportingSources: string[];
+  reportingPublishers: string[];
   latestQuestionAt: string | null;
   latestReportingAt: string | null;
   questions: Array<{ id: string; title: string; url: string; source: string; publishedAt: string }>;
@@ -114,6 +115,7 @@ export function buildDiscussionReportingOverlaps(
         questionCount: questionRows.length,
         questionCommunities: [...new Set(questionRows.map(({ row }) => row.source_name).filter(isString))].sort(),
         reportingSources: [...new Set(reportRows.map(({ row }) => row.source_name).filter(isString))].sort(),
+        reportingPublishers: [...new Set(reportRows.map(({ row }) => publisherLabel(row)).filter(isString))].sort(),
         latestQuestionAt: questionRows[0] ? new Date(questionRows[0].time).toISOString() : null,
         latestReportingAt: reportRows[0] ? new Date(reportRows[0].time).toISOString() : null,
         questions: questionRows.slice(0, 3).flatMap(({ row }) => evidence(row)),
@@ -150,4 +152,11 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function isString(value: string | null): value is string {
   return typeof value === "string" && Boolean(value.trim());
+}
+
+function publisherLabel(row: OverlapInput) {
+  const metadata = asRecord(row.raw_metadata_json);
+  return typeof metadata.publisher === "string" && metadata.publisher.trim()
+    ? metadata.publisher.trim()
+    : row.source_name;
 }

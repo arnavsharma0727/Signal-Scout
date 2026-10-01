@@ -190,7 +190,8 @@ export default async function Candidates() {
                   <span className="mono text-xs text-muted">{overlap.language} · {overlap.questionCount} matching questions · {overlap.reporting.length} linked headlines shown</span>
                 </div>
                 <p className="mt-1 text-xs text-muted">Match basis: {overlap.matchBasis}{overlap.matchBasis === "scheduled search phrase" ? " · collector-selected, not an organic topic label" : " · source-applied topic label"}</p>
-                <p className="mt-1 text-xs text-muted">Question communities: {overlap.questionCommunities.join(" · ") || "not reported"} · Reporting feed editions represented: {overlap.reportingSources.join(" · ") || "not reported"}</p>
+                <p className="mt-1 text-xs text-muted">Question communities: {overlap.questionCommunities.join(" · ") || "not reported"}</p>
+                <p className="mt-1 text-xs text-muted">Publisher labels in feed metadata: {overlap.reportingPublishers.join(" · ") || "not reported"} · Feed editions represented: {overlap.reportingSources.join(" · ") || "not reported"}. Publisher labels are not proof of corporate independence.</p>
                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                   <div>
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Discussion · question titles</h4>

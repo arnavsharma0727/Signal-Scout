@@ -122,4 +122,31 @@ describe("discussion-reporting literal overlaps", () => {
     expect(overlap).not.toHaveProperty("sentiment");
     expect(overlap).not.toHaveProperty("thesis");
   });
+
+  it("keeps regional editions visible but reports their shared publisher label once", () => {
+    const question = row();
+    const conversationAu = row({
+      id: "r-au",
+      source_type: "licensed-analysis",
+      source_name: "The Conversation · Australia edition",
+      source_domain: "theconversation.com",
+      title_original: "Central bank outlook",
+      source_url: "https://theconversation.com/au/story",
+      raw_metadata_json: { publisher: "The Conversation", edition: "au" },
+    });
+    const conversationUs = row({
+      ...conversationAu,
+      id: "r-us",
+      source_name: "The Conversation · U.S. edition",
+      source_url: "https://theconversation.com/us/story",
+      raw_metadata_json: { publisher: "The Conversation", edition: "us" },
+    });
+    const overlap = buildDiscussionReportingOverlaps([question, conversationAu, conversationUs], asOf)
+      .find(({ matchBasis }) => matchBasis === "scheduled search phrase");
+    expect(overlap?.reportingSources).toEqual([
+      "The Conversation · Australia edition",
+      "The Conversation · U.S. edition",
+    ]);
+    expect(overlap?.reportingPublishers).toEqual(["The Conversation"]);
+  });
 });
