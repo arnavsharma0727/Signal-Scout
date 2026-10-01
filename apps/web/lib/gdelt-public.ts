@@ -21,19 +21,55 @@ type GdeltResponse = {
 const API = "https://api.gdeltproject.org/api/v2/doc/doc";
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
+export const GDELT_OUTLET_COUNTRIES = [
+  { value: "", label: "All monitored countries" },
+  { value: "unitedstates", label: "United States" },
+  { value: "southkorea", label: "South Korea" },
+  { value: "japan", label: "Japan" },
+  { value: "unitedkingdom", label: "United Kingdom" },
+  { value: "germany", label: "Germany" },
+  { value: "france", label: "France" },
+  { value: "india", label: "India" },
+  { value: "brazil", label: "Brazil" },
+] as const;
+
+export const GDELT_OUTLET_LANGUAGES = [
+  { value: "", label: "All indexed languages" },
+  { value: "english", label: "English" },
+  { value: "korean", label: "Korean" },
+  { value: "japanese", label: "Japanese" },
+  { value: "spanish", label: "Spanish" },
+  { value: "french", label: "French" },
+  { value: "german", label: "German" },
+  { value: "portuguese", label: "Portuguese" },
+] as const;
+
+export type GdeltOutletCountry = (typeof GDELT_OUTLET_COUNTRIES)[number]["value"];
+export type GdeltOutletLanguage = (typeof GDELT_OUTLET_LANGUAGES)[number]["value"];
+
 /** Visitor-triggered news discovery; results stay in the browser and are never stored. */
 export async function searchGdeltNews(
   input: string,
   fetcher: typeof fetch = fetch,
   now = Date.now(),
+  outletCountry: GdeltOutletCountry = "",
+  outletLanguage: GdeltOutletLanguage = "",
 ): Promise<GdeltPublicArticle[]> {
   const query = input.trim();
   if (query.length < 3 || query.length > 100) {
     throw new Error("Enter a search phrase between 3 and 100 characters.");
   }
+  if (!GDELT_OUTLET_COUNTRIES.some(({ value }) => value === outletCountry) ||
+      !GDELT_OUTLET_LANGUAGES.some(({ value }) => value === outletLanguage)) {
+    throw new Error("Choose a listed publisher-country and language filter.");
+  }
 
   const params = new URLSearchParams({
-    query,
+    query: [
+      query,
+      outletCountry && `sourcecountry:${outletCountry}`,
+      outletLanguage && `sourcelang:${outletLanguage}`,
+    ].filter(Boolean).join(" "),
     mode: "artlist",
     format: "json",
     maxrecords: "25",

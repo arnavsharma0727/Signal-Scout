@@ -1,10 +1,19 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { GdeltPublicArticle, searchGdeltNews } from "../../lib/gdelt-public";
+import {
+  GDELT_OUTLET_COUNTRIES,
+  GDELT_OUTLET_LANGUAGES,
+  GdeltOutletCountry,
+  GdeltOutletLanguage,
+  GdeltPublicArticle,
+  searchGdeltNews,
+} from "../../lib/gdelt-public";
 
 export default function GdeltSearch() {
   const [query, setQuery] = useState("");
+  const [outletCountry, setOutletCountry] = useState<GdeltOutletCountry>("");
+  const [outletLanguage, setOutletLanguage] = useState<GdeltOutletLanguage>("");
   const [articles, setArticles] = useState<GdeltPublicArticle[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,7 +26,7 @@ export default function GdeltSearch() {
     setError("");
     setSearched(true);
     try {
-      setArticles(await searchGdeltNews(query));
+      setArticles(await searchGdeltNews(query, fetch, Date.now(), outletCountry, outletLanguage));
     } catch (cause) {
       setArticles([]);
       setError(cause instanceof Error ? cause.message : "The global news index is temporarily unavailable.");
@@ -31,15 +40,17 @@ export default function GdeltSearch() {
       <div className="eyebrow">Global news index · GDELT</div>
       <h2 className="mt-2 text-xl font-semibold">Search recent international coverage</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Search GDELT’s multilingual news index for the last seven days. This is coverage discovery,
-        not a complete news corpus, independent reporting count, or public-opinion measure. Results
-        are fetched directly by your browser and are not stored by Signal Scout.
+        Search GDELT’s multilingual news index for the last seven days, optionally narrowing by the
+        publisher outlet’s country and original language. Country describes the outlet, not the
+        audience or people discussing the topic. This is coverage discovery, not a complete news
+        corpus, independent reporting count, or public-opinion measure. Results are fetched directly
+        by your browser and are not stored by Signal Scout.
       </p>
-      <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
+      <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2">
         <label className="sr-only" htmlFor="gdelt-query">News search</label>
         <input
           id="gdelt-query"
-          className="min-w-0 flex-1 rounded border border-line bg-white px-3 py-2.5 outline-none focus:border-ink"
+          className="min-w-0 rounded border border-line bg-white px-3 py-2.5 outline-none focus:border-ink sm:col-span-2"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           minLength={3}
@@ -47,7 +58,19 @@ export default function GdeltSearch() {
           placeholder="e.g. semiconductor export controls"
           required
         />
-        <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
+        <label className="text-sm text-muted">
+          Publisher outlet country
+          <select className="mt-1 block w-full rounded border border-line bg-white px-3 py-2.5 text-ink" value={outletCountry} onChange={(event) => setOutletCountry(event.target.value as GdeltOutletCountry)}>
+            {GDELT_OUTLET_COUNTRIES.map(({ value, label }) => <option key={value || "all"} value={value}>{label}</option>)}
+          </select>
+        </label>
+        <label className="text-sm text-muted">
+          Original publication language
+          <select className="mt-1 block w-full rounded border border-line bg-white px-3 py-2.5 text-ink" value={outletLanguage} onChange={(event) => setOutletLanguage(event.target.value as GdeltOutletLanguage)}>
+            {GDELT_OUTLET_LANGUAGES.map(({ value, label }) => <option key={value || "all"} value={value}>{label}</option>)}
+          </select>
+        </label>
+        <button className="btn btn-primary justify-center sm:col-span-2" type="submit" disabled={loading}>
           {loading ? "Searching…" : "Search global news"}
         </button>
       </form>
@@ -72,7 +95,7 @@ export default function GdeltSearch() {
             ))}
           </ul>
           <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
-            Indexed/discovered by GDELT; article links and headlines belong to their publishers.{" "}
+            {new Set(articles.map((article) => article.domain)).size} distinct publisher domains in this capped sample; domains are not necessarily independent owners. Indexed/discovered by GDELT; article links and headlines belong to their publishers.{" "}
             <a className="underline text-ink" href="https://www.gdeltproject.org/" target="_blank" rel="noreferrer">GDELT Project</a>
           </p>
         </div>

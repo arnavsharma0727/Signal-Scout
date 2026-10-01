@@ -58,7 +58,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "Visitor-triggered direct search of the last seven days in GDELT's multilingual index, capped at 25 results. Headlines and source links stay in the browser; GDELT requires citation and allows free use, but index coverage is incomplete and headlines remain publisher material. Not forum discussion or independent-source corroboration.",
+        "Visitor-triggered direct search of the last seven days in GDELT's multilingual index, capped at 25 results, with optional publisher-outlet country and original-language filters. Country describes the outlet, not its audience. Headlines and source links stay in the browser; GDELT requires citation and allows free use, but index coverage is incomplete and headlines remain publisher material. Not forum discussion or independent-source corroboration.",
     },
     {
       name: "RSS / Atom",

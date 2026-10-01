@@ -16,6 +16,20 @@ describe("searchGdeltNews", () => {
     expect(results).toMatchObject([{ title: "Recent policy update", domain: "publisher.example", language: "English" }]);
   });
 
+  it("adds only supported publisher-country and source-language filters", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ articles: [] }), { status: 200 }));
+    await searchGdeltNews("semiconductor exports", fetchMock, Date.now(), "southkorea", "korean");
+    const params = new URL(fetchMock.mock.calls[0][0]).searchParams;
+    expect(params.get("query")).toBe("semiconductor exports sourcecountry:southkorea sourcelang:korean");
+  });
+
+  it("rejects unsupported filters before making a request", async () => {
+    const fetchMock = vi.fn();
+    await expect(searchGdeltNews("semiconductor exports", fetchMock, Date.now(), "attacker:query" as never))
+      .rejects.toThrow("listed publisher-country");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("validates the query before any request", async () => {
     const fetchMock = vi.fn();
     await expect(searchGdeltNews("x", fetchMock)).rejects.toThrow("3 and 100 characters");
