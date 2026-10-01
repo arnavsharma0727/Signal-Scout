@@ -74,12 +74,17 @@ describe("discussion-reporting literal overlaps", () => {
       source_domain: "globalvoices.org", title_original: "Nuclear fusion attracts new investment",
       source_url: "https://globalvoices.org/hardware", raw_metadata_json: {},
     });
-    const overlaps = buildDiscussionReportingOverlaps([forum, report], asOf);
+    const bumpedSnapshot = row({
+      ...forum, id: "fedora-1-later-snapshot", published_at: "2026-10-01T11:30:00Z",
+    });
+    const overlaps = buildDiscussionReportingOverlaps([forum, bumpedSnapshot, report], asOf);
     const exactPhrase = overlaps.find(({ phrase }) => phrase === "nuclear fusion");
     expect(exactPhrase).toMatchObject({
       phrase: "nuclear fusion", matchBasis: "literal topic-title phrase", discussionItemCount: 1,
       discussionSources: ["Fedora Discussion · community forum"],
-      discussions: [{ url: forum.source_url }], reporting: [{ url: report.source_url }],
+      latestDiscussionAt: "2026-10-01T11:30:00.000Z",
+      discussions: [{ id: "fedora-1-later-snapshot", url: forum.source_url }],
+      reporting: [{ url: report.source_url }],
     });
   });
 

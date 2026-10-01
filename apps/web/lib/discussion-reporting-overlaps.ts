@@ -57,7 +57,7 @@ export function buildDiscussionReportingOverlaps(
       if (query.length >= 2 && query.length <= 80 &&
         containsPhrase(normalizeText(row.title_original), normalizeText(query)))
         phrases.push({ phrase: query.toLocaleLowerCase(), basis: "scheduled search phrase" });
-      if (phrases.length) discussionItems.set(row.id, { row, phrases, time, language });
+      if (phrases.length) keepLatestDiscussionSnapshot(discussionItems, row, phrases, time, language);
     } else if (row.source_type === "licensed-forum") {
       const metadata = asRecord(row.raw_metadata_json);
       if (row.source_domain !== "discussion.fedoraproject.org" ||
@@ -69,7 +69,7 @@ export function buildDiscussionReportingOverlaps(
         phrase,
         basis: "literal topic-title phrase" as const,
       }));
-      if (phrases.length) discussionItems.set(row.id, { row, phrases, time, language });
+      if (phrases.length) keepLatestDiscussionSnapshot(discussionItems, row, phrases, time, language);
     } else if (
       row.source_type === "licensed-analysis" || row.source_type === "licensed-reporting"
     ) {
@@ -170,6 +170,39 @@ function literalTitlePhrases(title: string) {
     }
   }
   return [...phrases];
+}
+
+function keepLatestDiscussionSnapshot(
+  target: Map<string, { row: OverlapInput; phrases: Array<{ phrase: string; basis: DiscussionReportingOverlap["matchBasis"] }>; time: number; language: string }>,
+  row: OverlapInput,
+  phrases: Array<{ phrase: string; basis: DiscussionReportingOverlap["matchBasis"] }>,
+  time: number,
+  language: string,
+) {
+  const key = discussionIdentity(row);
+  const existing = target.get(key);
+  if (!existing || time > existing.time) target.set(key, { row, phrases, time, language });
+}
+
+function discussionIdentity(row: OverlapInput) {
+  try {
+    const url = new URL(row.source_url!);
+    const host = url.hostname.toLowerCase();
+    if (row.source_type === "licensed-forum" && host === "discussion.fedoraproject.org") {
+      const topicId = url.pathname.match(/^\/t\/[^/]+\/(\d+)(?:\/\d+)?\/?$/)?.[1];
+      if (topicId) return `fedora-topic:${topicId}`;
+    }
+    if (row.source_type === "stack-exchange") {
+      const questionId = url.pathname.match(/\/questions\/(\d+)(?:\/|$)/)?.[1];
+      if (questionId) return `stack-exchange:${host}:${questionId}`;
+    }
+    url.search = "";
+    url.hash = "";
+    url.pathname = url.pathname.replace(/\/$/, "");
+    return `${row.source_type}:${host}${url.pathname}`;
+  } catch {
+    return `${row.source_type}:${row.id}`;
+  }
 }
 
 function normalizeLanguage(value: string | null) {
