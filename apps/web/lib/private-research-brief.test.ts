@@ -6,11 +6,13 @@ describe("private research brief citation retention", () => {
     const result = preparePrivateEvidenceLinks([
       { url: "https://economics.stackexchange.com/questions/12/example?utm_source=feed#answer-34", language: "en", publishedAt: "2026-10-01T12:00:00Z", assessment: "supports", title: "Must not persist", attribution: "Private contributor field" },
       { url: "https://globalvoices.org/2026/10/01/story/?utm_campaign=x", language: "en" },
+      { url: "https://es.globalvoices.org/2026/10/01/historia/?utm_campaign=x", language: "es" },
+      { url: "https://forum.typst.app/t/topic/1234?utm_source=x", language: "unassigned" },
       { url: "https://en.wikipedia.org/w/index.php?title=Talk%3AMoney&oldid=12345&utm_source=x", language: "en" },
       { url: "https://theconversation.com/article-123?utm_source=x", language: "en" },
     ]);
 
-    expect(result).toHaveLength(4);
+    expect(result).toHaveLength(6);
     expect(result[0]).toMatchObject({
       url: "https://economics.stackexchange.com/questions/12/example#answer-34",
       host: "economics.stackexchange.com",
@@ -18,7 +20,9 @@ describe("private research brief citation retention", () => {
       assessment: "supports",
       licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
     });
-    expect(result[2].url).toBe("https://en.wikipedia.org/w/index.php?title=Talk%3AMoney&oldid=12345");
+    expect(result[2]).toMatchObject({ host: "es.globalvoices.org", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" });
+    expect(result[3]).toMatchObject({ sourceClass: "community forum", licenseUrl: "https://creativecommons.org/licenses/by/4.0/" });
+    expect(result[4].url).toBe("https://en.wikipedia.org/w/index.php?title=Talk%3AMoney&oldid=12345");
     expect(JSON.stringify(result)).not.toContain("Must not persist");
     expect(JSON.stringify(result)).not.toContain("Private contributor field");
     expect(JSON.stringify(result)).not.toContain("utm_");
@@ -30,6 +34,7 @@ describe("private research brief citation retention", () => {
     expect(privateCitationPolicy("https://www.reuters.com/world/story")).toBeNull();
     expect(privateCitationPolicy("javascript:alert(1)")).toBeNull();
     expect(privateCitationPolicy("https://user:pass@globalvoices.org/story")).toBeNull();
+    expect(privateCitationPolicy("https://evilglobalvoices.org/story")).toBeNull();
     expect(preparePrivateEvidenceLinks([{ url: "https://news.google.com/rss/articles/1" }])).toEqual([]);
   });
 

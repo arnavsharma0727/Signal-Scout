@@ -15,6 +15,8 @@ const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
   "social discussion",
   "news coverage",
   "editorial discussion",
+  "expert analysis",
+  "community forum",
 ];
 
 export default function ResearchBrief({
@@ -177,6 +179,7 @@ export default function ResearchBrief({
           <>
             <p className="mt-2 text-sm leading-6 text-muted">
               {coverage.sourceLabels.length} source labels · {coverage.languages.length} languages · {coverage.evidenceClasses.length} evidence classes
+              {` · ${coverage.knownOperatorLabels.length} reviewed source operators`}
               {coverage.earliest && coverage.latest
                 ? ` · ${new Date(coverage.earliest).toLocaleDateString()}–${new Date(coverage.latest).toLocaleDateString()}`
                 : " · publication dates unavailable"}
@@ -186,6 +189,9 @@ export default function ResearchBrief({
             </p>
             <p className="mt-1 text-xs leading-5 text-muted">
               Researcher-assigned: {coverage.researcherAssessments.map(({ assessment, count }) => `${assessment} ${count}`).join(" · ") || "none"} · {coverage.unassessedCount} unassessed
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              Reviewed operators: {coverage.knownOperatorLabels.join(" · ") || "none"} · {coverage.unresolvedOperatorItemCount} item(s) with unresolved operator identity. A recognized operator is an audit aid, not proof of independent coverage.
             </p>
           </>
         ) : (

@@ -4,6 +4,7 @@ import {isPublicEvidenceEligible, matchesStackExchangeTitleQuery} from './source
 import {buildDiscussionObservations} from './discussion-observations';
 import {WIKIMEDIA_TALK_WIKIS} from './wikimedia-talk';
 import {buildDiscussionReportingOverlaps} from './discussion-reporting-overlaps';
+import {toPublisherEvidence} from './publisher-evidence';
 
 export async function publishedDivergences(){
   const db=serverSupabase();
@@ -46,6 +47,25 @@ export async function recentSourceDocuments(){
       row.raw_metadata_json?.query,
     ))
   ).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
+}
+
+/** Recent, rights-reviewed publisher-feed headlines for the public Explorer; never selects stored body/excerpt fields. */
+export async function recentPublisherEvidence(){
+  const db=serverSupabase();
+  if(!db)return [];
+  const since=new Date(Date.now()-72*60*60*1000).toISOString();
+  const {data,error}=await db.from('source_documents')
+    .select('id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json')
+    .eq('market_code','INTL')
+    .in('source_type',['licensed-analysis','licensed-reporting','licensed-forum'])
+    .gte('published_at',since)
+    .order('published_at',{ascending:false})
+    .limit(90);
+  if(error||!data)return [];
+  return data.flatMap(row=>{
+    const evidence=toPublisherEvidence(row);
+    return evidence?[evidence]:[];
+  });
 }
 
 export async function recentDiscussionObservations(){

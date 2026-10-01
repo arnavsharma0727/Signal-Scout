@@ -18,7 +18,8 @@ const PRIVATE_SOURCE_RULES: Array<{
 }> = [
   { matches: host => host === "stackexchange.com" || host.endsWith(".stackexchange.com") || ["stackoverflow.com", "serverfault.com", "superuser.com", "askubuntu.com", "mathoverflow.net"].includes(host), sourceClass: "expert Q&A", licenseUrl: CC_BY_SA },
   { matches: host => /^(?:[a-z]{2,3}|simple)\.wikipedia\.org$/.test(host), sourceClass: "editorial discussion", licenseUrl: CC_BY_SA },
-  { matches: host => host === "globalvoices.org", sourceClass: "community reporting", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" },
+  { matches: host => host === "globalvoices.org" || host.endsWith(".globalvoices.org"), sourceClass: "community reporting", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" },
+  { matches: host => host === "forum.typst.app", sourceClass: "community forum", licenseUrl: "https://creativecommons.org/licenses/by/4.0/" },
   { matches: host => host === "theconversation.com", sourceClass: "expert analysis", licenseUrl: null },
   { matches: host => host === "ec.europa.eu", sourceClass: "official context", licenseUrl: "https://creativecommons.org/licenses/by/4.0/" },
   { matches: host => host === "mois.go.kr", sourceClass: "official context", licenseUrl: null },

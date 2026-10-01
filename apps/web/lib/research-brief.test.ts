@@ -65,6 +65,8 @@ describe("createResearchBriefMarkdown", () => {
   it("summarizes language, source labels, evidence classes, and valid date span without calling them independent", () => {
     const coverage = summarizeEvidenceCoverage([
       selected,
+      { ...selected, id: "se-2", sourceOperatorKey: "stack-exchange", sourceOperatorLabel: "Stack Exchange" },
+      { ...selected, id: "se-3", source: "Stack Overflow", sourceOperatorKey: "stack-exchange", sourceOperatorLabel: "Stack Exchange" },
       {
         ...selected,
         id: "mastodon-1",
@@ -77,11 +79,13 @@ describe("createResearchBriefMarkdown", () => {
       },
       { ...selected, id: "bad-date", timeValue: "not-a-date" },
     ]);
-    expect(coverage.itemCount).toBe(3);
-    expect(coverage.sourceLabels).toEqual(["Economics Stack Exchange", "Mastodon · mstdn.jp"]);
+    expect(coverage.itemCount).toBe(5);
+    expect(coverage.sourceLabels).toEqual(["Economics Stack Exchange", "Mastodon · mstdn.jp", "Stack Overflow"]);
+    expect(coverage.knownOperatorLabels).toEqual(["Stack Exchange"]);
+    expect(coverage.unresolvedOperatorItemCount).toBe(3);
     expect(coverage.languages).toEqual(["English", "Japanese"]);
     expect(coverage.evidenceClasses).toEqual([
-      { evidenceClass: "expert Q&A", count: 2 },
+      { evidenceClass: "expert Q&A", count: 4 },
       { evidenceClass: "social discussion", count: 1 },
     ]);
     expect(coverage.earliest).toBe("2026-10-01T12:00:00.000Z");

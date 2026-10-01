@@ -9,8 +9,9 @@ import TopicSearch from "./topic-search";
 import WikimediaTalkSearch from "./wikimedia-talk-search";
 import ResearchBrief from "./research-brief";
 import ResearchSweep from "./research-sweep";
+import LicensedPublisherEvidence from "./licensed-publisher-evidence";
 
-export default function ExploreWorkspace({ authAvailable, saveEnabled }: { authAvailable: boolean; saveEnabled: boolean }) {
+export default function ExploreWorkspace({ authAvailable, saveEnabled, publisherEvidence }: { authAvailable: boolean; saveEnabled: boolean; publisherEvidence: ResearchEvidence[] }) {
   const [evidence, setEvidence] = useState<ResearchEvidence[]>([]);
   const [initialTopic, setInitialTopic] = useState("");
   const selectedIds = useMemo(() => new Set(evidence.map(({ id }) => id)), [evidence]);
@@ -51,6 +52,7 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled }: { authA
         onClear={() => setEvidence([])}
       />
       <ResearchSweep initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+      <LicensedPublisherEvidence items={publisherEvidence} onAdd={addEvidence} selectedIds={selectedIds} />
       <div className="mt-8 border-t border-line pt-5 text-sm text-muted">
         Review a result’s original source, then explicitly add its citation to the brief.
       </div>

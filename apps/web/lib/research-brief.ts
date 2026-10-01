@@ -1,4 +1,4 @@
-export type ResearchEvidenceClass = "expert Q&A" | "social discussion" | "news coverage" | "editorial discussion";
+export type ResearchEvidenceClass = "expert Q&A" | "social discussion" | "news coverage" | "editorial discussion" | "expert analysis" | "community forum";
 
 export type ResearchEvidence = {
   id: string;
@@ -15,6 +15,9 @@ export type ResearchEvidence = {
   licenseName?: string;
   licenseUrl?: string;
   researcherAssessment?: "supports" | "contradicts" | "context";
+  /** Assigned only by reviewed source constructors; never infer independence from labels. */
+  sourceOperatorKey?: string;
+  sourceOperatorLabel?: string;
 };
 
 export type ResearchBriefDraft = {
@@ -35,6 +38,8 @@ export type EvidenceCoverage = {
   evidenceClasses: { evidenceClass: ResearchEvidenceClass; count: number }[];
   earliest: string | null;
   latest: string | null;
+  knownOperatorLabels: string[];
+  unresolvedOperatorItemCount: number;
 };
 
 /** Descriptive inventory only: labels and items are not counts of independent owners. */
@@ -48,6 +53,8 @@ export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): Evidenc
     "social discussion",
     "news coverage",
     "editorial discussion",
+    "expert analysis",
+    "community forum",
   ];
   const assessments: NonNullable<ResearchEvidence["researcherAssessment"]>[] = [
     "supports",
@@ -73,6 +80,10 @@ export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): Evidenc
       .filter(({ count }) => count > 0),
     earliest: timestamps.length ? new Date(timestamps[0]).toISOString() : null,
     latest: timestamps.length ? new Date(timestamps[timestamps.length - 1]).toISOString() : null,
+    knownOperatorLabels: [...new Set(evidence.flatMap(({ sourceOperatorKey, sourceOperatorLabel }) =>
+      sourceOperatorKey && sourceOperatorLabel ? [sourceOperatorLabel] : []))].sort(),
+    unresolvedOperatorItemCount: evidence.filter(({ sourceOperatorKey, sourceOperatorLabel }) =>
+      !sourceOperatorKey || !sourceOperatorLabel).length,
   };
 }
 
@@ -109,6 +120,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     "",
     `- Selected items: ${coverage.itemCount}`,
     `- Source labels: ${coverage.sourceLabels.map(escapeMarkdownLabel).join(", ") || "None"}`,
+    `- Reviewed source operators represented: ${coverage.knownOperatorLabels.map(escapeMarkdownLabel).join(", ") || "None"}; unresolved operator items: ${coverage.unresolvedOperatorItemCount}`,
     `- Languages: ${coverage.languages.map(escapeMarkdownLabel).join(", ") || "None"}`,
     `- Evidence classes: ${coverage.evidenceClasses.map(({ evidenceClass, count }) => `${escapeMarkdownLabel(evidenceClass)} (${count})`).join(", ") || "None"}`,
     `- Researcher-assigned assessment: ${coverage.researcherAssessments.map(({ assessment, count }) => `${assessment} (${count})`).join(", ") || "None"}; unassessed: ${coverage.unassessedCount}`,
@@ -137,7 +149,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     "",
     "## Coverage note",
     "",
-    "These are manually selected links from on-demand provider samples. Source views can overlap; source types are not necessarily independent operators. A low or empty sample does not show that a topic is absent. Check originals, applicable licenses, dates, language, and competing explanations before relying on this brief.",
+    "These are manually selected links from on-demand provider samples and recent licensed feeds. Source views can overlap; reviewed operator labels are a conservative source audit, not proof of topical independence or a representative population. A low or empty sample does not show that a topic is absent. Check originals, applicable licenses, dates, language, and competing explanations before relying on this brief.",
     "",
   );
   return lines.join("\n");

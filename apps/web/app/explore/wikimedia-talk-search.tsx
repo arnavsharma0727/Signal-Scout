@@ -124,6 +124,8 @@ export default function WikimediaTalkSearch({
                     timeValue: page.lastEditedAt,
                     attribution: "Check contributors and the applicable content license",
                     attributionUrl: page.historyUrl,
+                    sourceOperatorKey: "wikimedia",
+                    sourceOperatorLabel: "Wikimedia projects",
                   })}
                 >
                   {selectedIds.has(`wikimedia:${page.url}`) ? "Added to brief" : "Add link to brief"}

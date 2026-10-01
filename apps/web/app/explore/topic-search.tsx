@@ -129,6 +129,8 @@ export default function TopicSearch({
                     attributionUrl: item.authorUrl,
                     licenseName: "CC BY-SA 4.0",
                     licenseUrl: item.licenseUrl,
+                    sourceOperatorKey: "stack-exchange",
+                    sourceOperatorLabel: "Stack Exchange",
                   })}
                 >
                   {selectedIds.has(`stackexchange:${item.url}`) ? "Added to brief" : "Add to brief"}

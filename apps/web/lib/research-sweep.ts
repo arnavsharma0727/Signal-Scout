@@ -107,6 +107,8 @@ export async function runResearchSweep(
         attributionUrl: item.authorUrl,
         licenseName: "CC BY-SA 4.0",
         licenseUrl: item.licenseUrl,
+        sourceOperatorKey: "stack-exchange",
+        sourceOperatorLabel: "Stack Exchange",
       })),
     ));
   }
@@ -163,6 +165,8 @@ export async function runResearchSweep(
         context: "Article talk page; collaborative editorial discussion, not a general forum",
         attribution: "View page history and contributors",
         attributionUrl: page.historyUrl,
+        sourceOperatorKey: "wikimedia",
+        sourceOperatorLabel: "Wikimedia projects",
       })),
     ));
   }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import ExploreWorkspace from "./explore-workspace";
 import { authConfigured, authServerClient } from "../../lib/supabase-auth-server";
+import { recentPublisherEvidence } from "../../lib/public-data";
 
 export const metadata = { title: "Explore live discussion | Signal Scout" };
 
@@ -8,6 +9,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
   const { save } = await searchParams;
   const auth = authConfigured() ? await authServerClient() : null;
   const { data: { user } } = auth ? await auth.auth.getUser() : { data: { user: null } };
+  const publisherEvidence = await recentPublisherEvidence();
   return (
     <main className="shell min-h-screen py-12">
       <header className="flex items-center justify-between border-b border-line pb-6">
@@ -29,7 +31,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
         {save === "invalid" && <p role="alert" className="mt-4 text-sm">The brief could not be saved. Check that the topic and notes are within the stated limits, then try again.</p>}
         {save === "limit" && <p role="alert" className="mt-4 text-sm">This account has reached the limit of 100 saved briefs.</p>}
         {save === "unavailable" && <p role="alert" className="mt-4 text-sm">Private saving is temporarily unavailable. Your in-page draft has not been saved.</p>}
-        <ExploreWorkspace authAvailable={authConfigured()} saveEnabled={Boolean(user)} />
+        <ExploreWorkspace authAvailable={authConfigured()} saveEnabled={Boolean(user)} publisherEvidence={publisherEvidence} />
         <aside className="mt-8 border-t border-line pt-5 text-xs leading-5 text-muted">
           Searches run directly in your browser against the selected provider. Signal Scout’s server
           does not receive or store on-demand queries or results. Citations explicitly added to the
