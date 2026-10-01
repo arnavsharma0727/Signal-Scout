@@ -76,6 +76,26 @@ describe("discussion-reporting literal overlaps", () => {
     }));
   });
 
+  it("keeps short acronyms such as AI only on exact token boundaries", () => {
+    const question = row({
+      title_original: "AI adoption in financial services",
+      raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["machine-learning"], query: "AI" },
+    });
+    const headline = row({
+      id: "r-ai",
+      source_type: "licensed-analysis",
+      source_name: "The Conversation",
+      source_domain: "theconversation.com",
+      title_original: "AI policy needs to catch up",
+      source_url: "https://theconversation.com/ai-policy",
+      raw_metadata_json: {},
+    });
+    const partialWordOnly = { ...headline, id: "r-said", title_original: "Said policy needs to catch up", source_url: "https://theconversation.com/said" };
+    const overlaps = buildDiscussionReportingOverlaps([question, headline, partialWordOnly], asOf);
+    expect(overlaps).toHaveLength(1);
+    expect(overlaps[0]).toMatchObject({ phrase: "ai", matchBasis: "scheduled search phrase" });
+  });
+
   it("does not bridge languages, partial words, unlicensed Q&A, excluded sources, or stale rows", () => {
     const reports = [
       row({ id: "r-en", source_type: "licensed-analysis", source_name: "The Conversation", source_domain: "theconversation.com", title_original: "Central bank decisions", source_url: "https://theconversation.com/story", raw_metadata_json: {} }),

@@ -53,7 +53,7 @@ export function buildDiscussionReportingOverlaps(
       const phrases: Array<{ phrase: string; basis: DiscussionReportingOverlap["matchBasis"] }> =
         tags.map((phrase) => ({ phrase, basis: "community tag" }));
       const query = typeof metadata.query === "string" ? metadata.query.trim().normalize("NFC") : "";
-      if (query.length >= 3 && query.length <= 80 &&
+      if (query.length >= 2 && query.length <= 80 &&
         containsPhrase(normalizeText(row.title_original), normalizeText(query)))
         phrases.push({ phrase: query.toLocaleLowerCase(), basis: "scheduled search phrase" });
       if (phrases.length) questions.set(row.id, { row, phrases, time, language });

@@ -177,7 +177,7 @@ export default async function Candidates() {
           Discussion–reporting phrase overlaps
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-          A phrase can be either a community-applied Stack Exchange tag or the scheduled connector’s search term. It must appear as a whole phrase in a same-language licensed headline from the last seven days; scheduled search terms must also appear in the question title. Search-term matches reflect collector design, not organic topic frequency. This query-selected sample is not evidence that discussion caused coverage, that sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open every original item.
+          A phrase can be either a community-applied Stack Exchange tag or the scheduled connector’s search term. It must appear as a whole phrase in a same-language licensed headline from the last seven days; scheduled search terms must also appear in the question title. Search-term matches reflect collector design, not organic topic frequency; short terms such as “AI” are especially broad and need extra human validation. This query-selected sample is not evidence that discussion caused coverage, that sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open every original item.
         </p>
         {overlapsUnavailable ? (
           <p className="mt-4 text-sm text-muted">Cross-source records are unavailable. This is not evidence that no related discussion or reporting exists.</p>
@@ -190,7 +190,7 @@ export default async function Candidates() {
                   <span className="mono text-xs text-muted">{overlap.language} · {overlap.questionCount} matching questions · {overlap.reporting.length} linked headlines shown</span>
                 </div>
                 <p className="mt-1 text-xs text-muted">Match basis: {overlap.matchBasis}{overlap.matchBasis === "scheduled search phrase" ? " · collector-selected, not an organic topic label" : " · source-applied topic label"}</p>
-                <p className="mt-1 text-xs text-muted">Question communities: {overlap.questionCommunities.join(" · ") || "not reported"} · Reporting sources: {overlap.reportingSources.join(" · ") || "not reported"}</p>
+                <p className="mt-1 text-xs text-muted">Question communities: {overlap.questionCommunities.join(" · ") || "not reported"} · Reporting feed editions represented: {overlap.reportingSources.join(" · ") || "not reported"}</p>
                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                   <div>
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Discussion · question titles</h4>
