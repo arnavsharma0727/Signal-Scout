@@ -1,5 +1,13 @@
 # Source registry and access review
 
+## The Conversation licensed expert analysis
+
+The daily ingestion checks the direct Atom feeds for the Australia and U.S. editions. It accepts an item only when that item's feed entry carries an explicit Creative Commons attribution/no-derivatives rights statement, the author byline and publication date are present, and the original article link remains on the publisher's HTTPS host. Signal Scout retains only the headline unchanged, author names for attribution, date, original link, feed-edition label, and exact feed rights text; Atom summaries and article bodies are discarded. The source is classified as licensed expert analysis—not online conversation, breaking-news coverage, or independent cross-publisher corroboration. The two editions remain one publisher/operator; edition and language labels do not establish reader location or audience.
+
+No account, API key, fee, or click-through rights acceptance is used. Each accepted record retains its own feed-provided rights statement; items missing the required notice are skipped. The feed responses are capped at 1.5 MB each, one request is made per edition per daily ingestion, and publisher-origin URLs are enforced.
+
+References: [Australia edition Atom feed](https://theconversation.com/au/articles.atom), [U.S. edition Atom feed](https://theconversation.com/us/articles.atom), [The Conversation on its Creative Commons republication model](https://cdn.theconversation.com/static_files/files/1439/2018_Stakeholder_Report_The_Conversation.pdf).
+
 ## GDELT on-demand global news search
 
 Explore can send one visitor-triggered query directly from the browser to the GDELT DOC API. It requests at most 25 results from the last seven days and keeps returned headlines, dates, language, country labels, and publisher URLs only in that visitor's browser; the app does not persist results or queries. The UI links to the publisher and credits GDELT. Its returned source-country field is a publisher/index label, not audience geography or origin of conversation. GDELT's terms permit free academic, commercial, and governmental use, and require citation plus a link to GDELT. The hosted API rate-limits requests to at most one every five seconds; this execution environment repeatedly received HTTP 429 even when requests were spaced, so scheduled server-side ingestion is not considered reliable. The direct-browser search surfaces provider rate limiting and does not retry. GDELT is a news index, not a discussion forum, and matching headlines do not prove independent publishers or constitute a lead.

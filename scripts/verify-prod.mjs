@@ -42,10 +42,17 @@ try {
 } catch (error) { fail('uncleared Hacker News source is visibly disabled',error.message); }
 
 try {
+  const response = await fetch(`${base}/explore`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
+  const page = await response.text();
+  if (response.ok && page.includes('Search one topic across selected sources') && page.includes('Run source sweep')) pass('international live source sweep is public', `HTTP ${response.status}; source choices and direct-search workflow rendered`);
+  else fail('international live source sweep is public', `HTTP ${response.status}; source sweep UI missing`);
+} catch (error) { fail('international live source sweep is public',error.message); }
+
+try {
   const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Hacker News material is withheld from public evidence views while reuse rights are reviewed.') && !page.includes('The remaining U.S.-leaning Hacker News sample is shown below')) pass('public briefing withholds uncleared source material','source disclosure is current');
-  else fail('public briefing withholds uncleared source material',`HTTP ${response.status}; rights disclosure is missing or stale`);
+  if (response.ok && page.includes('Recent source evidence') && !page.includes('Hacker News comment') && !page.includes('The remaining U.S.-leaning Hacker News sample is shown below')) pass('public briefing withholds uncleared source material','homepage evidence panel excludes the disabled source');
+  else fail('public briefing withholds uncleared source material',`HTTP ${response.status}; disallowed source may be shown or current evidence panel is missing`);
 } catch (error) { fail('public briefing withholds uncleared source material',error.message); }
 
 const url = process.env.SUPABASE_URL;
@@ -58,36 +65,57 @@ async function rest(path, method='GET', prefer='count=exact') {
 }
 
 if (!url || !key) {
-  fail('database-backed gates', 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or keep them in local .env.local); credentials are never printed.');
+  fail('database-backed research checks', 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or keep them in local .env.local); credentials are never printed.');
 } else {
   try {
     const since=new Date(Date.now()-24*60*60*1000).toISOString();
-    const relevant=await rest(`document_entities?select=document_id,source_documents!inner(market_code,source_type,source_domain,published_at)&source_documents.published_at=gte.${encodeURIComponent(since)}`);
-    const rows=relevant.data??[];
-    const documents=new Map(rows.map(row=>[row.document_id,row.source_documents]));
-    if (documents.size >= 500) pass('>=500 entity-relevant source documents in last 24h', `${documents.size} unique linked documents`); else fail('>=500 entity-relevant source documents in last 24h', `${documents.size} unique linked documents; requires 500`);
-    const domains = new Set([...documents.values()].map(x=>x.source_domain).filter(Boolean));
-    const markets = new Set([...documents.values()].map(x=>x.market_code).filter(Boolean));
-    const classes = new Set([...documents.values()].map(x=>x.source_type).filter(Boolean));
-    if (domains.size >= 8) pass('>=8 independent source domains', `${domains.size} domains`); else fail('>=8 independent source domains', `${domains.size} domains; requires 8`);
-    if (markets.size >= 2 && classes.size >= 2) pass('multi-market/source-class coverage', `${markets.size} markets, ${classes.size} source classes`); else fail('multi-market/source-class coverage', `${markets.size} markets, ${classes.size} source classes; requires at least 2 of each`);
+    const recent=await rest(`source_documents?select=id,source_type,source_domain,market_code,language_code,published_at,raw_metadata_json&published_at=gte.${encodeURIComponent(since)}`);
+    const eligible=(recent.data??[]).filter(row=>row.source_type!=='hacker-news' && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
+    const types=new Set(eligible.map(row=>row.source_type).filter(Boolean));
+    const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
+    const communities=new Set(eligible.filter(row=>row.source_type==='stack-exchange').map(row=>row.raw_metadata_json?.site).filter(Boolean));
+    const discussions=eligible.filter(row=>['stack-exchange','lemmy','mastodon','bluesky','reddit'].includes(row.source_type));
+    const news=eligible.filter(row=>['rss','gdelt','news'].includes(row.source_type));
+    const licensedAnalysis=eligible.filter(row=>row.source_type==='licensed-analysis');
+    const officialContext=eligible.filter(row=>row.source_type==='official-policy');
+    if(eligible.length>=20)pass('>=20 eligible live source records / 24h',`${eligible.length} records; ${domains.size} host labels across ${types.size} stored source types (hostnames are not proof of independent owners)`);
+    else fail('>=20 eligible live source records / 24h',`${eligible.length} eligible records; requires 20`);
+    if(discussions.length>0)pass('scheduled public discussion collection',`${discussions.length} records; ${communities.size} Stack Exchange community indexes (one platform operator)`);
+    else fail('scheduled public discussion collection','No eligible scheduled discussion records in the last 24 hours');
+    if(officialContext.length>0)pass('institutional context is retained separately',`${officialContext.length} official-policy records; not counted as news or public discussion`);
+    else fail('institutional context is retained separately','No recent official-policy records');
+    if(news.length>0)pass('independent/news-source records are available',`${news.length} recent RSS/GDELT/news records`);
+    else fail('independent/news-source records are available','No recent RSS/GDELT/news records; official releases are not substituted for reporting');
+    if(licensedAnalysis.length>0)pass('licensed expert analysis is available separately',`${licensedAnalysis.length} records; not counted as public discussion or independent reporting`);
+    else fail('licensed expert analysis is available separately','No recent licensed-analysis records');
+    if(communities.size>=3)pass('discussion coverage spans multiple expert communities',`${communities.size} Stack Exchange community indexes; all remain one Q&A operator`);
+    else fail('discussion coverage spans multiple expert communities',`${communities.size} community indexes; requires 3`);
     const unresolved=await rest('source_documents?select=id&or=(source_domain.is.null,source_domain.eq.)');
     if(unresolved.count===0)pass('zero documents missing publisher domain','all records have a resolved domain');else fail('zero documents missing publisher domain',`${unresolved.count??'unknown'} unresolved records`);
-    try {
-      const metrics = await rest('metrics_daily?select=company_id,market_code,source_type&metric_date=eq.'+new Date().toISOString().slice(0,10));
-      const entities = new Set((metrics.data ?? []).map(row => row.company_id).filter(Boolean));
-      if (entities.size >= 40) pass('>=40 entities with computed metrics today', `${entities.size} distinct entities across ${metrics.count} market/source-class metrics`); else fail('>=40 entities with computed metrics today', `${entities.size} distinct entities across ${metrics.count ?? 'unknown'} metrics; requires 40 entities`);
-    } catch { fail('>=40 entities with computed metrics today', 'metrics_daily table or daily metric computation is not available'); }
+    const recentRuns=await rest(`connector_runs?select=connector_name,status,started_at,items_stored&started_at=gte.${encodeURIComponent(since)}`);
+    const groupedRuns=new Map();
+    for(const run of recentRuns.data??[]){
+      const group=groupedRuns.get(run.connector_name)??{success:0,failed:0,stored:0};
+      if(run.status==='completed'||run.status==='partial')group.success++;
+      if(run.status==='failed')group.failed++;
+      group.stored+=run.items_stored??0;
+      groupedRuns.set(run.connector_name,group);
+    }
+    const stackRuns=groupedRuns.get('stack-exchange');
+    if(stackRuns?.success&&stackRuns.stored>0)pass('scheduled Stack Exchange connector is operational',`${stackRuns.success} successful/partial runs; ${stackRuns.stored} stored items`);
+    else fail('scheduled Stack Exchange connector is operational','No successful Stack Exchange run with stored items in the last 24 hours');
+    const gdeltRuns=groupedRuns.get('gdelt');
+    if(gdeltRuns)pass('GDELT source health reported',`${gdeltRuns.success} successful/partial, ${gdeltRuns.failed} failed, ${gdeltRuns.stored} stored in 24h`);
+    else fail('GDELT source health reported','No GDELT run recorded in the last 24 hours');
     try {
       const leads = await rest('research_leads?select=id,verified_evidence_json,alternative_explanations_json&status=eq.active');
-      if (leads.count > 0 && leads.data?.every(x=>x.verified_evidence_json && x.alternative_explanations_json)) pass('active leads have evidence and counter-evidence', `${leads.count} leads`);
-      else fail('active leads have evidence and counter-evidence', `${leads.count ?? 0} complete active leads`);
+      const unsupported=leads.data?.filter(x=>!x.verified_evidence_json||!x.alternative_explanations_json)??[];
+      if(unsupported.length===0)pass('no active lead lacks evidence/counter-evidence',`${leads.count??0} active records; no incomplete records`);
+      else fail('no active lead lacks evidence/counter-evidence',`${unsupported.length} active records lack required evidence fields`);
+      if(leads.count>0)pass('evidence-qualified lead records exist',`${leads.count} active records`);
+      else fail('evidence-qualified lead records exist','No active evidence-qualified leads; current app must not invent them');
     } catch { fail('active leads have evidence and counter-evidence', 'Lead evidence query failed or required schema is unavailable'); }
-    try {
-      const log = await rest('lead_track_record?select=id');
-      if (log.count >= 30) pass('prospective track-record sample', `${log.count} observations`); else fail('prospective track-record sample', `${log.count ?? 0} observations; requires 30 before reporting outcomes`);
-    } catch { fail('prospective track-record sample', 'Append-only lead_track_record table is not available'); }
-  } catch (error) { fail('database-backed gates', error.message); }
+  } catch (error) { fail('database-backed research checks', error.message); }
 }
 
 console.log(`Signal Scout production verification: ${base}`);

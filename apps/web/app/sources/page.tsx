@@ -121,6 +121,13 @@ export default async function Sources() {
         "Daily keyless English RSS collection from the European Commission. Only headlines, dates, and original links are retained; attribution is attached under the Commission’s CC BY 4.0 default reuse notice, except items carrying a different notice. This is official institutional context, not independent reporting, public discussion, or a measure of attention.",
     },
     {
+      name: "The Conversation · licensed expert analysis",
+      key: "the-conversation",
+      enabled: true,
+      detail:
+        "Daily keyless Atom collection from the Australia and U.S. editions. The feed itself marks each retained item as Creative Commons attribution/no-derivatives. Signal Scout keeps the unmodified headline, author byline, publication date, original link, edition, and rights notice; feed summaries and article bodies are discarded. Editions belong to one publisher/operator, are not audience/country proxies, and this expert analysis is distinct from forum discussion and breaking-news coverage.",
+    },
+    {
       name: "GDELT news",
       key: "gdelt",
       enabled: process.env.GDELT_ENABLED === "true",

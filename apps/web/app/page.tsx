@@ -210,8 +210,8 @@ function EmptyPanel() {
 function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: import("../lib/time-zones").DisplayTimeZone }) {
   const groups = [
     { key: "discussion", label: "Online discussion", matches: (d: any) => ["stack-exchange", "bluesky", "hacker-news"].includes(d.source_type) },
-    { key: "news", label: "News and reporting", matches: (d: any) => ["rss", "gdelt"].includes(d.source_type) },
-    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "bluesky", "hacker-news", "rss", "gdelt"].includes(d.source_type) },
+    { key: "news", label: "News and licensed analysis", matches: (d: any) => ["rss", "gdelt", "licensed-analysis"].includes(d.source_type) },
+    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "bluesky", "hacker-news", "rss", "gdelt", "licensed-analysis"].includes(d.source_type) },
   ];
   return (
     <section className="panel mt-5 overflow-hidden">
@@ -256,6 +256,8 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                               ? "Hacker News comment"
                             : d.source_type === "stack-exchange"
                                 ? "Stack Exchange · expert Q&A"
+                              : d.source_type === "licensed-analysis"
+                                ? "Licensed expert analysis · not public discussion"
                               : "RSS / news"}
                         </span>
                         <span>{d.language_code}</span>
@@ -293,6 +295,16 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                           )}
                           {d.raw_metadata_json?.license === "KOGL-Type-1" && " · KOGL Type 1"}
                           {" · headline shown unmodified"}
+                        </p>
+                      )}
+                      {d.source_type === "licensed-analysis" && (
+                        <p className="mt-1 text-[10px] leading-4 text-muted">
+                          <span className="font-medium">{d.raw_metadata_json?.publisher ?? d.source_name}</span>
+                          {" · "}
+                          {(d.raw_metadata_json?.authors ?? []).join(", ")}
+                          {" · "}
+                          {d.raw_metadata_json?.rightsStatement}
+                          {" · unmodified headline; summary/body not retained"}
                         </p>
                       )}
                       <time

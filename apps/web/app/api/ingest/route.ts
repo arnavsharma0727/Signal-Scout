@@ -8,6 +8,7 @@ import { SECEdgarConnector } from "../../../lib/connectors/sec";
 import { MOISPressReleaseConnector } from "../../../lib/connectors/mois";
 import { StackExchangeConnector } from "../../../lib/connectors/stackexchange";
 import { EuropeanCommissionConnector } from "../../../lib/connectors/european-commission";
+import { TheConversationConnector } from "../../../lib/connectors/the-conversation";
 import { safeConnectorError } from "../../../lib/connectors/fetch";
 import { matchEntityText } from "../../../lib/entity-matching";
 import { recomputeEntityDailyMetrics } from "../../../lib/recompute-metrics";
@@ -97,6 +98,11 @@ async function runIngestion() {
         market.market_code === "US"
       )
         marketConnectors.push(new EuropeanCommissionConnector());
+      if (
+        company.ticker === "MARKET-TALK" &&
+        market.market_code === "US"
+      )
+        marketConnectors.push(new TheConversationConnector());
       const rssFeeds = getRssFeeds(market.market_code);
       if (process.env.RSS_ENABLED === "true" && rssFeeds.length)
         marketConnectors.push(new RSSConnector(rssFeeds));
@@ -130,6 +136,14 @@ async function runIngestion() {
           else if (connector instanceof EuropeanCommissionConnector)
             result = await connector.fetchDocuments({
               query: "official Commission releases",
+              start,
+              end,
+              marketCode: "INTL",
+              languageCode: "en",
+            });
+          else if (connector instanceof TheConversationConnector)
+            result = await connector.fetchDocuments({
+              query: "current affairs and public-interest research",
               start,
               end,
               marketCode: "INTL",
