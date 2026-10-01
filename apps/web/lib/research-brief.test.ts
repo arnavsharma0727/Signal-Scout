@@ -39,7 +39,27 @@ describe("createResearchBriefMarkdown", () => {
     expect(markdown).toContain("## Selected-sample coverage audit");
     expect(markdown).toContain("Source labels: Economics Stack Exchange");
     expect(markdown).toContain("not necessarily an independent publisher");
+    expect(markdown).toContain("Researcher-assigned assessment: None; unassessed: 1");
     expect(markdown).not.toContain("recommendation: buy");
+  });
+
+  it("exports explicitly researcher-assigned supporting and contradictory evidence separately", () => {
+    const markdown = createResearchBriefMarkdown({
+      topic: "Trade",
+      workingThesis: "A tentative thesis",
+      alternatives: "",
+      disconfirmingEvidence: "",
+      evidence: [
+        { ...selected, researcherAssessment: "supports" },
+        { ...selected, id: "se-2", researcherAssessment: "contradicts" },
+        { ...selected, id: "se-3", researcherAssessment: "context" },
+      ],
+      exportedAt: "2026-10-01T12:00:00Z",
+    });
+    expect(markdown).toContain("supports (1), contradicts (1), context (1); unassessed: 0");
+    expect(markdown).toContain("researcher assessment: supports");
+    expect(markdown).toContain("researcher assessment: contradicts");
+    expect(markdown).not.toContain("automated sentiment");
   });
 
   it("summarizes language, source labels, evidence classes, and valid date span without calling them independent", () => {

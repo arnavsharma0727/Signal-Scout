@@ -19,11 +19,13 @@ export default function ResearchBrief({
   evidence,
   initialTopic,
   onRemove,
+  onAssess,
   onClear,
 }: {
   evidence: ResearchEvidence[];
   initialTopic: string;
   onRemove: (id: string) => void;
+  onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | undefined) => void;
   onClear: () => void;
 }) {
   const [topic, setTopic] = useState("");
@@ -84,7 +86,7 @@ export default function ResearchBrief({
       <div className="eyebrow">Temporary, in-page workspace</div>
       <h2 id="research-brief-title" className="mt-2 text-xl font-semibold">Build a research brief</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Add source links deliberately, then write your own hypothesis, alternatives, and disconfirmation test. This draft exists only in this open page’s memory—no account, browser storage, or server save. Exporting or copying sends it only to your device or clipboard.
+        Add source links deliberately, assign each item a supporting, contradicting, or contextual role yourself, then write your hypothesis, alternatives, and disconfirmation test. These are your assessments, not automated sentiment or verified facts. This draft exists only in this open page’s memory—no account, browser storage, or server save. Exporting or copying sends it only to your device or clipboard.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -127,7 +129,27 @@ export default function ResearchBrief({
                     {item.attribution ? ` · ${item.attribution}` : ""}
                   </p>
                 </div>
-                <button className="shrink-0 text-xs underline text-muted" type="button" onClick={() => onRemove(item.id)}>Remove</button>
+                <div className="flex shrink-0 flex-col items-end gap-2">
+                  <label className="text-xs text-muted">
+                    Researcher assessment
+                    <select
+                      className="ml-2 rounded border border-line bg-white px-2 py-1 text-xs text-ink"
+                      value={item.researcherAssessment ?? ""}
+                      onChange={(event) => onAssess(
+                        item.id,
+                        event.target.value
+                          ? event.target.value as "supports" | "contradicts" | "context"
+                          : undefined,
+                      )}
+                    >
+                      <option value="">Unassessed</option>
+                      <option value="supports">Supports thesis</option>
+                      <option value="contradicts">Contradicts thesis</option>
+                      <option value="context">Context only</option>
+                    </select>
+                  </label>
+                  <button className="text-xs underline text-muted" type="button" onClick={() => onRemove(item.id)}>Remove</button>
+                </div>
               </li>
             ))}
           </ul>
@@ -148,6 +170,9 @@ export default function ResearchBrief({
             </p>
             <p className="mt-1 text-xs leading-5 text-muted">
               {coverage.sourceLabels.join(" · ")} · {coverage.languages.join(" · ")}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              Researcher-assigned: {coverage.researcherAssessments.map(({ assessment, count }) => `${assessment} ${count}`).join(" · ") || "none"} · {coverage.unassessedCount} unassessed
             </p>
           </>
         ) : (

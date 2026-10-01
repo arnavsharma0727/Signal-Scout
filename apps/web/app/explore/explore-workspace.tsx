@@ -39,6 +39,11 @@ export default function ExploreWorkspace() {
       <ResearchBrief
         initialTopic={initialTopic}
         evidence={evidence}
+        onAssess={(id, assessment) => setEvidence((current) =>
+          current.map((item) => item.id === id
+            ? { ...item, researcherAssessment: assessment }
+            : item),
+        )}
         onRemove={removeEvidence}
         onClear={() => setEvidence([])}
       />

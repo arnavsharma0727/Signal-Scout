@@ -14,6 +14,7 @@ export type ResearchEvidence = {
   attributionUrl?: string;
   licenseName?: string;
   licenseUrl?: string;
+  researcherAssessment?: "supports" | "contradicts" | "context";
 };
 
 export type ResearchBriefDraft = {
@@ -29,6 +30,8 @@ export type EvidenceCoverage = {
   itemCount: number;
   sourceLabels: string[];
   languages: string[];
+  researcherAssessments: { assessment: NonNullable<ResearchEvidence["researcherAssessment"]>; count: number }[];
+  unassessedCount: number;
   evidenceClasses: { evidenceClass: ResearchEvidenceClass; count: number }[];
   earliest: string | null;
   latest: string | null;
@@ -46,10 +49,22 @@ export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): Evidenc
     "news coverage",
     "editorial discussion",
   ];
+  const assessments: NonNullable<ResearchEvidence["researcherAssessment"]>[] = [
+    "supports",
+    "contradicts",
+    "context",
+  ];
   return {
     itemCount: evidence.length,
     sourceLabels: [...new Set(evidence.map(({ source }) => cleanText(source)).filter(Boolean))].sort(),
     languages: [...new Set(evidence.map(({ language }) => cleanText(language)).filter(Boolean))].sort(),
+    researcherAssessments: assessments
+      .map((assessment) => ({
+        assessment,
+        count: evidence.filter((item) => item.researcherAssessment === assessment).length,
+      }))
+      .filter(({ count }) => count > 0),
+    unassessedCount: evidence.filter((item) => !item.researcherAssessment).length,
     evidenceClasses: evidenceClasses
       .map((evidenceClass) => ({
         evidenceClass,
@@ -96,6 +111,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     `- Source labels: ${coverage.sourceLabels.map(escapeMarkdownLabel).join(", ") || "None"}`,
     `- Languages: ${coverage.languages.map(escapeMarkdownLabel).join(", ") || "None"}`,
     `- Evidence classes: ${coverage.evidenceClasses.map(({ evidenceClass, count }) => `${escapeMarkdownLabel(evidenceClass)} (${count})`).join(", ") || "None"}`,
+    `- Researcher-assigned assessment: ${coverage.researcherAssessments.map(({ assessment, count }) => `${assessment} (${count})`).join(", ") || "None"}; unassessed: ${coverage.unassessedCount}`,
     `- Publication-time span: ${coverage.earliest && coverage.latest ? `${coverage.earliest} to ${coverage.latest}` : "Unavailable"}`,
     "",
     "> Coverage is descriptive. A source label, language, item, or domain is not necessarily an independent publisher or population sample.",
@@ -113,7 +129,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
       item.licenseName && item.licenseUrl ? `[${escapeMarkdownLabel(item.licenseName)}](${safeMarkdownUrl(item.licenseUrl)})` : "",
     ].filter(Boolean).join("; ");
     lines.push(
-      `- [${escapeMarkdownLabel(item.title) || "Open source item"}](${safeMarkdownUrl(item.url)}) — ${cleanText(item.evidenceClass)}; ${escapeMarkdownLabel(item.source)}; ${escapeMarkdownLabel(item.language)}; ${escapeMarkdownLabel(item.timeLabel)}: ${escapeMarkdownLabel(item.timeValue)}${attribution ? `; ${attribution}` : ""}`,
+      `- [${escapeMarkdownLabel(item.title) || "Open source item"}](${safeMarkdownUrl(item.url)}) — ${cleanText(item.evidenceClass)}; ${escapeMarkdownLabel(item.source)}; ${escapeMarkdownLabel(item.language)}; ${escapeMarkdownLabel(item.timeLabel)}: ${escapeMarkdownLabel(item.timeValue)}${item.researcherAssessment ? `; researcher assessment: ${item.researcherAssessment}` : ""}${attribution ? `; ${attribution}` : ""}`,
     );
   }
 
