@@ -2,6 +2,7 @@ import 'server-only';
 import {serverSupabase} from './server-supabase';
 import {isPublicEvidenceEligible, matchesStackExchangeTitleQuery} from './source-policy';
 import {buildDiscussionObservations} from './discussion-observations';
+import {WIKIMEDIA_TALK_WIKIS} from './wikimedia-talk';
 
 export async function publishedDivergences(){
   const db=serverSupabase();
@@ -19,13 +20,25 @@ export async function recentSourceDocuments(){
       .select('id,market_code,source_type,source_name,source_domain,language_code,title_original,excerpt_original,source_url,published_at,discovered_at,raw_metadata_json')
       .eq('market_code',market)
       .neq('source_type','hacker-news')
+      .neq('source_type','wikimedia-talk')
       .neq('source_domain','news.google.com')
       .gte('published_at',since)
       .order('published_at',{ascending:false})
       .limit(60);
     return data??[];
   }));
-  return markets.flat().filter(row=>
+  const wikimedia = await Promise.all(WIKIMEDIA_TALK_WIKIS.map(async edition => {
+    const {data}=await db.from('source_documents')
+      .select('id,market_code,source_type,source_name,source_domain,language_code,title_original,excerpt_original,source_url,published_at,discovered_at,raw_metadata_json')
+      .eq('market_code','INTL')
+      .eq('source_type','wikimedia-talk')
+      .eq('source_name',`Wikimedia · ${edition.wiki} talk pages`)
+      .gte('published_at',since)
+      .order('published_at',{ascending:false})
+      .limit(5);
+    return data??[];
+  }));
+  return [...markets.flat(), ...wikimedia.flat()].filter(row=>
     isPublicEvidenceEligible(row.source_type,row.source_domain) &&
     (row.source_type !== 'stack-exchange' || matchesStackExchangeTitleQuery(
       row.title_original,

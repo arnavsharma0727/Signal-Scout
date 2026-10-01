@@ -10,6 +10,7 @@ import { StackExchangeConnector } from "../../../lib/connectors/stackexchange";
 import { EuropeanCommissionConnector } from "../../../lib/connectors/european-commission";
 import { TheConversationConnector } from "../../../lib/connectors/the-conversation";
 import { GlobalVoicesConnector } from "../../../lib/connectors/global-voices";
+import { WikimediaTalkConnector } from "../../../lib/connectors/wikimedia-talk";
 import { safeConnectorError } from "../../../lib/connectors/fetch";
 import { matchEntityText } from "../../../lib/entity-matching";
 import { recomputeEntityDailyMetrics } from "../../../lib/recompute-metrics";
@@ -121,6 +122,11 @@ async function runIngestion() {
         market.market_code === "US"
       )
         marketConnectors.push(new GlobalVoicesConnector());
+      if (
+        company.ticker === "MARKET-TALK" &&
+        market.market_code === "US"
+      )
+        marketConnectors.push(new WikimediaTalkConnector());
       const rssFeeds = getRssFeeds(market.market_code);
       // Publisher feeds are global research context, not company-specific
       // evidence. Run each configured market feed only for the macro profile.
@@ -181,6 +187,14 @@ async function runIngestion() {
               marketCode: "INTL",
               languageCode: "en",
             });
+          else if (connector instanceof WikimediaTalkConnector)
+            result = await connector.fetchDocuments({
+              query: "recent article talk-page activity",
+              start,
+              end,
+              marketCode: "INTL",
+              languageCode: "en",
+            });
           else if (connector instanceof StackExchangeConnector)
             result = await connector.fetchDocuments({
               query,
@@ -232,11 +246,18 @@ async function runIngestion() {
             await excludeTakedownBlockedDocuments(db, deduplicated);
           result.metadata = { ...result.metadata, excludedByTakedown };
           if (docs.length) {
-            const { data: stored, error } = await db
-              .from("source_documents")
-              .upsert(docs.map(toRow), { onConflict: "content_hash" })
-              .select("id,content_hash");
-            if (error) throw error;
+            const stored: Array<{ id: string; content_hash: string }> = [];
+            // Keep large, multi-edition feeds below PostgREST payload limits.
+            for (let offset = 0; offset < docs.length; offset += 500) {
+              const { data, error } = await db
+                .from("source_documents")
+                .upsert(docs.slice(offset, offset + 500).map(toRow), {
+                  onConflict: "content_hash",
+                })
+                .select("id,content_hash");
+              if (error) throw error;
+              stored.push(...(data ?? []));
+            }
             summary.documentsStored += docs.length;
             if (!macroContext && stored?.length) {
               const aliasByHash = new Map(

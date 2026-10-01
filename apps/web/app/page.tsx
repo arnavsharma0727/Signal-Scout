@@ -209,9 +209,9 @@ function EmptyPanel() {
 }
 function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: import("../lib/time-zones").DisplayTimeZone }) {
   const groups = [
-    { key: "discussion", label: "Online discussion", matches: (d: any) => ["stack-exchange", "bluesky", "hacker-news"].includes(d.source_type) },
+    { key: "discussion", label: "Online discussion", matches: (d: any) => ["stack-exchange", "wikimedia-talk", "bluesky", "hacker-news"].includes(d.source_type) },
     { key: "news", label: "Reporting and licensed analysis", matches: (d: any) => ["rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
-    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "bluesky", "hacker-news", "rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
+    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "wikimedia-talk", "bluesky", "hacker-news", "rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
   ];
   return (
     <section className="panel mt-5 overflow-hidden">
@@ -256,6 +256,8 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                               ? "Hacker News comment"
                             : d.source_type === "stack-exchange"
                                 ? "Stack Exchange · expert Q&A"
+                              : d.source_type === "wikimedia-talk"
+                                ? "Wikipedia talk-page revision · not market sentiment"
                               : d.source_type === "licensed-analysis"
                                 ? "Licensed expert analysis · not public discussion"
                               : d.source_type === "licensed-reporting"
@@ -287,6 +289,14 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                           {" · "}
                           <a className="underline" href={d.raw_metadata_json?.licenseUrl ?? "https://creativecommons.org/licenses/by-sa/4.0/"} target="_blank" rel="noreferrer">CC BY-SA 4.0</a>
                           {" · title shown unmodified"}
+                        </p>
+                      )}
+                      {d.source_type === "wikimedia-talk" && (
+                        <p className="mt-1 text-[10px] leading-4 text-muted">
+                          <span className="font-medium">{d.raw_metadata_json?.publisher ?? d.source_name}</span>
+                          {" · collaborative editorial discussion; comments and contributor identifiers not retained · "}
+                          <a className="underline" href={d.raw_metadata_json?.licenseUrl ?? "https://creativecommons.org/licenses/by-sa/4.0/"} target="_blank" rel="noreferrer">CC BY-SA 4.0</a>
+                          {" · page revision/history linked"}
                         </p>
                       )}
                       {d.source_type === "official-policy" && (

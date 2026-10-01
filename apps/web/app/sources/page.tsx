@@ -111,7 +111,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "Visitor-triggered search of namespace-1 talk pages in five language editions; archived pages are excluded and snippets are shown transiently only for pages edited in the last 90 days. Each result links to its page history so visitors can check contributors and the applicable license. The edit date can predate the matched snippet. Editorial collaboration is not general forum or investor attention; results are not stored or counted as leads.",
+        "Two modes: visitor-triggered, transient topic search across ten language editions; and one daily keyless scheduled sample of up to 500 newest non-bot, non-minor edits to article talk pages per edition. Scheduled records contain only the unchanged page title, timestamp, edition, and exact revision link; comment text, edit summaries, usernames, and IPs are never requested or stored. The linked revision/history supplies attribution under the applicable project license, usually CC BY-SA 4.0 (with GFDL also applying to many text contributions). Edition samples are capped, language is not audience geography, and collaborative editorial activity is not general investor sentiment or a lead by itself.",
     },
     {
       name: "European Commission Presscorner · official context",

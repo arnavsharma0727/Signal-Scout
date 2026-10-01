@@ -53,6 +53,8 @@ try {
   const page = await response.text();
   if (response.ok && page.includes('Recent source evidence') && !page.includes('Hacker News comment') && !page.includes('The remaining U.S.-leaning Hacker News sample is shown below')) pass('public briefing withholds uncleared source material','homepage evidence panel excludes the disabled source');
   else fail('public briefing withholds uncleared source material',`HTTP ${response.status}; disallowed source may be shown or current evidence panel is missing`);
+  if(response.ok&&page.includes('Wikipedia talk-page revision · not market sentiment')&&page.includes('contributor identifiers not retained')&&page.includes('CC BY-SA 4.0'))pass('Wikimedia discussion attribution and limitations are public','talk-page evidence labels editorial context and links its reuse terms');
+  else fail('Wikimedia discussion attribution and limitations are public','Wikimedia evidence label, privacy note, or license attribution is missing');
 } catch (error) { fail('public briefing withholds uncleared source material',error.message); }
 
 const url = process.env.SUPABASE_URL;
@@ -73,23 +75,27 @@ if (!url || !key) {
     const eligible=(recent.data??[]).filter(row=>row.source_type!=='hacker-news' && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
     const types=new Set(eligible.map(row=>row.source_type).filter(Boolean));
     const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
-    const discussions=eligible.filter(row=>['stack-exchange','lemmy','mastodon','bluesky','reddit'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)));
+    const discussions=eligible.filter(row=>['stack-exchange','wikimedia-talk','lemmy','mastodon','bluesky','reddit'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)));
     const communities=new Set(discussions.filter(row=>row.source_type==='stack-exchange').map(row=>row.raw_metadata_json?.site).filter(Boolean));
+    const wikiEditions=new Set(discussions.filter(row=>row.source_type==='wikimedia-talk').map(row=>row.raw_metadata_json?.editionLanguage).filter(Boolean));
+    const wikiRows=eligible.filter(row=>row.source_type==='wikimedia-talk');
     const news=eligible.filter(row=>['rss','gdelt','news','licensed-reporting'].includes(row.source_type));
     const licensedAnalysis=eligible.filter(row=>row.source_type==='licensed-analysis');
     const officialContext=eligible.filter(row=>row.source_type==='official-policy');
     if(eligible.length>=20)pass('>=20 eligible live source records / 24h',`${eligible.length} records; ${domains.size} host labels across ${types.size} stored source types (hostnames are not proof of independent owners)`);
     else fail('>=20 eligible live source records / 24h',`${eligible.length} eligible records; requires 20`);
-    if(discussions.length>0)pass('scheduled public discussion collection',`${discussions.length} records; ${communities.size} Stack Exchange community indexes (one platform operator)`);
+    if(discussions.length>0)pass('scheduled public discussion collection',`${discussions.length} eligible records; ${communities.size} Stack Exchange communities and ${wikiEditions.size} Wikipedia language editions (both single-operator platform samples)`);
     else fail('scheduled public discussion collection','No eligible scheduled discussion records in the last 24 hours');
+    if(wikiRows.length>0&&wikiRows.every(row=>row.raw_metadata_json?.talkContentRetained===false&&row.raw_metadata_json?.contributorNameOrIdRetained===false&&row.raw_metadata_json?.editSummaryRetained===false&&row.raw_metadata_json?.licenseUrl==='https://creativecommons.org/licenses/by-sa/4.0/'))pass('Wikimedia scheduled records minimize contributor data',`${wikiRows.length} metadata-only revisions from ${wikiEditions.size} editions; no talk text, edit summary, or contributor identifiers`);
+    else fail('Wikimedia scheduled records minimize contributor data',`${wikiRows.length} records; expected metadata-only rows with license attribution`);
     if(officialContext.length>0)pass('institutional context is retained separately',`${officialContext.length} official-policy records; not counted as news or public discussion`);
     else fail('institutional context is retained separately','No recent official-policy records');
     if(news.length>0)pass('independent/news-source records are available',`${news.length} recent independent reporting/RSS/GDELT/news records`);
     else fail('independent/news-source records are available','No recent independent reporting/RSS/GDELT/news records; official releases are not substituted for reporting');
     if(licensedAnalysis.length>0)pass('licensed expert analysis is available separately',`${licensedAnalysis.length} records; not counted as public discussion or independent reporting`);
     else fail('licensed expert analysis is available separately','No recent licensed-analysis records');
-    if(communities.size>=3)pass('discussion coverage spans multiple expert communities',`${communities.size} Stack Exchange community indexes; all remain one Q&A operator`);
-    else fail('discussion coverage spans multiple expert communities',`${communities.size} community indexes; requires 3`);
+    if(communities.size>=3||wikiEditions.size>=3)pass('discussion coverage spans multiple communities or editions',`${communities.size} Stack Exchange communities and ${wikiEditions.size} Wikipedia language editions; each platform is one operator, not independent sources`);
+    else fail('discussion coverage spans multiple communities or editions',`${communities.size} Stack Exchange communities and ${wikiEditions.size} Wikipedia language editions; requires at least 3 views`);
     const unresolved=await rest('source_documents?select=id&or=(source_domain.is.null,source_domain.eq.)');
     if(unresolved.count===0)pass('zero documents missing publisher domain','all records have a resolved domain');else fail('zero documents missing publisher domain',`${unresolved.count??'unknown'} unresolved records`);
     const recentRuns=await rest(`connector_runs?select=connector_name,status,started_at,items_stored&started_at=gte.${encodeURIComponent(since)}`);

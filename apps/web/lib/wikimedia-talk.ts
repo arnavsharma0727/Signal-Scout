@@ -4,6 +4,11 @@ export const WIKIMEDIA_TALK_WIKIS = [
   { language: "de", label: "Deutsch", wiki: "Deutschsprachige Wikipedia" },
   { language: "ko", label: "한국어", wiki: "한국어 위키백과" },
   { language: "ja", label: "日本語", wiki: "日本語版ウィキペディア" },
+  { language: "pt", label: "Português", wiki: "Wikipédia em português" },
+  { language: "fr", label: "Français", wiki: "Wikipédia en français" },
+  { language: "zh", label: "中文", wiki: "中文维基百科" },
+  { language: "ar", label: "العربية", wiki: "ويكيبيديا العربية" },
+  { language: "id", label: "Bahasa Indonesia", wiki: "Wikipedia bahasa Indonesia" },
 ] as const;
 
 export type WikimediaTalkPage = {
