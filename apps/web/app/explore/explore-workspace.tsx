@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { ResearchEvidence } from "../../lib/research-brief";
 import GdeltSearch from "./gdelt-search";
+import LemmySearch from "./lemmy-search";
 import MastodonSearch from "./mastodon-search";
 import TopicSearch from "./topic-search";
 import WikimediaTalkSearch from "./wikimedia-talk-search";
@@ -33,6 +34,7 @@ export default function ExploreWorkspace() {
       <TopicSearch onAdd={addEvidence} selectedIds={selectedIds} />
       <GdeltSearch onAdd={addEvidence} selectedIds={selectedIds} />
       <MastodonSearch onAdd={addEvidence} selectedIds={selectedIds} />
+      <LemmySearch onAdd={addEvidence} selectedIds={selectedIds} />
       <WikimediaTalkSearch onAdd={addEvidence} selectedIds={selectedIds} />
     </>
   );

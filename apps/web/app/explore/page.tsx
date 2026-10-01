@@ -14,7 +14,7 @@ export default function ExplorePage() {
         <div className="eyebrow mb-4 mt-12">Live source exploration</div>
         <h1 className="text-4xl font-semibold tracking-tight">Explore selected public discussions.</h1>
         <p className="mt-4 max-w-2xl leading-7 text-muted">
-          Search global news, expert Q&amp;A, a federated social feed, and encyclopedia article discussions. Each
+          Search global news, expert Q&amp;A, federated social and forum discussions, and encyclopedia article discussions. Each
           source has different coverage and rights; these samples are not representative public
           opinion or verified thesis leads. Inspect the linked original discussions.
         </p>
@@ -27,7 +27,9 @@ export default function ExplorePage() {
           explicitly marked CC BY-SA 4.0. Mastodon posts remain the authors’ content and are shown
           transiently with their original links; no blanket content license is implied. GDELT
           headlines are transient and linked to their publishers, with GDELT attribution. Wikimedia
-          search results are transient snippets with links to the talk-page history for attribution.{" "}
+          search results are transient snippets with links to the talk-page history for attribution.
+          Lemmy searches show titles, author attribution, dates, communities, and original links only;
+          post bodies are discarded. Instance views are incomplete and not country proxies.{" "}
           <Link className="underline text-ink" href="/sources">Source details</Link> ·{" "}
           <Link className="underline text-ink" href="/privacy">Privacy</Link>
         </aside>

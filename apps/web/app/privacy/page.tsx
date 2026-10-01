@@ -64,6 +64,17 @@ export default function Privacy() {
             snippets may contain older text from a recently edited page.
           </p>
           <p>
+            Explore can search lemmy.world for up to 20 newest matching posts.
+            The topic is sent directly from your browser to that instance;
+            Signal Scout does not receive the query or store the results.
+            Results are limited to post title,
+            original link, author attribution, community, date, and an optional
+            language identifier; post bodies are discarded from the app result
+            model. This is an incomplete federated index, not a global,
+            country, or population sample. The instance operator may process
+            request metadata under their own terms and privacy policies.
+          </p>
+          <p>
             Explore can also query GDELT’s public multilingual news index
             directly from the browser. GDELT receives the search phrase and
             optional publisher-country/language filters. The result headlines

@@ -98,6 +98,14 @@ export default async function Sources() {
         "Optional visitor-triggered trend discovery requests up to 10 public hashtag suggestions from each of four fixed Mastodon servers; each server’s internal trend ranking stays separate, with no merged score or storage. A selected tag can be searched across one or four server timelines (up to 20 public posts each); overlapping statuses are deduplicated and per-server counts are not summed. Servers are not country proxies. Content remains author-owned and no blanket license is implied. Posts are transient with author/origin links and content warnings; nothing is stored or analyzed. Not a global timeline or representative measure.",
     },
     {
+      name: "Lemmy · public federated forum view",
+      key: "lemmy-public",
+      enabled: true,
+      onDemand: true,
+      detail:
+        "Visitor-triggered, keyless search of up to 20 newest matching posts on lemmy.world. Queries are sent directly from the browser; only title, author attribution, date, community, optional language id, and original link enter transient page state. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Post bodies are discarded; nothing is persisted. This is one incomplete federated instance index, not a global timeline, country proxy, representative population sample, or measure of attention. User posts remain their authors’ content; no blanket license is implied. Review the instance terms before use.",
+    },
+    {
       name: "Wikimedia · article talk pages",
       key: "wikimedia-talk",
       enabled: true,
