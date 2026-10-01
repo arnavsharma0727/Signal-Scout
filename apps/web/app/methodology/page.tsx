@@ -56,10 +56,22 @@ export default function Methodology() {
           titles remain untranslated; matching across languages is not
           inferred.
         </p>
+        <p className="mt-3 text-sm leading-6 text-muted">
+          A sample-level review flag is an exploratory prompt only. It requires
+          at least {METHODOLOGY.discussionReview.minimumRecentQuestions}{" "}
+          exact-tag questions among {METHODOLOGY.discussionReview.minimumRecentSampleSize}{" "}
+          recent questions, at least {METHODOLOGY.discussionReview.minimumCommunities}{" "}
+          Stack Exchange communities, 14 prior observed days, and a share
+          increase above the prior median of at least max(
+          {METHODOLOGY.discussionReview.madMultiple}×MAD,{" "}
+          {Math.round(METHODOLOGY.discussionReview.minimumShareIncrease * 100)}
+          percentage points). It is not a significance test, cross-platform
+          confirmation, or thesis lead.
+        </p>
       </section>
       <section className="panel mt-5 p-7">
         <h2 className="text-xl font-bold">
-          Implemented parameters (not a live signal)
+          Method parameters and exploratory review gate
         </h2>
         <p className="mt-3 text-sm leading-6 text-muted">
           Shared code configuration version {METHODOLOGY.version}. Daily
@@ -70,6 +82,10 @@ export default function Methodology() {
           independent domains, and{" "}
           {METHODOLOGY.dailyMetrics.minimumPriorObservedDaysForBaseline} prior
           observed days for a baseline.
+        </p>
+        <p className="mt-2 text-sm leading-6 text-muted">
+          The discussion sample-level review gate uses the thresholds described
+          above. A flag does not create or promote an evidence-qualified lead.
         </p>
         <p className="mt-2 text-sm leading-6 text-muted">
           Dormant research-priority helper weights: {displayedWeights}. Its

@@ -1,11 +1,18 @@
 /** Parameters currently used by descriptive aggregation and the dormant divergence helpers. */
 export const METHODOLOGY = {
-  version: "v1.1",
+  version: "v1.2",
   dailyMetrics: {
     minimumUniqueHashesForDescriptiveOnly: 20,
     minimumIndependentDomainsForDescriptiveOnly: 5,
     minimumPriorObservedDaysForBaseline: 14,
     baselineWindowDays: 30,
+  },
+  discussionReview: {
+    minimumRecentQuestions: 3,
+    minimumRecentSampleSize: 20,
+    minimumCommunities: 2,
+    minimumShareIncrease: 0.15,
+    madMultiple: 3,
   },
   divergence: {
     sourceTierWeights: { 1: 1, 2: 0.75, 3: 0.5, 4: 0.25, 5: 0.1 },

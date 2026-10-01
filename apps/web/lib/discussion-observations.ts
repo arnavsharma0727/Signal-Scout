@@ -20,6 +20,8 @@ export type DiscussionTopicObservation = {
   baselineMedianDailyShare: number | null;
   baselineMadDailyShare: number | null;
   baselineStatus: "available" | "insufficient_observed_days";
+  sampleReviewCandidate: boolean;
+  sampleReviewReason: string | null;
 };
 
 type StoredDiscussion = {
@@ -36,6 +38,7 @@ type RecentDiscussion = StoredDiscussion & { tags: string[]; timestamp: number }
 const LICENSE = "CC BY-SA 4.0";
 const HOUR_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * HOUR_MS;
+const REVIEW_RULE = METHODOLOGY.discussionReview;
 
 /** Exact tags on licensed Q&A; relative shares are descriptive, never lead scores. */
 export function buildDiscussionObservations(
@@ -108,12 +111,21 @@ export function buildDiscussionObservations(
       const median = baselineReady ? medianOf(shareByDay) : null;
       const mad = median === null ? null : medianOf(shareByDay.map((share) => Math.abs(share - median)));
       const ordered = group.sort((a, b) => b.timestamp - a.timestamp);
+      const communities = [...new Set(group.map((row) => row.source_name).filter((name): name is string => Boolean(name)))].sort();
+      const minimumReviewShare = median === null || mad === null
+        ? null
+        : median + Math.max(REVIEW_RULE.madMultiple * mad, REVIEW_RULE.minimumShareIncrease);
+      const sampleReviewCandidate =
+        baselineReady && recentSampleSize >= REVIEW_RULE.minimumRecentSampleSize &&
+        group.length >= REVIEW_RULE.minimumRecentQuestions &&
+        communities.length >= REVIEW_RULE.minimumCommunities &&
+        minimumReviewShare !== null && group.length / recentSampleSize >= minimumReviewShare;
       return {
         tag,
         recentQuestionCount: group.length,
         recentSampleSize,
         recentShare: recentSampleSize ? group.length / recentSampleSize : 0,
-        communities: [...new Set(group.map((row) => row.source_name).filter((name): name is string => Boolean(name)))].sort(),
+        communities,
         latestAt: ordered[0]?.published_at ?? null,
         evidence: ordered.slice(0, 3).map((row) => ({
           id: row.id,
@@ -126,9 +138,14 @@ export function buildDiscussionObservations(
         baselineMedianDailyShare: median,
         baselineMadDailyShare: mad,
         baselineStatus: baselineReady ? "available" as const : "insufficient_observed_days" as const,
+        sampleReviewCandidate,
+        sampleReviewReason: sampleReviewCandidate && median !== null && mad !== null
+          ? `Exact-tag share is ${((group.length / recentSampleSize - median) * 100).toFixed(1)} percentage points above its prior median; it cleared the larger of ${REVIEW_RULE.madMultiple}×MAD or ${Math.round(REVIEW_RULE.minimumShareIncrease * 100)} percentage points, with ${group.length} recent questions across ${communities.length} Stack Exchange communities.`
+          : null,
       };
     })
-    .sort((a, b) => b.recentQuestionCount - a.recentQuestionCount || (b.latestAt ?? "").localeCompare(a.latestAt ?? ""))
+    .sort((a, b) => Number(b.sampleReviewCandidate) - Number(a.sampleReviewCandidate) ||
+      b.recentQuestionCount - a.recentQuestionCount || (b.latestAt ?? "").localeCompare(a.latestAt ?? ""))
     .slice(0, 12);
 }
 

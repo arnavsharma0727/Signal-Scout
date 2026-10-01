@@ -85,7 +85,51 @@ describe("buildDiscussionObservations", () => {
       baselineMedianDailyShare: 0.5,
       baselineMadDailyShare: 0,
       baselineStatus: "available",
+      sampleReviewCandidate: false,
     });
+  });
+
+  it("flags only a large exact-tag sample shift with enough questions, sites, and observed baseline", () => {
+    const history = [];
+    for (let day = 14; day <= 27; day++) {
+      const date = `2026-09-${day}T12:00:00Z`;
+      history.push(
+        row({ id: `tagged-${day}`, published_at: date, source_name: "Economics Stack Exchange" }),
+        ...Array.from({ length: 9 }, (_, index) => row({
+          id: `other-${day}-${index}`,
+          source_name: "Economics Stack Exchange",
+          published_at: date,
+          raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["economics"] },
+        })),
+      );
+    }
+    const recent = [
+      ...Array.from({ length: 6 }, (_, index) => row({
+        id: `recent-tag-${index}`,
+        source_name: index % 2 ? "Personal Finance & Money Stack Exchange" : "Economics Stack Exchange",
+        published_at: `2026-09-30T${String(index + 10).padStart(2, "0")}:00:00Z`,
+      })),
+      ...Array.from({ length: 14 }, (_, index) => row({
+        id: `recent-other-${index}`,
+        source_name: "Economics Stack Exchange",
+        published_at: `2026-09-${String(28 + Math.floor(index / 5)).padStart(2, "0")}T${String(16 + (index % 5)).padStart(2, "0")}:00:00Z`,
+        raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["economics"] },
+      })),
+    ];
+
+    const result = buildDiscussionObservations([...history, ...recent], AS_OF);
+    const inflation = result
+      .find((item) => item.tag === "inflation");
+    expect(inflation).toMatchObject({
+      recentQuestionCount: 6,
+      recentSampleSize: 20,
+      priorObservedDays: 14,
+      baselineMedianDailyShare: 0.1,
+      baselineMadDailyShare: 0,
+      sampleReviewCandidate: true,
+    });
+    expect(inflation?.sampleReviewReason).toContain("6 recent questions across 2 Stack Exchange communities");
+    expect(result[0]?.tag).toBe("inflation");
   });
 
   it("does not fill missing publication dates with zero in the baseline", () => {

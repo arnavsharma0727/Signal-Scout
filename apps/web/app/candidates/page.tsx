@@ -102,6 +102,11 @@ export default async function Candidates() {
           platform—not a population trend or independent-source count.
           Tags remain in their original form; no translation or semantic merge
           is inferred. Open the source questions before drawing conclusions.
+          A sample-level review flag requires at least 3 tagged questions among
+          20 recent questions, 2 Stack Exchange communities, 14 prior observed
+          days, and a share increase of at least max(3×MAD, 15 percentage
+          points). It is an exploratory triage rule—not significance, a public
+          attention measure, or an evidence-qualified thesis lead.
         </p>
         {observationsUnavailable ? (
           <p className="mt-4 text-sm text-muted">
@@ -128,6 +133,12 @@ export default async function Candidates() {
                     ? `Prior daily median ${formatShare(observation.baselineMedianDailyShare)} · MAD ${formatShare(observation.baselineMadDailyShare)} · ${observation.priorObservedDays} observed publication days`
                     : `Baseline unavailable · ${observation.priorObservedDays}/14 prior observed publication days`}
                 </p>
+                {observation.sampleReviewCandidate && observation.sampleReviewReason && (
+                  <p className="mt-3 border-l-2 border-ink pl-3 text-sm leading-6">
+                    <strong>Sample-level review flag—not a thesis lead.</strong>{" "}
+                    {observation.sampleReviewReason} This is one expert-Q&amp;A platform; corroborate the topic with independent reporting and other conversation before forming a thesis.
+                  </p>
+                )}
                 <ul className="mt-2 space-y-2">
                   {observation.evidence.map((item) => (
                     <li key={item.id} className="text-sm leading-6">
