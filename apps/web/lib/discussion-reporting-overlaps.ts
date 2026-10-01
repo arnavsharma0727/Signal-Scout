@@ -14,28 +14,28 @@ export type OverlapInput = {
 
 export type DiscussionReportingOverlap = {
   phrase: string;
-  matchBasis: "community tag" | "scheduled search phrase";
+  matchBasis: "community tag" | "scheduled search phrase" | "literal topic-title phrase";
   language: string;
-  questionCount: number;
-  questionCommunities: string[];
+  discussionItemCount: number;
+  discussionSources: string[];
   reportingSources: string[];
   reportingPublishers: string[];
-  latestQuestionAt: string | null;
+  latestDiscussionAt: string | null;
   latestReportingAt: string | null;
-  questions: Array<{ id: string; title: string; url: string; source: string; publishedAt: string }>;
+  discussions: Array<{ id: string; title: string; url: string; source: string; publishedAt: string }>;
   reporting: Array<{ id: string; title: string; url: string; source: string; publishedAt: string }>;
 };
 
 const QUESTION_LICENSE = "CC BY-SA 4.0";
 const WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Literal same-language community-tag or collector-query matches; never infers sentiment or causality. */
+/** Literal same-language discussion-tag or collector-query matches; never infers sentiment or causality. */
 export function buildDiscussionReportingOverlaps(
   rows: OverlapInput[],
   asOf = new Date(),
 ): DiscussionReportingOverlap[] {
   const cutoff = asOf.getTime() - WINDOW_MS;
-  const questions = new Map<string, { row: OverlapInput; phrases: Array<{ phrase: string; basis: DiscussionReportingOverlap["matchBasis"] }>; time: number; language: string }>();
+  const discussionItems = new Map<string, { row: OverlapInput; phrases: Array<{ phrase: string; basis: DiscussionReportingOverlap["matchBasis"] }>; time: number; language: string }>();
   const reports: Array<{ row: OverlapInput; time: number; language: string }> = [];
 
   for (const row of rows) {
@@ -57,7 +57,19 @@ export function buildDiscussionReportingOverlaps(
       if (query.length >= 2 && query.length <= 80 &&
         containsPhrase(normalizeText(row.title_original), normalizeText(query)))
         phrases.push({ phrase: query.toLocaleLowerCase(), basis: "scheduled search phrase" });
-      if (phrases.length) questions.set(row.id, { row, phrases, time, language });
+      if (phrases.length) discussionItems.set(row.id, { row, phrases, time, language });
+    } else if (row.source_type === "licensed-forum") {
+      const metadata = asRecord(row.raw_metadata_json);
+      if (row.source_domain !== "discussion.fedoraproject.org" ||
+        metadata.publisher !== "Fedora Discussion" ||
+        metadata.licenseUrl !== "https://creativecommons.org/licenses/by-sa/4.0/" ||
+        metadata.titleUnmodified !== true || metadata.topicBodyAndRepliesDiscarded !== true ||
+        metadata.profileDetailsDiscarded !== true) continue;
+      const phrases = literalTitlePhrases(row.title_original).map((phrase) => ({
+        phrase,
+        basis: "literal topic-title phrase" as const,
+      }));
+      if (phrases.length) discussionItems.set(row.id, { row, phrases, time, language });
     } else if (
       row.source_type === "licensed-analysis" || row.source_type === "licensed-reporting"
     ) {
@@ -69,7 +81,7 @@ export function buildDiscussionReportingOverlaps(
     phrase: string;
     matchBasis: DiscussionReportingOverlap["matchBasis"];
     language: string;
-    questions: Map<string, { row: OverlapInput; time: number }>;
+    discussions: Map<string, { row: OverlapInput; time: number }>;
     reports: Map<string, { row: OverlapInput; time: number }>;
   }>();
   const reportsByLanguage = new Map<string, typeof reports>();
@@ -79,26 +91,26 @@ export function buildDiscussionReportingOverlaps(
     reportsByLanguage.set(report.language, languageReports);
   }
   const matchingReports = new Map<string, typeof reports>();
-  for (const question of questions.values()) {
-    for (const candidate of question.phrases) {
+  for (const discussion of discussionItems.values()) {
+    for (const candidate of discussion.phrases) {
       // Very short Latin acronyms (AI, GPU, LLM, etc.) collide across unrelated
       // contexts even on exact token boundaries. Keep these searchable in Explore,
       // but do not present them as discussion/reporting cues.
       if (isBroadShortLatinAcronym(candidate.phrase)) continue;
       const phrase = normalizeText(candidate.phrase.replace(/[_-]+/g, " "));
       if (candidate.basis === "community tag" && phrase.length < 3) continue;
-      const key = `${question.language}\u0000${candidate.basis}\u0000${phrase}`;
+      const key = `${discussion.language}\u0000${candidate.basis}\u0000${phrase}`;
       const group = groups.get(key) ?? {
         phrase: candidate.phrase,
         matchBasis: candidate.basis,
-        language: question.language,
-        questions: new Map(),
+        language: discussion.language,
+        discussions: new Map(),
         reports: new Map(),
       };
-      group.questions.set(question.row.id, { row: question.row, time: question.time });
+      group.discussions.set(discussion.row.id, { row: discussion.row, time: discussion.time });
       let matches = matchingReports.get(key);
       if (!matches) {
-        matches = (reportsByLanguage.get(question.language) ?? [])
+        matches = (reportsByLanguage.get(discussion.language) ?? [])
           .filter((report) => containsPhrase(normalizeText(report.row.title_original!), phrase));
         matchingReports.set(key, matches);
       }
@@ -110,29 +122,54 @@ export function buildDiscussionReportingOverlaps(
 
   return [...groups.values()]
     .map((group) => {
-      const questionRows = [...group.questions.values()].sort((a, b) => b.time - a.time);
+      const discussionRows = [...group.discussions.values()].sort((a, b) => b.time - a.time);
       const reportRows = [...group.reports.values()].sort((a, b) => b.time - a.time);
       return {
         phrase: group.phrase,
         matchBasis: group.matchBasis,
         language: group.language,
-        questionCount: questionRows.length,
-        questionCommunities: [...new Set(questionRows.map(({ row }) => row.source_name).filter(isString))].sort(),
+        discussionItemCount: discussionRows.length,
+        discussionSources: [...new Set(discussionRows.map(({ row }) => row.source_name).filter(isString))].sort(),
         reportingSources: [...new Set(reportRows.map(({ row }) => row.source_name).filter(isString))].sort(),
         reportingPublishers: [...new Set(reportRows.map(({ row }) => publisherLabel(row)).filter(isString))].sort(),
-        latestQuestionAt: questionRows[0] ? new Date(questionRows[0].time).toISOString() : null,
+        latestDiscussionAt: discussionRows[0] ? new Date(discussionRows[0].time).toISOString() : null,
         latestReportingAt: reportRows[0] ? new Date(reportRows[0].time).toISOString() : null,
-        questions: questionRows.slice(0, 3).flatMap(({ row }) => evidence(row)),
+        discussions: discussionRows.slice(0, 3).flatMap(({ row }) => evidence(row)),
         reporting: reportRows.slice(0, 3).flatMap(({ row }) => evidence(row)),
       };
     })
-    .sort((a, b) => b.questionCount - a.questionCount || (b.latestReportingAt ?? "").localeCompare(a.latestReportingAt ?? ""))
+    .sort((a, b) => b.discussionItemCount - a.discussionItemCount || (b.latestReportingAt ?? "").localeCompare(a.latestReportingAt ?? ""))
     .slice(0, 20);
 }
 
 function isBroadShortLatinAcronym(value: string) {
   const compact = normalizeText(value).replace(/\s+/g, "");
   return /^[a-z]{2,3}$/.test(compact);
+}
+
+const TITLE_PHRASE_STOPWORDS = new Set([
+  "about", "after", "also", "and", "are", "but", "can", "does", "for", "from",
+  "have", "how", "into", "its", "just", "more", "not", "our", "out", "should",
+  "than", "that", "the", "their", "them", "there", "these", "they", "this", "those",
+  "through", "under", "using", "was", "were", "what", "when", "where", "which", "with",
+  "would", "your",
+]);
+
+/** Candidate terms are excerpts of the original title, not tags or inferred topics. */
+function literalTitlePhrases(title: string) {
+  const tokens = normalizeText(title).split(" ").filter(Boolean);
+  const phrases = new Set<string>();
+  for (let length = 2; length <= Math.min(4, tokens.length); length++) {
+    for (let start = 0; start + length <= tokens.length; start++) {
+      const terms = tokens.slice(start, start + length);
+      const phrase = terms.join(" ");
+      if (phrase.length < 10 || phrase.length > 48 ||
+          terms.some((term) => TITLE_PHRASE_STOPWORDS.has(term)) ||
+          isBroadShortLatinAcronym(phrase)) continue;
+      phrases.add(phrase);
+    }
+  }
+  return [...phrases];
 }
 
 function normalizeLanguage(value: string | null) {

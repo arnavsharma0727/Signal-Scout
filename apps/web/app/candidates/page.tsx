@@ -180,7 +180,7 @@ export default async function Candidates() {
           Discussion–reporting phrase overlaps
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-          A phrase can be either a community-applied Stack Exchange tag or the scheduled connector’s search term. It must appear as a whole phrase in a same-language licensed headline from the last seven days; scheduled search terms must also appear in the question title. Search-term matches reflect collector design, not organic topic frequency. Acronym-only Latin queries of two or three letters (such as AI, GPU, or LLM) are suppressed here because they collide across unrelated contexts; use a fully spelled phrase to investigate cross-source coverage. This query-selected sample is not evidence that discussion caused coverage, that sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open every original item.
+          A phrase can be a community-applied Stack Exchange tag, a scheduled Stack Exchange search term, or an exact two-to-four-word sequence from a Fedora topic title. It must appear as a whole phrase in a same-language licensed headline from the last seven days; scheduled search terms must also appear in the question title. Generated Fedora phrases are literal title excerpts, not platform tags or classified topics. Search-term matches reflect collector design, not organic topic frequency. Acronym-only Latin phrases of two or three letters (such as AI, GPU, or LLM) are suppressed here because they collide across unrelated contexts. Fedora is a selected Linux community, not a financial forum or population sample. This query-selected sample is not evidence that discussion caused coverage, that sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open every original item.
         </p>
         {overlapsUnavailable ? (
           <p className="mt-4 text-sm text-muted">Cross-source records are unavailable. This is not evidence that no related discussion or reporting exists.</p>
@@ -190,16 +190,16 @@ export default async function Candidates() {
               <article className="border-t border-line pt-4" key={`${overlap.language}:${overlap.matchBasis}:${overlap.phrase}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold">{overlap.phrase}</h3>
-                  <span className="mono text-xs text-muted">{overlap.language} · {overlap.questionCount} matching questions · {overlap.reporting.length} linked headlines shown</span>
+                  <span className="mono text-xs text-muted">{overlap.language} · {overlap.discussionItemCount} matching discussion items · {overlap.reporting.length} linked headlines shown</span>
                 </div>
-                <p className="mt-1 text-xs text-muted">Match basis: {overlap.matchBasis}{overlap.matchBasis === "scheduled search phrase" ? " · collector-selected, not an organic topic label" : " · source-applied topic label"}</p>
-                <p className="mt-1 text-xs text-muted">Question communities: {overlap.questionCommunities.join(" · ") || "not reported"}</p>
+                <p className="mt-1 text-xs text-muted">Match basis: {overlap.matchBasis}{overlap.matchBasis === "scheduled search phrase" ? " · collector-selected, not an organic topic label" : overlap.matchBasis === "community tag" ? " · source-applied topic label" : " · exact phrase excerpted from the original forum title, not a platform tag"}</p>
+                <p className="mt-1 text-xs text-muted">Discussion sources: {overlap.discussionSources.join(" · ") || "not reported"}</p>
                 <p className="mt-1 text-xs text-muted">Publisher labels in feed metadata: {overlap.reportingPublishers.join(" · ") || "not reported"} · Feed editions represented: {overlap.reportingSources.join(" · ") || "not reported"}. Publisher labels are not proof of corporate independence.</p>
                 <div className="mt-3 grid gap-4 md:grid-cols-2">
                   <div>
-                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Discussion · question titles</h4>
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Discussion · original titles</h4>
                     <ul className="mt-2 space-y-2">
-                      {overlap.questions.map((item) => <li key={item.id} className="text-sm leading-5"><a className="underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><div className="text-xs text-muted">{item.source} · {formatTimestamp(item.publishedAt, timeZone)}</div></li>)}
+                      {overlap.discussions.map((item) => <li key={item.id} className="text-sm leading-5"><a className="underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><div className="text-xs text-muted">{item.source} · {formatTimestamp(item.publishedAt, timeZone)}</div></li>)}
                     </ul>
                   </div>
                   <div>

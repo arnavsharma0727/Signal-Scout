@@ -29,12 +29,12 @@ describe("discussion-reporting literal overlaps", () => {
     expect(tagOverlap).toMatchObject({
       phrase: "central-bank",
       language: "en",
-      questionCount: 1,
-      questionCommunities: ["Economics Stack Exchange"],
+      discussionItemCount: 1,
+      discussionSources: ["Economics Stack Exchange"],
       reportingSources: ["Global Voices"],
     });
-    expect(queryOverlap).toMatchObject({ phrase: "central bank", questionCount: 1 });
-    expect(tagOverlap!.questions[0].url).toContain("stackexchange.com/questions/1");
+    expect(queryOverlap).toMatchObject({ phrase: "central bank", discussionItemCount: 1 });
+    expect(tagOverlap!.discussions[0].url).toContain("stackexchange.com/questions/1");
     expect(tagOverlap!.reporting[0].url).toBe("https://globalvoices.org/story");
   });
 
@@ -55,6 +55,55 @@ describe("discussion-reporting literal overlaps", () => {
     expect(buildDiscussionReportingOverlaps([question, report], asOf)).toHaveLength(1);
   });
 
+  it("matches attributed Fedora title phrases to exact same-language reporting phrases", () => {
+    const forum = row({
+      id: "fedora-1", source_type: "licensed-forum",
+      source_name: "Fedora Discussion · community forum",
+      source_domain: "discussion.fedoraproject.org", language_code: "en",
+      title_original: "Nuclear fusion debate",
+      source_url: "https://discussion.fedoraproject.org/t/workstation/123",
+      raw_metadata_json: {
+        publisher: "Fedora Discussion", author: "member",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+        titleUnmodified: true, topicBodyAndRepliesDiscarded: true,
+        profileDetailsDiscarded: true,
+      },
+    });
+    const report = row({
+      id: "gv-hardware", source_type: "licensed-reporting", source_name: "Global Voices",
+      source_domain: "globalvoices.org", title_original: "Nuclear fusion attracts new investment",
+      source_url: "https://globalvoices.org/hardware", raw_metadata_json: {},
+    });
+    const overlaps = buildDiscussionReportingOverlaps([forum, report], asOf);
+    const exactPhrase = overlaps.find(({ phrase }) => phrase === "nuclear fusion");
+    expect(exactPhrase).toMatchObject({
+      phrase: "nuclear fusion", matchBasis: "literal topic-title phrase", discussionItemCount: 1,
+      discussionSources: ["Fedora Discussion · community forum"],
+      discussions: [{ url: forum.source_url }], reporting: [{ url: report.source_url }],
+    });
+  });
+
+  it("does not treat an unreviewed forum or wrong license as discussion evidence", () => {
+    const report = row({
+      id: "report", source_type: "licensed-reporting", source_name: "Global Voices",
+      source_domain: "globalvoices.org", title_original: "Nuclear fusion research", raw_metadata_json: {},
+    });
+    const unreviewed = row({
+      id: "unreviewed", source_type: "licensed-forum", source_domain: "unknown.example",
+      title_original: "Nuclear fusion debate",
+      raw_metadata_json: { publisher: "Unknown" },
+    });
+    const wrongLicense = row({
+      id: "wrong-license", source_type: "licensed-forum", source_domain: "discussion.fedoraproject.org",
+      raw_metadata_json: {
+        publisher: "Fedora Discussion", licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
+        titleUnmodified: true, topicBodyAndRepliesDiscarded: true,
+        profileDetailsDiscarded: true,
+      },
+    });
+    expect(buildDiscussionReportingOverlaps([unreviewed, wrongLicense, report], asOf)).toEqual([]);
+  });
+
   it("labels scheduled search phrases separately from community-applied tags", () => {
     const question = row({
       title_original: "Interest rate outlook",
@@ -72,7 +121,7 @@ describe("discussion-reporting literal overlaps", () => {
     expect(buildDiscussionReportingOverlaps([question, report], asOf)).toContainEqual(expect.objectContaining({
       phrase: "interest rate",
       matchBasis: "scheduled search phrase",
-      questionCount: 1,
+      discussionItemCount: 1,
     }));
   });
 
@@ -128,8 +177,8 @@ describe("discussion-reporting literal overlaps", () => {
     const q2 = row({ id: "q2", source_name: "Money Stack Exchange", source_url: "https://money.stackexchange.com/questions/2" });
     const report = row({ id: "r1", source_type: "licensed-reporting", source_name: "Global Voices", source_domain: "globalvoices.org", title_original: "Central bank weighs new measures", source_url: "https://globalvoices.org/story", raw_metadata_json: {} });
     const overlap = buildDiscussionReportingOverlaps([q1, q1, q2, report, report], asOf)[0];
-    expect(overlap.questionCount).toBe(2);
-    expect(overlap.questions).toHaveLength(2);
+    expect(overlap.discussionItemCount).toBe(2);
+    expect(overlap.discussions).toHaveLength(2);
     expect(overlap.reporting).toHaveLength(1);
     expect(overlap).not.toHaveProperty("sentiment");
     expect(overlap).not.toHaveProperty("thesis");

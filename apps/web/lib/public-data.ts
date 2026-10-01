@@ -91,14 +91,14 @@ export async function recentDiscussionObservations(){
   ));
 }
 
-/** Temporary, literal same-language overlaps between licensed Q&A and licensed reporting. */
+/** Temporary, literal same-language overlaps between reviewed forum/Q&A discussion and licensed reporting. */
 export async function recentDiscussionReportingOverlaps(){
   const db=serverSupabase();
   if(!db)return null;
   const since=new Date(Date.now()-7*24*60*60*1000).toISOString();
   const fields='id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json';
   const [questions,reports]=await Promise.all([
-    db.from('source_documents').select(fields).eq('source_type','stack-exchange')
+    db.from('source_documents').select(fields).in('source_type',['stack-exchange','licensed-forum'])
       .gte('published_at',since).order('published_at',{ascending:false}).limit(2000),
     db.from('source_documents').select(fields).in('source_type',['licensed-analysis','licensed-reporting'])
       .gte('published_at',since).order('published_at',{ascending:false}).limit(2000),

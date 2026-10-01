@@ -122,7 +122,7 @@ export default async function Sources() {
       enabled: true,
       referenceUrl: "https://discussion.fedoraproject.org/tos",
       detail:
-        "One daily keyless request to the public Discourse latest-topics endpoint, capped at 30 topics. Fedora Discussion's terms require acceptable contributor licenses and specify CC BY-SA 4.0 as the default. Only the unmodified title, original-poster username for attribution, topic link, latest-activity timestamp, and reply-count snapshot are retained; profile details, post bodies, and replies are discarded. This is a selected Fedora/Linux community sample, not financial discussion, broad public opinion, or a proxy for users' geography. The daily endpoint is incomplete and can resurface old topics; activity timestamps do not mean a new topic.",
+        "One daily keyless request to the public Discourse latest-topics endpoint, capped at 30 topics. Fedora Discussion's terms require acceptable contributor licenses and specify CC BY-SA 4.0 as the default. Only the unmodified title, original-poster username for attribution, topic link, latest-activity timestamp, and reply-count snapshot are retained; profile details, post bodies, replies, and topic tags are discarded. This is a selected Fedora/Linux community sample, not financial discussion, broad public opinion, or a proxy for users' geography. The daily endpoint is incomplete and can resurface old topics; activity timestamps do not mean a new topic.",
     },
     {
       name: "Mastodon · public hashtag timelines (4 server views)",
