@@ -14,6 +14,7 @@ export default function LemmySearch({
   selectedIds: ReadonlySet<string>;
 }) {
   const [query, setQuery] = useState("");
+  const [instanceQueries, setInstanceQueries] = useState<Partial<Record<LemmyInstance, string>>>({});
   const [views, setViews] = useState<LemmyView[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -33,7 +34,12 @@ export default function LemmySearch({
     try {
       if (!selectedHosts.length) throw new Error("Choose at least one Lemmy instance to search.");
       if (!termsConfirmed) throw new Error("Review and affirm the selected instances’ legal/privacy information before searching.");
-      const next = await compareLemmyInstances(query, fetch, Date.now(), selectedHosts);
+      const next = await compareLemmyInstances(
+        selectedHosts.map((host) => ({ host, query: instanceQueries[host] ?? query })),
+        fetch,
+        Date.now(),
+        selectedHosts,
+      );
       setViews(next);
       if (next.every(({ error: issue }) => issue)) setError("All selected Lemmy instances are unavailable.");
     } catch (cause) {
@@ -62,6 +68,9 @@ export default function LemmySearch({
         Review the <a className="underline text-ink" href="https://join-lemmy.org/docs/contributors/04-api.html" target="_blank" rel="noreferrer">Lemmy API documentation</a>,
         and each selected instance’s linked legal and privacy information before use.
       </p>
+      <p className="mt-2 text-xs leading-5 text-muted">
+        For cross-language comparison, enter your own equivalent phrase for each server. Signal Scout does not translate or merge results; each server receives only its own phrase.
+      </p>
       <fieldset className="mt-4 grid gap-2 border-y border-line py-4">
         <legend className="text-sm font-medium">Select server views</legend>
         {LEMMY_INSTANCES.map((instance) => (
@@ -83,18 +92,21 @@ export default function LemmySearch({
           </label>
         ))}
       </fieldset>
-      <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
-        <label className="sr-only" htmlFor="lemmy-query">Search phrase</label>
-        <input
-          id="lemmy-query"
-          className="min-w-0 flex-1 rounded border border-line bg-white px-3 py-2.5 outline-none focus:border-ink"
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          minLength={2}
-          maxLength={100}
-          placeholder="e.g. inflation, central bank, supply chain"
-          required
-        />
+      <form onSubmit={submit} className="mt-5 grid gap-3">
+        {selectedHosts.map((host) => (
+          <label key={host} className="block text-sm font-medium">
+            Search phrase for {host}
+            <input
+              className="mt-1 block w-full rounded border border-line bg-white px-3 py-2.5 font-normal outline-none focus:border-ink"
+              value={instanceQueries[host] ?? query}
+              onChange={(event) => setInstanceQueries((current) => ({ ...current, [host]: event.target.value }))}
+              minLength={2}
+              maxLength={100}
+              placeholder="e.g. inflation, central bank, supply chain"
+              required
+            />
+          </label>
+        ))}
         <label className="flex items-center gap-2 text-xs leading-5 text-muted sm:max-w-xs">
           <input
             type="checkbox"
@@ -104,7 +116,7 @@ export default function LemmySearch({
           />
           I have reviewed the legal/privacy links for every selected instance and confirm I meet its age requirements before searching.
         </label>
-        <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
+        <button className="btn btn-primary justify-center sm:justify-self-start" type="submit" disabled={loading}>
           {loading ? "Searching instances…" : "Search Lemmy"}
         </button>
       </form>
@@ -124,6 +136,7 @@ export default function LemmySearch({
                   {view.error ? `Unavailable: ${view.error}` : `${view.returnedCount} returned · one server view`}
                 </span>
               </div>
+              <p className="mt-1 text-xs text-muted">Search phrase: “{view.query}”</p>
               {!view.error && view.posts.length > 0 && (
                 <ul className="mt-3 divide-y divide-line border-y border-line">
                   {view.posts.map((post) => {
@@ -156,6 +169,7 @@ export default function LemmySearch({
                               timeValue: post.publishedAt,
                               attribution: `Lemmy author: ${post.author}`,
                               attributionUrl: post.authorUrl ?? post.url,
+                              context: `Search phrase: ${view.query}`,
                             })}
                           >
                             Add citation to brief

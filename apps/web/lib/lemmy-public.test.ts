@@ -81,6 +81,41 @@ describe("Lemmy public discussion search", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("sends a distinct visitor-supplied phrase to each instance and preserves it per view", async () => {
+    const requests: URL[] = [];
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      requests.push(new URL(String(input)));
+      return Promise.resolve(new Response(JSON.stringify({ posts: [] }), { status: 200 }));
+    });
+    const views = await compareLemmyInstances([
+      { host: "lemmy.world", query: "central bank" },
+      { host: "discuss.tchncs.de", query: "banque centrale" },
+    ], fetchMock, now, ["lemmy.world", "discuss.tchncs.de"]);
+    expect(requests.map((url) => [url.hostname, url.searchParams.get("q")])).toEqual([
+      ["lemmy.world", "central bank"],
+      ["discuss.tchncs.de", "banque centrale"],
+    ]);
+    expect(views.map(({ host, query }) => [host, query])).toEqual([
+      ["lemmy.world", "central bank"],
+      ["discuss.tchncs.de", "banque centrale"],
+    ]);
+  });
+
+  it("rejects missing, duplicate, or malformed per-instance phrases before network calls", async () => {
+    const fetchMock = vi.fn();
+    await expect(compareLemmyInstances([
+      { host: "lemmy.world", query: "central bank" },
+    ], fetchMock, now, ["lemmy.world", "discuss.tchncs.de"])).rejects.toThrow("exactly one");
+    await expect(compareLemmyInstances([
+      { host: "lemmy.world", query: "central bank" },
+      { host: "lemmy.world", query: "interest rates" },
+    ], fetchMock, now, ["lemmy.world"])).rejects.toThrow("only once");
+    await expect(compareLemmyInstances([
+      { host: "lemmy.world", query: "x" },
+    ], fetchMock, now, ["lemmy.world"])).rejects.toThrow("2–100 characters");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("validates query length", async () => {
     await expect(searchLemmyPosts("a", "lemmy.world")).rejects.toThrow("2–100 characters");
   });

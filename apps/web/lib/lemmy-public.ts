@@ -23,6 +23,7 @@ export type LemmyPost = {
 
 export type LemmyView = {
   host: LemmyInstance;
+  query: string;
   returnedCount: number;
   posts: LemmyPost[];
   error: string | null;
@@ -113,7 +114,7 @@ export async function searchLemmyPosts(
 
 /** Keep each instance's incomplete federated index visible as its own view. */
 export async function compareLemmyInstances(
-  query: string,
+  queryOrQueries: string | readonly { host: LemmyInstance; query: string }[],
   fetcher: typeof fetch = fetch,
   now = Date.now(),
   hosts: readonly LemmyInstance[] = LEMMY_INSTANCES.map(({ host }) => host),
@@ -122,13 +123,31 @@ export async function compareLemmyInstances(
   if (!uniqueHosts.length || uniqueHosts.some((host) => !LEMMY_INSTANCES.some((item) => item.host === host))) {
     throw new Error("Choose one or more supported public Lemmy instances.");
   }
+  const queryByHost = new Map<LemmyInstance, string>();
+  if (typeof queryOrQueries === "string") {
+    for (const host of uniqueHosts) queryByHost.set(host, queryOrQueries);
+  } else {
+    for (const item of queryOrQueries) {
+      if (!LEMMY_INSTANCES.some((instance) => instance.host === item.host))
+        throw new Error("Choose a supported public Lemmy instance.");
+      if (queryByHost.has(item.host)) throw new Error("Each Lemmy instance can be searched only once.");
+      const term = item.query.trim();
+      if (term.length < 2 || term.length > 100)
+        throw new Error("Each search phrase must have 2–100 characters.");
+      queryByHost.set(item.host, term);
+    }
+    if (uniqueHosts.some((host) => !queryByHost.has(host)) || queryByHost.size !== uniqueHosts.length)
+      throw new Error("Provide exactly one search phrase for every selected Lemmy instance.");
+  }
   return Promise.all(uniqueHosts.map(async (host) => {
+    const query = queryByHost.get(host)!;
     try {
       const posts = await searchLemmyPosts(query, host, fetcher, now);
-      return { host, returnedCount: posts.length, posts, error: null };
+      return { host, query, returnedCount: posts.length, posts, error: null };
     } catch (cause) {
       return {
         host,
+        query,
         returnedCount: 0,
         posts: [],
         error: cause instanceof Error ? cause.message : "This instance is temporarily unavailable.",
