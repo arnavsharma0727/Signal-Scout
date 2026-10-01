@@ -205,6 +205,9 @@ export default async function Candidates() {
                     </ul>
                   </div>
                 </div>
+                <Link className="btn mt-4" href={`/explore#topic=${encodeURIComponent(overlap.phrase)}`}>
+                  Explore this phrase across live sources
+                </Link>
               </article>
             ))}
           </div>
