@@ -3,6 +3,7 @@ import {serverSupabase} from './server-supabase';
 import {isPublicEvidenceEligible, matchesStackExchangeTitleQuery} from './source-policy';
 import {buildDiscussionObservations} from './discussion-observations';
 import {WIKIMEDIA_TALK_WIKIS} from './wikimedia-talk';
+import {buildDiscussionReportingOverlaps} from './discussion-reporting-overlaps';
 
 export async function publishedDivergences(){
   const db=serverSupabase();
@@ -68,4 +69,20 @@ export async function recentDiscussionObservations(){
   return buildDiscussionObservations(rows.filter(row =>
     matchesStackExchangeTitleQuery(row.title_original, row.raw_metadata_json?.query)
   ));
+}
+
+/** Temporary, literal same-language overlaps between licensed Q&A and licensed reporting. */
+export async function recentDiscussionReportingOverlaps(){
+  const db=serverSupabase();
+  if(!db)return null;
+  const since=new Date(Date.now()-7*24*60*60*1000).toISOString();
+  const fields='id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json';
+  const [questions,reports]=await Promise.all([
+    db.from('source_documents').select(fields).eq('source_type','stack-exchange')
+      .gte('published_at',since).order('published_at',{ascending:false}).limit(2000),
+    db.from('source_documents').select(fields).in('source_type',['licensed-analysis','licensed-reporting'])
+      .gte('published_at',since).order('published_at',{ascending:false}).limit(2000),
+  ]);
+  if(questions.error||reports.error||!questions.data||!reports.data)return null;
+  return buildDiscussionReportingOverlaps([...questions.data,...reports.data]);
 }

@@ -3,7 +3,7 @@ import { serverSupabase } from "../../lib/server-supabase";
 import { hasUnclearedHackerNewsEvidence } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
-import { recentDiscussionObservations } from "../../lib/public-data";
+import { recentDiscussionObservations, recentDiscussionReportingOverlaps } from "../../lib/public-data";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +29,9 @@ export default async function Candidates() {
   const discussionResult = await recentDiscussionObservations();
   const observationsUnavailable = discussionResult === null;
   const observations = discussionResult ?? [];
+  const overlapResult = await recentDiscussionReportingOverlaps();
+  const overlapsUnavailable = overlapResult === null;
+  const overlaps = overlapResult ?? [];
   const db = serverSupabase();
   let leads: Lead[] = [];
   let unavailable = !db;
@@ -167,6 +170,45 @@ export default async function Candidates() {
             describes this narrow sample only; it does not mean discussion is
             absent elsewhere.
           </p>
+        )}
+      </section>
+      <section className="panel mb-6 p-6" aria-labelledby="discussion-reporting-overlaps-title">
+        <h2 id="discussion-reporting-overlaps-title" className="text-xl font-semibold">
+          Discussion–reporting phrase overlaps
+        </h2>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+          Exact same-language Stack Exchange tag phrases must appear in both a question title and a licensed reporting/analysis headline, published within the last seven days. This is a small, query-selected discovery sample—not evidence that discussion caused coverage, that the sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open and review every original item.
+        </p>
+        {overlapsUnavailable ? (
+          <p className="mt-4 text-sm text-muted">Cross-source records are unavailable. This is not evidence that no related discussion or reporting exists.</p>
+        ) : overlaps.length ? (
+          <div className="mt-5 space-y-5">
+            {overlaps.map((overlap) => (
+              <article className="border-t border-line pt-4" key={`${overlap.language}:${overlap.tag}`}>
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <h3 className="font-semibold">{overlap.tag}</h3>
+                  <span className="mono text-xs text-muted">{overlap.language} · {overlap.questionCount} matching questions · {overlap.reporting.length} linked headlines shown</span>
+                </div>
+                <p className="mt-1 text-xs text-muted">Question communities: {overlap.questionCommunities.join(" · ") || "not reported"} · Reporting sources: {overlap.reportingSources.join(" · ") || "not reported"}</p>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Discussion · question titles</h4>
+                    <ul className="mt-2 space-y-2">
+                      {overlap.questions.map((item) => <li key={item.id} className="text-sm leading-5"><a className="underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><div className="text-xs text-muted">{item.source} · {formatTimestamp(item.publishedAt, timeZone)}</div></li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-semibold uppercase tracking-wide text-muted">Reporting/analysis · headlines</h4>
+                    <ul className="mt-2 space-y-2">
+                      {overlap.reporting.map((item) => <li key={item.id} className="text-sm leading-5"><a className="underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><div className="text-xs text-muted">{item.source} · {formatTimestamp(item.publishedAt, timeZone)}</div></li>)}
+                    </ul>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-muted">No exact same-language phrase overlaps were found in the available seven-day sample. This does not mean the topic is absent from discussion or reporting.</p>
         )}
       </section>
       {unavailable ? (

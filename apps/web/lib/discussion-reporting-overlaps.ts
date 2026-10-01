@@ -1,0 +1,144 @@
+import { isPublicEvidenceEligible, matchesStackExchangeTitleQuery } from "./source-policy";
+
+export type OverlapInput = {
+  id: string;
+  source_type: string | null;
+  source_name: string | null;
+  source_domain: string | null;
+  language_code: string | null;
+  title_original: string | null;
+  source_url: string | null;
+  published_at: string | null;
+  raw_metadata_json: unknown;
+};
+
+export type DiscussionReportingOverlap = {
+  tag: string;
+  language: string;
+  questionCount: number;
+  questionCommunities: string[];
+  reportingSources: string[];
+  latestQuestionAt: string | null;
+  latestReportingAt: string | null;
+  questions: Array<{ id: string; title: string; url: string; source: string; publishedAt: string }>;
+  reporting: Array<{ id: string; title: string; url: string; source: string; publishedAt: string }>;
+};
+
+const QUESTION_LICENSE = "CC BY-SA 4.0";
+const WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Literal same-language tag/title matches only; never infers sentiment or a causal link. */
+export function buildDiscussionReportingOverlaps(
+  rows: OverlapInput[],
+  asOf = new Date(),
+): DiscussionReportingOverlap[] {
+  const cutoff = asOf.getTime() - WINDOW_MS;
+  const questions = new Map<string, { row: OverlapInput; tags: string[]; time: number; language: string }>();
+  const reports: Array<{ row: OverlapInput; time: number; language: string }> = [];
+
+  for (const row of rows) {
+    const time = Date.parse(row.published_at ?? "");
+    if (!Number.isFinite(time) || time < cutoff || time > asOf.getTime() || !row.title_original || !row.source_url ||
+      !isPublicEvidenceEligible(row.source_type, row.source_domain))
+      continue;
+    const language = normalizeLanguage(row.language_code);
+    if (row.source_type === "stack-exchange") {
+      const metadata = asRecord(row.raw_metadata_json);
+      if (metadata.contentLicense !== QUESTION_LICENSE || !Array.isArray(metadata.tags) ||
+        !matchesStackExchangeTitleQuery(row.title_original, metadata.query)) continue;
+      const tags = [...new Set(metadata.tags.filter((tag): tag is string => typeof tag === "string")
+        .map((tag) => tag.trim().normalize("NFC").toLocaleLowerCase())
+        .filter((tag) => tag.length >= 3 && tag.length <= 50))];
+      if (tags.length) questions.set(row.id, { row, tags, time, language });
+    } else if (
+      row.source_type === "licensed-analysis" || row.source_type === "licensed-reporting"
+    ) {
+      reports.push({ row, time, language });
+    }
+  }
+
+  const groups = new Map<string, {
+    tag: string;
+    language: string;
+    questions: Map<string, { row: OverlapInput; time: number }>;
+    reports: Map<string, { row: OverlapInput; time: number }>;
+  }>();
+  const reportsByLanguage = new Map<string, typeof reports>();
+  for (const report of reports) {
+    const languageReports = reportsByLanguage.get(report.language) ?? [];
+    languageReports.push(report);
+    reportsByLanguage.set(report.language, languageReports);
+  }
+  const matchingReports = new Map<string, typeof reports>();
+  for (const question of questions.values()) {
+    const questionTitle = normalizeText(question.row.title_original!);
+    for (const tag of question.tags) {
+      const phrase = normalizeText(tag.replace(/[_-]+/g, " "));
+      if (!containsPhrase(questionTitle, phrase)) continue;
+      const key = `${question.language}\u0000${tag}`;
+      const group = groups.get(key) ?? {
+        tag,
+        language: question.language,
+        questions: new Map(),
+        reports: new Map(),
+      };
+      group.questions.set(question.row.id, { row: question.row, time: question.time });
+      let matches = matchingReports.get(key);
+      if (!matches) {
+        matches = (reportsByLanguage.get(question.language) ?? [])
+          .filter((report) => containsPhrase(normalizeText(report.row.title_original!), phrase));
+        matchingReports.set(key, matches);
+      }
+      for (const report of matches)
+        group.reports.set(report.row.id, { row: report.row, time: report.time });
+      if (group.reports.size) groups.set(key, group);
+    }
+  }
+
+  return [...groups.values()]
+    .map((group) => {
+      const questionRows = [...group.questions.values()].sort((a, b) => b.time - a.time);
+      const reportRows = [...group.reports.values()].sort((a, b) => b.time - a.time);
+      return {
+        tag: group.tag,
+        language: group.language,
+        questionCount: questionRows.length,
+        questionCommunities: [...new Set(questionRows.map(({ row }) => row.source_name).filter(isString))].sort(),
+        reportingSources: [...new Set(reportRows.map(({ row }) => row.source_name).filter(isString))].sort(),
+        latestQuestionAt: questionRows[0] ? new Date(questionRows[0].time).toISOString() : null,
+        latestReportingAt: reportRows[0] ? new Date(reportRows[0].time).toISOString() : null,
+        questions: questionRows.slice(0, 3).flatMap(({ row }) => evidence(row)),
+        reporting: reportRows.slice(0, 3).flatMap(({ row }) => evidence(row)),
+      };
+    })
+    .sort((a, b) => b.questionCount - a.questionCount || (b.latestReportingAt ?? "").localeCompare(a.latestReportingAt ?? ""))
+    .slice(0, 20);
+}
+
+function normalizeLanguage(value: string | null) {
+  return value?.trim().toLocaleLowerCase() || "und";
+}
+
+function normalizeText(value: string) {
+  return value.normalize("NFC").toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
+}
+
+function containsPhrase(text: string, phrase: string) {
+  if (!phrase) return false;
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  return new RegExp(`(?:^|[^\\p{L}\\p{N}])${escaped}(?:$|[^\\p{L}\\p{N}])`, "u").test(text);
+}
+
+function evidence(row: OverlapInput) {
+  return row.title_original && row.source_url && row.source_name && row.published_at
+    ? [{ id: row.id, title: row.title_original, url: row.source_url, source: row.source_name, publishedAt: row.published_at }]
+    : [];
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
+}
+
+function isString(value: string | null): value is string {
+  return typeof value === "string" && Boolean(value.trim());
+}
