@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { comparePublicHashtag, searchPublicHashtag } from "./mastodon-public";
+import {
+  comparePublicHashtag,
+  compareTrendingHashtags,
+  fetchTrendingHashtags,
+  searchPublicHashtag,
+} from "./mastodon-public";
 
 const post = {
   id: "123",
@@ -95,5 +100,43 @@ describe("comparePublicHashtag", () => {
     expect(result.views[0].error).toBeNull();
     expect(result.views[1].error).toContain("rate-limiting");
     expect(result.samples).toHaveLength(1);
+  });
+});
+
+describe("public Mastodon trending tags", () => {
+  it("requests one public list, keeps simple Unicode hashtags, and constructs a same-server link", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify([
+      { name: "economics" },
+      { name: "半導体" },
+      { name: "invalid tag" },
+      { name: "x".repeat(51) },
+    ]), { status: 200 }));
+    const tags = await fetchTrendingHashtags("mstdn.jp", fetchMock);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("https://mstdn.jp/api/v1/trends/tags?limit=10");
+    expect(tags).toEqual([
+      { name: "economics", url: "https://mstdn.jp/tags/economics" },
+      { name: "半導体", url: "https://mstdn.jp/tags/%E5%8D%8A%E5%B0%8E%E4%BD%93" },
+    ]);
+  });
+
+  it("does not authenticate or retry when an instance limits public access", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 403 }));
+    await expect(fetchTrendingHashtags("mastodon.social", fetchMock)).rejects.toThrow("No login or workaround");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][1]).not.toHaveProperty("headers.Authorization");
+  });
+
+  it("keeps each instance trend list separate and reports per-instance errors", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) =>
+      Promise.resolve(String(url).includes("mstdn.jp")
+        ? new Response("", { status: 429 })
+        : new Response(JSON.stringify([{ name: "economics" }]), { status: 200 })),
+    );
+    const result = await compareTrendingHashtags(fetchMock, ["mastodon.social", "mstdn.jp"]);
+    expect(result).toMatchObject([
+      { host: "mastodon.social", tags: [{ name: "economics" }], error: null },
+      { host: "mstdn.jp", tags: [], error: "This instance is rate-limiting requests. Try again later." },
+    ]);
   });
 });

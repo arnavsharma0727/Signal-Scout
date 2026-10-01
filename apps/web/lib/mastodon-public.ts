@@ -23,6 +23,13 @@ export type MastodonSample = {
   seenVia: MastodonInstance[];
 };
 
+export type MastodonTrendingTag = { name: string; url: string };
+export type MastodonTrendView = {
+  host: MastodonInstance;
+  tags: MastodonTrendingTag[];
+  error: string | null;
+};
+
 type ApiPost = {
   id?: string;
   url?: string | null;
@@ -40,6 +47,8 @@ type ApiPost = {
   };
 };
 
+type ApiTag = { name?: unknown };
+
 export const MASTODON_INSTANCES = [
   { host: "mastodon.social", label: "mastodon.social" },
   { host: "mastodon.online", label: "mastodon.online" },
@@ -47,6 +56,60 @@ export const MASTODON_INSTANCES = [
   { host: "mastodon.world", label: "mastodon.world" },
 ] as const;
 export type MastodonInstance = (typeof MASTODON_INSTANCES)[number]["host"];
+
+/** Read the instance's public trending-tag suggestions; no posts or trend data are retained. */
+export async function fetchTrendingHashtags(
+  instance: MastodonInstance,
+  fetcher: typeof fetch = fetch,
+): Promise<MastodonTrendingTag[]> {
+  if (!MASTODON_INSTANCES.some((candidate) => candidate.host === instance)) {
+    throw new Error("Choose a supported public Mastodon server.");
+  }
+  const response = await fetcher(`https://${instance}/api/v1/trends/tags?limit=10`, {
+    headers: { accept: "application/json" },
+  });
+  if (response.status === 401 || response.status === 403) {
+    throw new Error("This instance does not expose public trend suggestions. No login or workaround is attempted.");
+  }
+  if (response.status === 429) {
+    throw new Error("This instance is rate-limiting requests. Try again later.");
+  }
+  if (!response.ok) throw new Error("Trend suggestions are temporarily unavailable on this instance.");
+
+  const body = (await response.json()) as ApiTag[];
+  if (!Array.isArray(body)) return [];
+  return body.flatMap((tag) => {
+    if (typeof tag.name !== "string" || !/^[\p{L}\p{N}_-]{1,50}$/u.test(tag.name)) return [];
+    return [{
+      name: tag.name,
+      url: `https://${instance}/tags/${encodeURIComponent(tag.name)}`,
+    }];
+  });
+}
+
+/** Keep each server's own trend list separate; Mastodon trend scores are instance-specific. */
+export async function compareTrendingHashtags(
+  fetcher: typeof fetch = fetch,
+  instances: readonly MastodonInstance[] = MASTODON_INSTANCES.map(({ host }) => host),
+): Promise<MastodonTrendView[]> {
+  const uniqueInstances = [...new Set(instances)];
+  if (!uniqueInstances.length || uniqueInstances.some(
+    (instance) => !MASTODON_INSTANCES.some((candidate) => candidate.host === instance),
+  )) {
+    throw new Error("Choose one or more supported public Mastodon servers.");
+  }
+  return Promise.all(uniqueInstances.map(async (host) => {
+    try {
+      return { host, tags: await fetchTrendingHashtags(host, fetcher), error: null };
+    } catch (cause) {
+      return {
+        host,
+        tags: [],
+        error: cause instanceof Error ? cause.message : "Trend suggestions are temporarily unavailable.",
+      };
+    }
+  }));
+}
 
 /** Read one public hashtag timeline directly from Mastodon; never persists posts. */
 export async function searchPublicHashtag(

@@ -1,7 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
-import { comparePublicHashtag, MASTODON_INSTANCES, MastodonInstance, MastodonSample, MastodonServerView } from "../../lib/mastodon-public";
+import { FormEvent, useRef, useState } from "react";
+import {
+  comparePublicHashtag,
+  compareTrendingHashtags,
+  MASTODON_INSTANCES,
+  MastodonInstance,
+  MastodonSample,
+  MastodonServerView,
+  MastodonTrendView,
+} from "../../lib/mastodon-public";
 
 function plainText(html: string) {
   const withBreaks = html.replace(/<\s*\/(p|div|li)\s*>/gi, "\n").replace(/<\s*br\s*\/?>/gi, "\n");
@@ -11,13 +19,33 @@ function plainText(html: string) {
 
 export default function MastodonSearch() {
   const [tag, setTag] = useState("");
+  const searchInput = useRef<HTMLInputElement>(null);
   const [instance, setInstance] = useState<MastodonInstance>("mastodon.social");
   const [compareServers, setCompareServers] = useState(false);
   const [views, setViews] = useState<MastodonServerView[]>([]);
   const [samples, setSamples] = useState<MastodonSample[]>([]);
+  const [trendViews, setTrendViews] = useState<MastodonTrendView[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [loadingTrends, setLoadingTrends] = useState(false);
   const [error, setError] = useState("");
+  const [trendError, setTrendError] = useState("");
+
+  async function loadTrends() {
+    if (loadingTrends) return;
+    setLoadingTrends(true);
+    setTrendError("");
+    try {
+      const result = await compareTrendingHashtags();
+      setTrendViews(result);
+      if (result.every((view) => view.error)) setTrendError("No selected instance made public trend suggestions available.");
+    } catch (cause) {
+      setTrendViews([]);
+      setTrendError(cause instanceof Error ? cause.message : "Trend suggestions are temporarily unavailable.");
+    } finally {
+      setLoadingTrends(false);
+    }
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -57,10 +85,57 @@ export default function MastodonSearch() {
         automated accounts. Server choice is not a country proxy, and returned counts do not measure how
         many people discussed a topic.
       </p>
+      <div className="mt-5 border-y border-line py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-sm font-semibold">Discover hashtags trending on these servers</h3>
+            <p className="mt-1 max-w-2xl text-xs leading-5 text-muted">
+              One public request per server. Each instance selects its own trending tags from roughly the past week; these are topic prompts, not global or country-level popularity signals. Lists and tags can overlap, and are not combined or stored. Selecting a tag fills the search below.
+            </p>
+          </div>
+          <button className="btn" type="button" onClick={loadTrends} disabled={loadingTrends}>
+            {loadingTrends ? "Loading suggestions…" : "Load topic suggestions"}
+          </button>
+        </div>
+        {trendError && <p role="alert" className="mt-3 text-sm">{trendError}</p>}
+        {trendViews.length > 0 && (
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {trendViews.map((view) => (
+              <section key={view.host} className="border-t border-line pt-3" aria-label={`Trending tags on ${view.host}`}>
+                <h4 className="text-xs font-semibold">{view.host}</h4>
+                {view.error ? (
+                  <p className="mt-2 text-xs text-muted">Unavailable: {view.error}</p>
+                ) : view.tags.length ? (
+                  <ul className="mt-2 flex flex-wrap gap-2">
+                    {view.tags.map((suggestion) => (
+                      <li key={suggestion.name}>
+                        <button
+                          className="border border-line px-2 py-1 text-xs underline underline-offset-2 hover:border-ink"
+                          type="button"
+                          onClick={() => {
+                            setTag(suggestion.name);
+                            searchInput.current?.focus();
+                          }}
+                          aria-label={`Use hashtag ${suggestion.name} in the live post search`}
+                        >
+                          #{suggestion.name}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-2 text-xs text-muted">No tags returned.</p>
+                )}
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
       <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
         <label className="sr-only" htmlFor="mastodon-hashtag">Hashtag</label>
         <input
           id="mastodon-hashtag"
+          ref={searchInput}
           className="min-w-0 flex-1 rounded border border-line bg-white px-3 py-2.5 outline-none focus:border-ink"
           value={tag}
           onChange={(event) => setTag(event.target.value)}
