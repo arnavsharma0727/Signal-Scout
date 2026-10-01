@@ -10,6 +10,7 @@ import {
   MastodonServerView,
   MastodonTrendView,
 } from "../../lib/mastodon-public";
+import type { ResearchEvidence } from "../../lib/research-brief";
 
 function plainText(html: string) {
   const withBreaks = html.replace(/<\s*\/(p|div|li)\s*>/gi, "\n").replace(/<\s*br\s*\/?>/gi, "\n");
@@ -17,7 +18,13 @@ function plainText(html: string) {
   return (parsed.body.textContent ?? "").replace(/[ \t]+/g, " ").replace(/\n{3,}/g, "\n\n").trim();
 }
 
-export default function MastodonSearch() {
+export default function MastodonSearch({
+  onAdd,
+  selectedIds,
+}: {
+  onAdd: (item: ResearchEvidence) => void;
+  selectedIds: ReadonlySet<string>;
+}) {
   const [tag, setTag] = useState("");
   const searchInput = useRef<HTMLInputElement>(null);
   const [instance, setInstance] = useState<MastodonInstance>("mastodon.social");
@@ -203,6 +210,26 @@ export default function MastodonSearch() {
               <a className="mt-3 inline-block text-xs underline text-muted" href={post.url} target="_blank" rel="noreferrer">
                 View original post on {post.originServer}
               </a>
+              <button
+                className="ml-4 text-xs underline text-muted"
+                type="button"
+                disabled={selectedIds.has(`mastodon:${post.url}`)}
+                onClick={() => onAdd({
+                  id: `mastodon:${post.url}`,
+                  title: `Public Mastodon post by @${post.authorHandle}`,
+                  url: post.url,
+                  source: `Mastodon · ${post.originServer}`,
+                  evidenceClass: "social discussion",
+                  language: post.language ?? "Not declared",
+                  timeLabel: "Posted",
+                  timeValue: post.createdAt,
+                  context: `Returned by ${seenVia.join(", ")} (server views may overlap)`,
+                  attribution: "Author-owned content; no blanket license implied",
+                  attributionUrl: post.authorUrl,
+                })}
+              >
+                {selectedIds.has(`mastodon:${post.url}`) ? "Added to brief" : "Add link to brief"}
+              </button>
             </li>
           ))}
         </ul>

@@ -1,8 +1,5 @@
 import Link from "next/link";
-import GdeltSearch from "./gdelt-search";
-import MastodonSearch from "./mastodon-search";
-import TopicSearch from "./topic-search";
-import WikimediaTalkSearch from "./wikimedia-talk-search";
+import ExploreWorkspace from "./explore-workspace";
 
 export const metadata = { title: "Explore live discussion | Signal Scout" };
 
@@ -21,13 +18,12 @@ export default function ExplorePage() {
           source has different coverage and rights; these samples are not representative public
           opinion or verified thesis leads. Inspect the linked original discussions.
         </p>
-        <TopicSearch />
-        <GdeltSearch />
-        <MastodonSearch />
-        <WikimediaTalkSearch />
+        <ExploreWorkspace />
         <aside className="mt-8 border-t border-line pt-5 text-xs leading-5 text-muted">
-          Searches run directly in your browser against the selected provider. Signal Scout does not
-          receive or store on-demand queries or results. Stack Exchange results are limited to items
+          Searches run directly in your browser against the selected provider. Signal Scout’s server
+          does not receive or store on-demand queries or results. Citations explicitly added to the
+          brief exist only in page memory until you leave or reload; no browser storage or server save
+          is used. Copies/downloads stay on your device. Stack Exchange results are limited to items
           explicitly marked CC BY-SA 4.0. Mastodon posts remain the authors’ content and are shown
           transiently with their original links; no blanket content license is implied. GDELT
           headlines are transient and linked to their publishers, with GDELT attribution. Wikimedia

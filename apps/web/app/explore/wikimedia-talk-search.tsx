@@ -2,13 +2,20 @@
 
 import { FormEvent, useState } from "react";
 import { searchWikimediaTalk, WikimediaTalkPage, WIKIMEDIA_TALK_WIKIS } from "../../lib/wikimedia-talk";
+import type { ResearchEvidence } from "../../lib/research-brief";
 
 function plainText(html: string) {
   const parsed = new DOMParser().parseFromString(html, "text/html");
   return (parsed.body.textContent ?? "").replace(/\s+/g, " ").trim().slice(0, 360);
 }
 
-export default function WikimediaTalkSearch() {
+export default function WikimediaTalkSearch({
+  onAdd,
+  selectedIds,
+}: {
+  onAdd: (item: ResearchEvidence) => void;
+  selectedIds: ReadonlySet<string>;
+}) {
   const [topic, setTopic] = useState("");
   const [language, setLanguage] = useState("en");
   const [pages, setPages] = useState<WikimediaTalkPage[]>([]);
@@ -97,6 +104,25 @@ export default function WikimediaTalkSearch() {
               <p className="mt-3 text-sm leading-6 text-muted">{plainText(page.snippetHtml)}</p>
               <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
                 <a className="underline text-ink" href={page.historyUrl} target="_blank" rel="noreferrer">Page history, contributors, and applicable license</a>
+                <button
+                  className="underline"
+                  type="button"
+                  disabled={selectedIds.has(`wikimedia:${page.url}`)}
+                  onClick={() => onAdd({
+                    id: `wikimedia:${page.url}`,
+                    title: page.title,
+                    url: page.url,
+                    source: page.wiki,
+                    evidenceClass: "editorial discussion",
+                    language: page.language,
+                    timeLabel: "Latest page edit (not necessarily the snippet date)",
+                    timeValue: page.lastEditedAt,
+                    attribution: "Check contributors and the applicable content license",
+                    attributionUrl: page.historyUrl,
+                  })}
+                >
+                  {selectedIds.has(`wikimedia:${page.url}`) ? "Added to brief" : "Add link to brief"}
+                </button>
               </div>
             </li>
           ))}

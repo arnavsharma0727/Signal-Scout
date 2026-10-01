@@ -6,8 +6,15 @@ import {
   LiveDiscussionItem,
   searchLiveDiscussion,
 } from "../../lib/live-topic-search";
+import type { ResearchEvidence } from "../../lib/research-brief";
 
-export default function TopicSearch() {
+export default function TopicSearch({
+  onAdd,
+  selectedIds,
+}: {
+  onAdd: (item: ResearchEvidence) => void;
+  selectedIds: ReadonlySet<string>;
+}) {
   const [topic, setTopic] = useState("");
   const [site, setSite] = useState<string>(DISCUSSION_COMMUNITIES[0].site);
   const [items, setItems] = useState<LiveDiscussionItem[]>([]);
@@ -100,6 +107,27 @@ export default function TopicSearch() {
                 {item.tags.length > 0 && (
                   <p className="mt-2 text-xs text-muted">Tags: {item.tags.join(" · ")}</p>
                 )}
+                <button
+                  className="mt-2 text-xs underline text-muted"
+                  type="button"
+                  disabled={selectedIds.has(`stackexchange:${item.url}`)}
+                  onClick={() => onAdd({
+                    id: `stackexchange:${item.url}`,
+                    title: item.title,
+                    url: item.url,
+                    source: item.community,
+                    evidenceClass: "expert Q&A",
+                    language: item.language,
+                    timeLabel: "Published",
+                    timeValue: item.createdAt,
+                    attribution: `Author: ${item.author}`,
+                    attributionUrl: item.authorUrl,
+                    licenseName: "CC BY-SA 4.0",
+                    licenseUrl: item.licenseUrl,
+                  })}
+                >
+                  {selectedIds.has(`stackexchange:${item.url}`) ? "Added to brief" : "Add to brief"}
+                </button>
               </li>
             ))}
           </ul>

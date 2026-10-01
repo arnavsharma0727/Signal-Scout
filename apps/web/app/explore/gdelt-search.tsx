@@ -9,8 +9,15 @@ import {
   GdeltPublicArticle,
   searchGdeltNews,
 } from "../../lib/gdelt-public";
+import type { ResearchEvidence } from "../../lib/research-brief";
 
-export default function GdeltSearch() {
+export default function GdeltSearch({
+  onAdd,
+  selectedIds,
+}: {
+  onAdd: (item: ResearchEvidence) => void;
+  selectedIds: ReadonlySet<string>;
+}) {
   const [query, setQuery] = useState("");
   const [outletCountry, setOutletCountry] = useState<GdeltOutletCountry>("");
   const [outletLanguage, setOutletLanguage] = useState<GdeltOutletLanguage>("");
@@ -91,6 +98,31 @@ export default function GdeltSearch() {
                   {article.domain} · {article.language} · source country: {article.sourceCountry} ·{" "}
                   <time dateTime={article.seenAt}>{new Date(article.seenAt).toLocaleString()}</time>
                 </p>
+                {(() => {
+                  const id = `gdelt:${article.url}`;
+                  return (
+                    <button
+                      className="mt-2 text-xs underline text-muted"
+                      type="button"
+                      disabled={selectedIds.has(id)}
+                      onClick={() => onAdd({
+                        id,
+                        title: article.title,
+                        url: article.url,
+                        source: article.domain,
+                        evidenceClass: "news coverage",
+                        language: article.language,
+                        timeLabel: "Indexed/seen",
+                        timeValue: article.seenAt,
+                        context: `Publisher country: ${article.sourceCountry} (outlet metadata, not audience geography)`,
+                        attribution: "Headline belongs to publisher; indexed by GDELT",
+                        attributionUrl: "https://www.gdeltproject.org/",
+                      })}
+                    >
+                      {selectedIds.has(id) ? "Added to brief" : "Add to brief"}
+                    </button>
+                  );
+                })()}
               </li>
             ))}
           </ul>

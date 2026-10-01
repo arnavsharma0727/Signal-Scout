@@ -64,6 +64,26 @@ export default function Privacy() {
             snippets may contain older text from a recently edited page.
           </p>
           <p>
+            Explore can also query GDELT’s public multilingual news index
+            directly from the browser. GDELT receives the search phrase and
+            optional publisher-country/language filters. The result headlines
+            and links are displayed transiently; selected citations are not
+            sent to Signal Scout’s server.
+          </p>
+          <p>
+            The optional Mastodon trend-discovery action requests public tag
+            suggestions directly from four configured Mastodon instances. The
+            suggestions and brief are transient. The brief holds only citations
+            a visitor explicitly selects and notes the visitor writes, in
+            volatile page memory. It is erased
+            on reload or navigation and is not placed in local storage, sent to
+            Signal Scout, or saved to its database. Copying or downloading a
+            Markdown brief is a visitor-initiated action to the local clipboard
+            or device. A selected social post is represented by its original
+            link and attribution metadata; post text is not copied into the
+            brief.
+          </p>
+          <p>
             The app is hosted by Vercel and uses Supabase for server-side data
             storage. These providers process requests and stored data to operate
             the service under their own terms and privacy policies. Server
