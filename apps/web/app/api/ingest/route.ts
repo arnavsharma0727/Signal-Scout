@@ -19,6 +19,7 @@ import type {
   NormalizedDocument,
 } from "../../../lib/connectors/types";
 export const runtime = "nodejs";
+let authDenialLogged = false;
 export async function GET(request: NextRequest) {
   if (!isAuthorized(request))
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -31,11 +32,22 @@ export async function POST(request: NextRequest) {
 }
 function isAuthorized(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  return (
-    request.headers.get("authorization") === `Bearer ${secret}` ||
-    request.headers.get("x-cron-secret") === secret
+  const authorization = request.headers.get("authorization");
+  const internalHeader = request.headers.get("x-cron-secret");
+  const authorized = Boolean(secret) && (
+    authorization === `Bearer ${secret}` || internalHeader === secret
   );
+  if (!authorized && !authDenialLogged) {
+    authDenialLogged = true;
+    console.warn("[ingest-auth] request denied", {
+      cronSecretConfigured: Boolean(secret),
+      authorizationProvided: Boolean(authorization),
+      authorizationMatched: Boolean(secret && authorization === `Bearer ${secret}`),
+      internalHeaderProvided: Boolean(internalHeader),
+      internalHeaderMatched: Boolean(secret && internalHeader === secret),
+    });
+  }
+  return authorized;
 }
 async function runIngestion() {
   const db = serverSupabase();
