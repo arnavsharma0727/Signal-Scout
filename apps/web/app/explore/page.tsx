@@ -29,7 +29,7 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
         {save === "invalid" && <p role="alert" className="mt-4 text-sm">The brief could not be saved. Check that the topic and notes are within the stated limits, then try again.</p>}
         {save === "limit" && <p role="alert" className="mt-4 text-sm">This account has reached the limit of 100 saved briefs.</p>}
         {save === "unavailable" && <p role="alert" className="mt-4 text-sm">Private saving is temporarily unavailable. Your in-page draft has not been saved.</p>}
-        <ExploreWorkspace saveEnabled={Boolean(user)} />
+        <ExploreWorkspace authAvailable={authConfigured()} saveEnabled={Boolean(user)} />
         <aside className="mt-8 border-t border-line pt-5 text-xs leading-5 text-muted">
           Searches run directly in your browser against the selected provider. Signal Scout’s server
           does not receive or store on-demand queries or results. Citations explicitly added to the

@@ -7,6 +7,7 @@ import {
   Globe2,
 } from "lucide-react";
 import { recentSourceDocuments } from "../lib/public-data";
+import { authConfigured } from "../lib/supabase-auth-server";
 import { getDisplayTimeZone } from "../lib/display-timezone";
 import { formatTimestamp } from "../lib/format-time";
 import {
@@ -21,7 +22,6 @@ const nav = [
   ["Coverage", "/coverage"],
   ["Lead review", "/candidates"],
   ["Watchlists", "/watchlists"],
-  ["My briefs", "/briefs"],
   ["Methodology", "/methodology"],
   ["Sources", "/sources"],
 ];
@@ -42,7 +42,7 @@ export default async function Home() {
           <span className="font-bold tracking-tight">SIGNAL SCOUT</span>
         </Link>
         <nav className="hidden gap-7 text-sm text-muted md:flex">
-          {nav.map(([n, h]) => (
+          {[...nav, ...(authConfigured() ? [["My briefs", "/briefs"]] : [])].map(([n, h]) => (
             <Link key={h} href={h} className={h === "/" ? "text-ink" : ""}>
               {n}
             </Link>

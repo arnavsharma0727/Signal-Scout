@@ -20,6 +20,7 @@ const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
 export default function ResearchBrief({
   evidence,
   initialTopic,
+  authAvailable,
   saveEnabled,
   onRemove,
   onAssess,
@@ -27,6 +28,7 @@ export default function ResearchBrief({
 }: {
   evidence: ResearchEvidence[];
   initialTopic: string;
+  authAvailable: boolean;
   saveEnabled: boolean;
   onRemove: (id: string) => void;
   onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | undefined) => void;
@@ -209,11 +211,15 @@ export default function ResearchBrief({
         <div className="flex flex-wrap items-center gap-3">
           {saveEnabled
             ? <button className="btn btn-primary" type="submit" disabled={!topic.trim()}>Save privately to my account</button>
-            : <a className="btn btn-primary" href="/login?next=%2Fbriefs">Sign in to save</a>}
-          <a className="text-sm underline underline-offset-2" href="/briefs">My saved briefs</a>
+            : authAvailable
+              ? <a className="btn btn-primary" href="/login?next=%2Fbriefs">Sign in to save</a>
+              : <span className="text-sm text-muted">Private saving is not enabled on this deployment.</span>}
+          {authAvailable && <a className="text-sm underline underline-offset-2" href="/briefs">My saved briefs</a>}
         </div>
         <p className="mt-2 text-xs leading-5 text-muted">
-          Saving sends this topic and your notes to Signal Scout and Supabase, plus link-only citations from approved sources. {privateLinks.length} citation(s) will be kept; {excludedCount} other selected item(s) will be omitted. Titles, excerpts, contributor names, social posts, and search queries are not saved. You must be signed in; saved briefs are private and not public leads.
+          {authAvailable
+            ? <>Saving sends this topic and your notes to Signal Scout and Supabase, plus link-only citations from approved sources. {privateLinks.length} citation(s) will be kept; {excludedCount} other selected item(s) will be omitted. Titles, excerpts, contributor names, social posts, and search queries are not saved. You must be signed in; saved briefs are private and not public leads.</>
+            : <>Your draft is not being sent or saved. Copy or download it to keep a local copy; page notes disappear when you leave or reload. Account storage requires deployment authentication to be configured.</>}
         </p>
       </form>
       {notice && <p role="status" className="mt-3 text-xs text-muted">{notice}</p>}
