@@ -81,11 +81,15 @@ describe("comparePublicHashtag", () => {
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(result.views).toEqual([
-      { host: "mastodon.social", returnedCount: 1, error: null },
-      { host: "mstdn.jp", returnedCount: 1, error: null },
+      { host: "mastodon.social", tag: "markets", returnedCount: 1, error: null },
+      { host: "mstdn.jp", tag: "markets", returnedCount: 1, error: null },
     ]);
     expect(result.samples).toHaveLength(1);
     expect(result.samples[0].seenVia).toEqual(["mastodon.social", "mstdn.jp"]);
+    expect(result.samples[0].searches).toEqual([
+      { host: "mastodon.social", tag: "markets" },
+      { host: "mstdn.jp", tag: "markets" },
+    ]);
   });
 
   it("keeps successful samples when one server view fails", async () => {
@@ -100,6 +104,42 @@ describe("comparePublicHashtag", () => {
     expect(result.views[0].error).toBeNull();
     expect(result.views[1].error).toContain("rate-limiting");
     expect(result.samples).toHaveLength(1);
+  });
+
+  it("sends a distinct visitor-supplied hashtag to each selected server", async () => {
+    const requested: string[] = [];
+    const fetchMock = vi.fn().mockImplementation((url: string) => {
+      requested.push(String(url));
+      return Promise.resolve(new Response(JSON.stringify([post]), { status: 200 }));
+    });
+    const result = await comparePublicHashtag([
+      { host: "mastodon.social", tag: "AI" },
+      { host: "mstdn.jp", tag: "人工知能" },
+    ], fetchMock, Date.parse("2026-10-01T00:00:00Z"), ["mastodon.social", "mstdn.jp"]);
+    expect(requested).toEqual([
+      "https://mastodon.social/api/v1/timelines/tag/AI?limit=20",
+      "https://mstdn.jp/api/v1/timelines/tag/%E4%BA%BA%E5%B7%A5%E7%9F%A5%E8%83%BD?limit=20",
+    ]);
+    expect(result.views.map(({ host, tag }) => [host, tag])).toEqual([
+      ["mastodon.social", "AI"],
+      ["mstdn.jp", "人工知能"],
+    ]);
+    expect(result.samples[0].searches).toEqual([
+      { host: "mastodon.social", tag: "AI" },
+      { host: "mstdn.jp", tag: "人工知能" },
+    ]);
+  });
+
+  it("rejects missing or duplicate server queries before network access", async () => {
+    const fetchMock = vi.fn();
+    await expect(comparePublicHashtag([
+      { host: "mastodon.social", tag: "AI" },
+    ], fetchMock, Date.now(), ["mastodon.social", "mstdn.jp"])).rejects.toThrow("exactly one");
+    await expect(comparePublicHashtag([
+      { host: "mastodon.social", tag: "AI" },
+      { host: "mastodon.social", tag: "markets" },
+    ], fetchMock, Date.now(), ["mastodon.social"])).rejects.toThrow("only once");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
 

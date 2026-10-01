@@ -95,7 +95,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "Optional visitor-triggered trend discovery requests up to 10 public hashtag suggestions from each of four fixed Mastodon servers; each server’s internal trend ranking stays separate, with no merged score or storage. A selected tag can be searched across one or four server timelines (up to 20 public posts each); overlapping statuses are deduplicated and per-server counts are not summed. Servers are not country proxies. Content remains author-owned and no blanket license is implied. Posts are transient with author/origin links and content warnings; nothing is stored or analyzed. Not a global timeline or representative measure.",
+        "Optional visitor-triggered trend discovery requests up to 10 public hashtag suggestions from each of four fixed Mastodon servers; each server’s internal trend ranking stays separate, with no merged score or storage. A visitor can supply a distinct hashtag for each selected server in a one- or four-server comparison, useful for manually entered language variants. Each server receives only its own query; exact hashtags stay attached to separate server views. Up to 20 public posts per server are transiently shown with author/origin links and content warnings; overlapping statuses are deduplicated and per-server counts are not summed. Instance information links are provided and the visitor must affirm review before a request; Signal Scout does not accept terms for them. Servers are not country proxies. Content remains author-owned and no blanket license is implied. Nothing is stored or analyzed. Not a global timeline or representative measure.",
     },
     {
       name: "Lemmy · public federated forum view",

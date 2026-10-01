@@ -26,6 +26,7 @@ export default function MastodonSearch({
   selectedIds: ReadonlySet<string>;
 }) {
   const [tag, setTag] = useState("");
+  const [instanceTags, setInstanceTags] = useState<Partial<Record<MastodonInstance, string>>>({});
   const searchInput = useRef<HTMLInputElement>(null);
   const [instance, setInstance] = useState<MastodonInstance>("mastodon.social");
   const [compareServers, setCompareServers] = useState(false);
@@ -37,9 +38,14 @@ export default function MastodonSearch({
   const [loadingTrends, setLoadingTrends] = useState(false);
   const [error, setError] = useState("");
   const [trendError, setTrendError] = useState("");
+  const [policiesReviewed, setPoliciesReviewed] = useState(false);
 
   async function loadTrends() {
     if (loadingTrends) return;
+    if (!policiesReviewed) {
+      setTrendError("Review the linked server information and affirm before requesting suggestions.");
+      return;
+    }
     setLoadingTrends(true);
     setTrendError("");
     try {
@@ -61,8 +67,10 @@ export default function MastodonSearch({
     setError("");
     setSearched(true);
     try {
+      if (!policiesReviewed) throw new Error("Review the linked server information and affirm before searching.");
       const result = await comparePublicHashtag(
-        tag,
+        (compareServers ? MASTODON_INSTANCES.map(({ host }) => host) : [instance])
+          .map((host) => ({ host, tag: instanceTags[host] ?? tag })),
         fetch,
         Date.now(),
         compareServers ? MASTODON_INSTANCES.map(({ host }) => host) : [instance],
@@ -121,6 +129,7 @@ export default function MastodonSearch({
                           type="button"
                           onClick={() => {
                             setTag(suggestion.name);
+                            setInstanceTags({});
                             searchInput.current?.focus();
                           }}
                           aria-label={`Use hashtag ${suggestion.name} in the live post search`}
@@ -138,19 +147,36 @@ export default function MastodonSearch({
           </div>
         )}
       </div>
-      <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
-        <label className="sr-only" htmlFor="mastodon-hashtag">Hashtag</label>
-        <input
-          id="mastodon-hashtag"
-          ref={searchInput}
-          className="min-w-0 flex-1 rounded border border-line bg-white px-3 py-2.5 outline-none focus:border-ink"
-          value={tag}
-          onChange={(event) => setTag(event.target.value)}
-          minLength={1}
-          maxLength={50}
-          placeholder="e.g. climate, economics, AI"
-          required
-        />
+      <p className="mt-4 text-xs leading-5 text-muted">
+        For multilingual comparison, enter your own equivalent hashtag per server. Hashtags are not translated, and separate server counts are not combined.
+      </p>
+      <div className="mt-3 border-y border-line py-3 text-xs leading-5 text-muted">
+        Review the instance-specific information for the servers you plan to query:
+        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+          {MASTODON_INSTANCES.map(({ host }) => <li key={host}><a className="underline text-ink" href={`https://${host}/about`} target="_blank" rel="noreferrer">{host} policies</a></li>)}
+        </ul>
+        <label className="mt-3 flex items-start gap-2">
+          <input className="mt-1" type="checkbox" checked={policiesReviewed} onChange={(event) => setPoliciesReviewed(event.target.checked)} />
+          I reviewed the server information for the instances I will query. Signal Scout is not accepting terms on my behalf.
+        </label>
+      </div>
+      <form onSubmit={submit} className="mt-5 grid gap-3">
+        {(compareServers ? MASTODON_INSTANCES.map(({ host }) => host) : [instance]).map((host, index) => (
+          <label key={host} className="block text-sm font-medium">
+            Hashtag for {host}
+            <input
+              id={index === 0 ? "mastodon-hashtag" : undefined}
+              ref={index === 0 ? searchInput : undefined}
+              className="mt-1 block w-full rounded border border-line bg-white px-3 py-2.5 font-normal outline-none focus:border-ink"
+              value={instanceTags[host] ?? tag}
+              onChange={(event) => setInstanceTags((current) => ({ ...current, [host]: event.target.value }))}
+              minLength={1}
+              maxLength={50}
+              placeholder="e.g. climate, economics, AI"
+              required
+            />
+          </label>
+        ))}
         <label className="sr-only" htmlFor="mastodon-instance">Mastodon server</label>
         {!compareServers && (
           <select
@@ -166,7 +192,7 @@ export default function MastodonSearch({
           <input type="checkbox" checked={compareServers} onChange={(event) => setCompareServers(event.target.checked)} />
           Compare four server views
         </label>
-        <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
+        <button className="btn btn-primary justify-center sm:justify-self-start" type="submit" disabled={loading}>
           {loading ? "Loading…" : compareServers ? "Compare samples" : "Load server sample"}
         </button>
       </form>
@@ -178,7 +204,7 @@ export default function MastodonSearch({
         <div className="mt-5 flex flex-wrap gap-2 border-t border-line pt-4">
           {views.map((view) => (
             <span className="border border-line px-2 py-1 text-xs text-muted" key={view.host}>
-              {view.host}: {view.error ? "unavailable" : `${view.returnedCount} posts returned`}
+              {view.host} · #{view.tag}: {view.error ? "unavailable" : `${view.returnedCount} posts returned`}
             </span>
           ))}
           {views.length > 1 && <span className="self-center text-xs text-muted">Counts can overlap; do not sum as conversation volume.</span>}
@@ -186,7 +212,7 @@ export default function MastodonSearch({
       )}
       {samples.length > 0 && (
         <ul className="mt-6 divide-y divide-line border-t border-line">
-          {samples.map(({ post, seenVia }) => (
+          {samples.map(({ post, seenVia, searches }) => (
             <li key={post.id} className="py-5">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-xs text-muted">
                 <a className="font-medium text-ink underline" href={post.authorUrl} target="_blank" rel="noreferrer">
@@ -195,6 +221,7 @@ export default function MastodonSearch({
                 <span>@{post.authorHandle}</span>
                 <span>· {post.originServer}</span>
                 <span>· returned by {seenVia.join(", ")}</span>
+                <span>· searched as {searches.map(({ host, tag: searchedTag }) => `${host} #${searchedTag}`).join("; ")}</span>
                 {post.accountMarkedAutomated && <span>· account marked automated</span>}
                 <span>· {post.language ?? "language undeclared"}</span>
                 <span>· <time dateTime={post.createdAt}>{new Date(post.createdAt).toLocaleString()}</time></span>
@@ -223,7 +250,7 @@ export default function MastodonSearch({
                   language: post.language ?? "Not declared",
                   timeLabel: "Posted",
                   timeValue: post.createdAt,
-                  context: `Returned by ${seenVia.join(", ")} (server views may overlap)`,
+                  context: `Searches: ${searches.map(({ host, tag: searchedTag }) => `${host} #${searchedTag}`).join("; ")} · returned server views may overlap`,
                   attribution: "Author-owned content; no blanket license implied",
                   attributionUrl: post.authorUrl,
                 })}

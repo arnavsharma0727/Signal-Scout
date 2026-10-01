@@ -14,6 +14,7 @@ export type MastodonPublicPost = {
 
 export type MastodonServerView = {
   host: MastodonInstance;
+  tag: string;
   returnedCount: number;
   error: string | null;
 };
@@ -21,7 +22,10 @@ export type MastodonServerView = {
 export type MastodonSample = {
   post: MastodonPublicPost;
   seenVia: MastodonInstance[];
+  searches: Array<{ host: MastodonInstance; tag: string }>;
 };
+
+export type MastodonInstanceQuery = { host: MastodonInstance; tag: string };
 
 export type MastodonTrendingTag = { name: string; url: string };
 export type MastodonTrendView = {
@@ -180,7 +184,7 @@ export async function searchPublicHashtag(
 
 /** Compare one bounded sample per selected instance; results are never persisted. */
 export async function comparePublicHashtag(
-  input: string,
+  input: string | readonly MastodonInstanceQuery[],
   fetcher: typeof fetch = fetch,
   now = Date.now(),
   instances: readonly MastodonInstance[] = MASTODON_INSTANCES.map(({ host }) => host),
@@ -192,12 +196,28 @@ export async function comparePublicHashtag(
     throw new Error("Choose one or more supported public Mastodon servers.");
   }
 
+  const tagByHost = new Map<MastodonInstance, string>();
+  if (typeof input === "string") {
+    for (const host of uniqueInstances) tagByHost.set(host, validateHashtag(input));
+  } else {
+    for (const item of input) {
+      if (!MASTODON_INSTANCES.some(({ host }) => host === item.host))
+        throw new Error("Choose a supported public Mastodon server.");
+      if (tagByHost.has(item.host)) throw new Error("Each Mastodon server can be searched only once.");
+      tagByHost.set(item.host, validateHashtag(item.tag));
+    }
+    if (uniqueInstances.some((host) => !tagByHost.has(host)) || tagByHost.size !== uniqueInstances.length)
+      throw new Error("Provide exactly one hashtag for every selected Mastodon server.");
+  }
+
   const results = await Promise.all(uniqueInstances.map(async (host) => {
+    const tag = tagByHost.get(host)!;
     try {
-      return { host, posts: await searchPublicHashtag(input, fetcher, now, host), error: null };
+      return { host, tag, posts: await searchPublicHashtag(tag, fetcher, now, host), error: null };
     } catch (cause) {
       return {
         host,
+        tag,
         posts: [],
         error: cause instanceof Error ? cause.message : "This server view is temporarily unavailable.",
       };
@@ -207,19 +227,33 @@ export async function comparePublicHashtag(
   for (const result of results) {
     for (const post of result.posts) {
       const sample = samples.get(post.url);
-      if (sample) sample.seenVia.push(result.host);
-      else samples.set(post.url, { post, seenVia: [result.host] });
+      if (sample) {
+        sample.seenVia.push(result.host);
+        sample.searches.push({ host: result.host, tag: result.tag });
+      } else samples.set(post.url, {
+        post,
+        seenVia: [result.host],
+        searches: [{ host: result.host, tag: result.tag }],
+      });
     }
   }
 
   return {
-    views: results.map(({ host, posts, error }) => ({
+    views: results.map(({ host, tag, posts, error }) => ({
       host,
+      tag,
       returnedCount: posts.length,
       error,
     })) satisfies MastodonServerView[],
     samples: [...samples.values()],
   };
+}
+
+function validateHashtag(input: string) {
+  const hashtag = input.trim().replace(/^#+/, "");
+  if (!/^[\p{L}\p{N}_-]{1,50}$/u.test(hashtag))
+    throw new Error("Enter a hashtag with 1–50 letters, numbers, underscores, or hyphens.");
+  return hashtag;
 }
 
 function safeHttpsUrl(value: string | null | undefined) {
