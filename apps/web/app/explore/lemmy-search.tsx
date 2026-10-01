@@ -1,7 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { compareLemmyInstances, LemmyView } from "../../lib/lemmy-public";
+import { compareLemmyInstances, LEMMY_INSTANCES, LemmyInstance, LemmyView } from "../../lib/lemmy-public";
 import type { ResearchEvidence } from "../../lib/research-brief";
 
 export default function LemmySearch({
@@ -19,6 +19,7 @@ export default function LemmySearch({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [termsConfirmed, setTermsConfirmed] = useState(false);
+  const [selectedHosts, setSelectedHosts] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
   useEffect(() => {
     if (initialTopic) setQuery(initialTopic);
   }, [initialTopic]);
@@ -30,9 +31,11 @@ export default function LemmySearch({
     setSearched(true);
     setError("");
     try {
-      const next = await compareLemmyInstances(query);
+      if (!selectedHosts.length) throw new Error("Choose at least one Lemmy instance to search.");
+      if (!termsConfirmed) throw new Error("Review and affirm the selected instances’ legal/privacy information before searching.");
+      const next = await compareLemmyInstances(query, fetch, Date.now(), selectedHosts);
       setViews(next);
-      if (next.every(({ error: issue }) => issue)) setError("The Lemmy public instance is unavailable.");
+      if (next.every(({ error: issue }) => issue)) setError("All selected Lemmy instances are unavailable.");
     } catch (cause) {
       setViews([]);
       setError(cause instanceof Error ? cause.message : "Public forum search is temporarily unavailable.");
@@ -49,16 +52,37 @@ export default function LemmySearch({
       <div className="eyebrow">Live public forum search · Lemmy federation</div>
       <h2 className="mt-2 text-xl font-semibold">Search community discussions</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Search up to 20 newest matching posts returned by lemmy.world’s public federated index. This is one incomplete
-        server view, not a global timeline or a country-level sample. Returned counts are not measures of attention.
+        Search up to 20 newest matching posts from each selected public Lemmy server index. Each is a separate, incomplete
+        federated view—not a global timeline or a country-level sample. Returned counts are not measures of attention.
         Bot-marked, NSFW, removed, and stale results are filtered. Titles and author attribution are shown transiently;
         post bodies are discarded from the app’s result model and are never stored or added to the research brief.
       </p>
       <p className="mt-2 text-xs leading-5 text-muted">
-        Search runs from your browser without login. lemmy.world receives the query and your network request.
+        Search runs from your browser without login. Each selected server receives the query and your network request.
         Review the <a className="underline text-ink" href="https://join-lemmy.org/docs/contributors/04-api.html" target="_blank" rel="noreferrer">Lemmy API documentation</a>,
-        <a className="underline text-ink" href="https://legal.lemmy.world/tos/" target="_blank" rel="noreferrer"> lemmy.world terms</a>.
+        and each selected instance’s linked legal and privacy information before use.
       </p>
+      <fieldset className="mt-4 grid gap-2 border-y border-line py-4">
+        <legend className="text-sm font-medium">Select server views</legend>
+        {LEMMY_INSTANCES.map((instance) => (
+          <label key={instance.host} className="flex items-start gap-2 text-sm">
+            <input
+              className="mt-1"
+              type="checkbox"
+              checked={selectedHosts.includes(instance.host)}
+              onChange={(event) => setSelectedHosts((current) => event.target.checked
+                ? [...current, instance.host]
+                : current.filter((host) => host !== instance.host))}
+            />
+            <span>
+              {instance.label}{" · "}
+              <a className="underline" href={instance.legalUrl} target="_blank" rel="noreferrer">legal information</a>
+              {" · "}
+              <a className="underline" href={instance.privacyUrl} target="_blank" rel="noreferrer">privacy</a>
+            </span>
+          </label>
+        ))}
+      </fieldset>
       <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
         <label className="sr-only" htmlFor="lemmy-query">Search phrase</label>
         <input
@@ -78,7 +102,7 @@ export default function LemmySearch({
             onChange={(event) => setTermsConfirmed(event.target.checked)}
             required
           />
-          I am at least 18 (or the higher local minimum age) and agree to the linked terms before searching.
+          I have reviewed the legal/privacy links for every selected instance and confirm I meet its age requirements before searching.
         </label>
         <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
           {loading ? "Searching instances…" : "Search Lemmy"}

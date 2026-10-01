@@ -1,7 +1,13 @@
-export type LemmyInstance = "lemmy.world";
+export type LemmyInstance = "lemmy.world" | "discuss.tchncs.de";
 
-export const LEMMY_INSTANCES: readonly { host: LemmyInstance; label: string }[] = [
-  { host: "lemmy.world", label: "lemmy.world" },
+export const LEMMY_INSTANCES: readonly {
+  host: LemmyInstance;
+  label: string;
+  legalUrl: string;
+  privacyUrl: string;
+}[] = [
+  { host: "lemmy.world", label: "lemmy.world", legalUrl: "https://legal.lemmy.world/tos/", privacyUrl: "https://legal.lemmy.world/privacy-policy/" },
+  { host: "discuss.tchncs.de", label: "discuss.tchncs.de", legalUrl: "https://discuss.tchncs.de/legal", privacyUrl: "https://tchncs.de/privacy" },
 ];
 
 export type LemmyPost = {

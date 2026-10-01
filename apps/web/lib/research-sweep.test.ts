@@ -86,7 +86,7 @@ describe("runResearchSweep", () => {
     expect(results.map(({ key, evidence, error }) => [key, evidence.length, error])).toEqual([
       ["gdelt", 1, null],
       ["stack-exchange", 1, null],
-      ["lemmy", 1, null],
+      ["lemmy:lemmy.world", 1, null],
       ["mastodon", 1, null],
       ["wikimedia", 1, null],
       ["wikinews", 1, null],
@@ -121,6 +121,28 @@ describe("runResearchSweep", () => {
       lemmyTermsAccepted: false,
     }, fetcher, NOW)).rejects.toThrow("Review and affirm");
     expect(fetcher).not.toHaveBeenCalled();
+  });
+
+  it("keeps selected Lemmy instance results separate", async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      return new Response(JSON.stringify({ posts: [{
+        post: { id: 2, ap_id: `https://${url.hostname}/post/2`, name: "A recent topic", published: new Date(NOW - 60_000).toISOString(), language_id: 37 },
+        creator: { name: "member", actor_id: `https://${url.hostname}/u/member` },
+        community: { name: "world" },
+      }] }));
+    });
+    const results = await runResearchSweep("markets", {
+      gdelt: false,
+      lemmy: true,
+      lemmyInstances: ["lemmy.world", "discuss.tchncs.de"],
+      lemmyTermsAccepted: true,
+    }, fetcher, NOW);
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(results.map(({ key, evidence }) => [key, evidence[0]?.source])).toEqual([
+      ["lemmy:lemmy.world", "Lemmy · lemmy.world / c/world"],
+      ["lemmy:discuss.tchncs.de", "Lemmy · discuss.tchncs.de / c/world"],
+    ]);
   });
 
   it("keeps source failures separate so one rate-limited API does not erase other results", async () => {

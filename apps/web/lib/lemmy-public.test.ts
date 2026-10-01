@@ -60,13 +60,25 @@ describe("Lemmy public discussion search", () => {
   it("keeps only the instance whose terms were reviewed", async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ posts: [item()] }), { status: 200 }));
-    const views = await compareLemmyInstances("central bank", fetchMock, now);
+    const views = await compareLemmyInstances("central bank", fetchMock, now, ["lemmy.world"]);
     expect(views.map(({ host, returnedCount, error }) => ({ host, returnedCount, error }))).toEqual([
       { host: "lemmy.world", returnedCount: 1, error: null },
     ]);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     await expect(compareLemmyInstances("central bank", fetchMock, now, ["lemmy.ml" as unknown as LemmyInstance]))
       .rejects.toThrow("supported public Lemmy instances");
+  });
+
+  it("queries a selected second instance as a separate bounded view", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      expect(url.hostname).toBe("discuss.tchncs.de");
+      expect(url.pathname).toBe("/api/v3/search");
+      return Promise.resolve(new Response(JSON.stringify({ posts: [item({ ap_id: "https://discuss.tchncs.de/post/42" })] }), { status: 200 }));
+    });
+    const views = await compareLemmyInstances("semiconductor", fetchMock, now, ["discuss.tchncs.de"]);
+    expect(views).toMatchObject([{ host: "discuss.tchncs.de", returnedCount: 1, error: null }]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("validates query length", async () => {

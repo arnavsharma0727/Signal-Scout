@@ -1,6 +1,6 @@
 import { searchGdeltNews } from "./gdelt-public";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "./live-topic-search";
-import { searchLemmyPosts } from "./lemmy-public";
+import { LEMMY_INSTANCES, LemmyInstance, searchLemmyPosts } from "./lemmy-public";
 import { MASTODON_INSTANCES, searchPublicHashtag } from "./mastodon-public";
 import { WIKIMEDIA_TALK_WIKIS, searchWikimediaTalk } from "./wikimedia-talk";
 import { WIKINEWS_EDITIONS, searchWikinews } from "./wikinews-search";
@@ -10,6 +10,7 @@ export type ResearchSweepSelection = {
   gdelt: boolean;
   stackExchangeSite?: string;
   lemmy: boolean;
+  lemmyInstances?: readonly LemmyInstance[];
   lemmyTermsAccepted: boolean;
   mastodon?: { hashtag: string; instance: string };
   wikimediaLanguage?: string;
@@ -17,7 +18,7 @@ export type ResearchSweepSelection = {
 };
 
 export type ResearchSweepSourceResult = {
-  key: "gdelt" | "stack-exchange" | "lemmy" | "mastodon" | "wikimedia" | "wikinews";
+  key: string;
   label: string;
   window: string;
   evidence: ResearchEvidence[];
@@ -46,6 +47,12 @@ export async function runResearchSweep(
   }
   if (selection.lemmy && !selection.lemmyTermsAccepted) {
     throw new Error("Review and affirm the Lemmy instance terms and age condition before including it.");
+  }
+  const lemmyInstances = selection.lemmyInstances ?? [LEMMY_INSTANCES[0].host];
+  if (selection.lemmy && (!lemmyInstances.length || lemmyInstances.some(
+    (host) => !LEMMY_INSTANCES.some((instance) => instance.host === host),
+  ))) {
+    throw new Error("Choose one or more listed public Lemmy instances.");
   }
   if (!selection.gdelt && !selection.stackExchangeSite && !selection.lemmy && !selection.mastodon && !selection.wikimediaLanguage && !selection.wikinewsLanguage) {
     throw new Error("Select at least one source.");
@@ -102,12 +109,13 @@ export async function runResearchSweep(
     ));
   }
   if (selection.lemmy) {
-    tasks.push(capture("lemmy", "Lemmy · lemmy.world", "Recent posts within 7 days; up to 20", async () =>
-      (await searchLemmyPosts(query, "lemmy.world", fetcher, now)).map((post) => ({
+    for (const host of new Set(lemmyInstances)) {
+      tasks.push(capture(`lemmy:${host}`, `Lemmy · ${host}`, "Recent posts within 7 days; up to 20 per server view", async () =>
+      (await searchLemmyPosts(query, host, fetcher, now)).map((post) => ({
         id: `lemmy:${post.url}`,
         title: post.title,
         url: post.url,
-        source: `Lemmy · lemmy.world / c/${post.community}`,
+        source: `Lemmy · ${host} / c/${post.community}`,
         evidenceClass: "social discussion" as const,
         language: post.languageId === null ? "not provided" : `Lemmy language id ${post.languageId}`,
         timeLabel: "Published",
@@ -115,7 +123,8 @@ export async function runResearchSweep(
         attribution: `Lemmy author: ${post.author}`,
         attributionUrl: post.authorUrl ?? post.url,
       })),
-    ));
+      ));
+    }
   }
   if (selection.mastodon) {
     const { hashtag, instance } = selection.mastodon;

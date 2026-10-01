@@ -6,6 +6,7 @@ import {
 } from "../../lib/live-topic-search";
 import { WIKIMEDIA_TALK_WIKIS } from "../../lib/wikimedia-talk";
 import { WIKINEWS_EDITIONS } from "../../lib/wikinews-search";
+import { LEMMY_INSTANCES, LemmyInstance } from "../../lib/lemmy-public";
 import { MASTODON_INSTANCES, MastodonInstance } from "../../lib/mastodon-public";
 import {
   runResearchSweep,
@@ -26,6 +27,7 @@ export default function ResearchSweep({
   const [gdelt, setGdelt] = useState(true);
   const [stackExchangeSite, setStackExchangeSite] = useState<string>(DISCUSSION_COMMUNITIES[0].site);
   const [lemmy, setLemmy] = useState(false);
+  const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
   const [lemmyTermsAccepted, setLemmyTermsAccepted] = useState(false);
   const [mastodonEnabled, setMastodonEnabled] = useState(false);
   const [mastodonHashtag, setMastodonHashtag] = useState("");
@@ -52,6 +54,7 @@ export default function ResearchSweep({
         gdelt,
         stackExchangeSite,
         lemmy,
+        lemmyInstances,
         lemmyTermsAccepted,
         mastodon: mastodonEnabled ? { hashtag: mastodonHashtag, instance: mastodonInstance } : undefined,
         wikimediaLanguage,
@@ -109,9 +112,35 @@ export default function ResearchSweep({
             </span>
           </label>
           <label className="flex items-start gap-2 text-sm leading-6">
-            <input className="mt-1" type="checkbox" checked={lemmy} onChange={(event) => setLemmy(event.target.checked)} />
-            <span><strong>Lemmy · lemmy.world</strong><span className="block text-xs text-muted">Federated public forum index · up to 20 newest posts within 7 days</span></span>
+            <input className="mt-1" type="checkbox" checked={lemmy} onChange={(event) => { setLemmy(event.target.checked); setLemmyTermsAccepted(false); }} />
+            <span><strong>Lemmy public forums</strong><span className="block text-xs text-muted">Select one or more separate server indexes · up to 20 newest posts each within 7 days</span></span>
           </label>
+          {lemmy && (
+            <fieldset className="ml-6 grid gap-2 text-xs">
+              <legend className="sr-only">Lemmy instances to search</legend>
+              {LEMMY_INSTANCES.map((instance) => (
+                <label key={instance.host} className="flex items-start gap-2">
+                  <input
+                    className="mt-0.5"
+                    type="checkbox"
+                    checked={lemmyInstances.includes(instance.host)}
+                    onChange={(event) => {
+                      setLemmyInstances((current) => event.target.checked
+                        ? [...current, instance.host]
+                        : current.filter((host) => host !== instance.host));
+                      setLemmyTermsAccepted(false);
+                    }}
+                  />
+                  <span>
+                    {instance.label}{" · "}
+                    <a className="underline" href={instance.legalUrl} target="_blank" rel="noreferrer">legal information</a>
+                    {" · "}
+                    <a className="underline" href={instance.privacyUrl} target="_blank" rel="noreferrer">privacy</a>
+                  </span>
+                </label>
+              ))}
+            </fieldset>
+          )}
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={mastodonEnabled} onChange={(event) => setMastodonEnabled(event.target.checked)} />
             <span className="min-w-0 flex-1">
@@ -173,11 +202,7 @@ export default function ResearchSweep({
           <label className="flex items-start gap-2 text-xs leading-5 text-muted">
             <input className="mt-1" type="checkbox" checked={lemmyTermsAccepted} onChange={(event) => setLemmyTermsAccepted(event.target.checked)} required />
             <span>
-              I meet the applicable minimum age and agree to the{" "}
-              <a className="underline text-ink" href="https://legal.lemmy.world/tos/" target="_blank" rel="noreferrer">lemmy.world terms</a>
-              {" "}and{" "}
-              <a className="underline text-ink" href="https://legal.lemmy.world/privacy-policy/" target="_blank" rel="noreferrer">privacy policy</a>
-              {" "}before sending this search to that instance.
+              I reviewed the legal/privacy links for each checked instance and affirm I meet its applicable age requirements before sending the search query.
             </span>
           </label>
         )}

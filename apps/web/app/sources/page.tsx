@@ -103,7 +103,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "Visitor-triggered, keyless search of up to 20 newest matching posts on lemmy.world. Queries are sent directly from the browser; only title, author attribution, date, community, optional language id, and original link enter transient page state. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Post bodies are discarded; nothing is persisted. This is one incomplete federated instance index, not a global timeline, country proxy, representative population sample, or measure of attention. User posts remain their authors’ content; no blanket license is implied. Review the instance terms before use.",
+        "Visitor-triggered, keyless search of up to 20 newest matching posts per selected instance: lemmy.world and discuss.tchncs.de. Queries go directly from the browser to each selected server. Only title, author attribution, date, community, optional language id, and original link enter transient page state; bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Post bodies are discarded; nothing is persisted. The views are separate and incomplete; they are not a global timeline, country proxy, representative population sample, or measure of attention. Posts remain their authors’ content; no blanket license is implied. Visitors must review the selected instance’s legal/privacy information and explicitly confirm before searching.",
     },
     {
       name: "Wikimedia · article talk pages",
