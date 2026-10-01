@@ -45,6 +45,7 @@ type SourceConfig = {
   key: string;
   enabled: boolean;
   detail: string;
+  referenceUrl?: string;
   onDemand?: boolean;
 };
 
@@ -117,6 +118,7 @@ export default async function Sources() {
       name: "Wikinews · archived, not a live source",
       key: "wikinews-public",
       enabled: false,
+      referenceUrl: "https://meta.wikimedia.org/w/index.php?oldid=30328679#Board_of_Trustees_Approves_Closure_of_Wikinews",
       detail:
         "The Wikimedia Foundation closed all Wikinews editions effective 2026-05-04; they are read-only archives. A live API search returned only 2024 English results, so Signal Scout removed Wikinews from current-source searches. Archived content is not used as current evidence. See the Wikimedia Foundation’s project-closure announcement and the current distribution list.",
     },
@@ -249,6 +251,11 @@ export default async function Sources() {
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-muted">{source.detail}</p>
+                {source.referenceUrl && (
+                  <a className="mt-2 inline-block text-xs underline text-muted" href={source.referenceUrl} target="_blank" rel="noreferrer">
+                    Wikimedia Foundation closure notice
+                  </a>
+                )}
                 {source.onDemand ? (
                   <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
                     Visitor-triggered only. No database records or automated run-health history.
