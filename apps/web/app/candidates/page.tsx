@@ -26,7 +26,9 @@ type Lead = {
 
 export default async function Candidates() {
   const timeZone = await getDisplayTimeZone();
-  const observations = await recentDiscussionObservations();
+  const discussionResult = await recentDiscussionObservations();
+  const observationsUnavailable = discussionResult === null;
+  const observations = discussionResult ?? [];
   const db = serverSupabase();
   let leads: Lead[] = [];
   let unavailable = !db;
@@ -90,27 +92,40 @@ export default async function Candidates() {
           Observed discussion topics
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-          Exact tags on licensed Stack Exchange questions collected in the last
-          72 hours. This is a query-selected expert Q&amp;A sample from
-          one platform—not a population trend or a count of independent outlets.
+          Exact tags on licensed Stack Exchange questions published in the last
+          72 hours, compared with their median daily share across prior observed
+          publication days in the 30-day archive. Days with no eligible records
+          are not treated as zero. A baseline stays unavailable until 14
+          observed days exist. This is a query-selected expert Q&amp;A sample
+          from one platform—not a population trend or independent-source count.
           Tags remain in their original form; no translation or semantic merge
-          is inferred. Open the source questions before deciding whether a topic
-          merits further research.
+          is inferred. Open the source questions before drawing conclusions.
         </p>
-        {observations.length ? (
+        {observationsUnavailable ? (
+          <p className="mt-4 text-sm text-muted">
+            Discussion topic data is unavailable right now. This is not evidence
+            that a topic or discussion is absent.
+          </p>
+        ) : observations.length ? (
           <div className="mt-5 space-y-4">
             {observations.map((observation) => (
               <article className="border-t border-line pt-4" key={observation.tag}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold">{observation.tag}</h3>
                   <span className="mono text-xs text-muted">
-                    {observation.questionCount}{" "}
-                    {observation.questionCount === 1 ? "question" : "questions"}
+                    {observation.recentQuestionCount} of {observation.recentSampleSize}{" "}
+                    {observation.recentSampleSize === 1 ? "question" : "sampled questions"}
+                    {" · "}{Math.round(observation.recentShare * 100)}% recent share
                     {" · "}
                     {observation.communities.length}{" "}
                     {observation.communities.length === 1 ? "community" : "communities"}
                   </span>
                 </div>
+                <p className="mt-1 text-xs text-muted">
+                  {observation.baselineStatus === "available"
+                    ? `Prior daily median ${formatShare(observation.baselineMedianDailyShare)} · MAD ${formatShare(observation.baselineMadDailyShare)} · ${observation.priorObservedDays} observed publication days`
+                    : `Baseline unavailable · ${observation.priorObservedDays}/14 prior observed publication days`}
+                </p>
                 <ul className="mt-2 space-y-2">
                   {observation.evidence.map((item) => (
                     <li key={item.id} className="text-sm leading-6">
@@ -220,6 +235,9 @@ function hasEvidence(value: unknown): boolean {
   if (Array.isArray(value)) return value.length > 0;
   if (value && typeof value === "object") return Object.keys(value).length > 0;
   return typeof value === "string" && value.trim().length > 0;
+}
+function formatShare(value: number | null) {
+  return value === null ? "—" : `${(value * 100).toFixed(1)}%`;
 }
 function Page({
   title,

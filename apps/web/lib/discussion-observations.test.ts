@@ -11,6 +11,7 @@ const row = (overrides: Record<string, unknown> = {}) => ({
   raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["inflation"] },
   ...overrides,
 }) as Parameters<typeof buildDiscussionObservations>[0][number];
+const AS_OF = new Date("2026-10-01T00:00:00Z");
 
 describe("buildDiscussionObservations", () => {
   it("groups repeated exact tags and retains links to licensed evidence", () => {
@@ -21,33 +22,35 @@ describe("buildDiscussionObservations", () => {
         source_name: "Personal Finance & Money Stack Exchange",
         source_url: "https://money.stackexchange.com/questions/2",
       }),
-    ]);
+    ], AS_OF);
 
     expect(result).toHaveLength(1);
     expect(result[0]).toMatchObject({
       tag: "inflation",
-      questionCount: 2,
+      recentQuestionCount: 2,
+      recentSampleSize: 2,
+      baselineStatus: "insufficient_observed_days",
       communities: ["Economics Stack Exchange", "Personal Finance & Money Stack Exchange"],
     });
     expect(result[0].evidence).toHaveLength(2);
   });
 
   it("keeps singleton tags descriptive and excludes unlicensed content and other sources", () => {
-    expect(buildDiscussionObservations([row()])[0]).toMatchObject({
+    expect(buildDiscussionObservations([row()], AS_OF)[0]).toMatchObject({
       tag: "inflation",
-      questionCount: 1,
+      recentQuestionCount: 1,
     });
     expect(buildDiscussionObservations([
       row({ raw_metadata_json: { contentLicense: "CC BY-SA 3.0", tags: ["inflation"] } }),
       row({ id: "q2", source_type: "gdelt" }),
-    ])).toEqual([]);
+    ], AS_OF)).toEqual([]);
   });
 
   it("normalizes tags and ignores malformed values", () => {
     const result = buildDiscussionObservations([
       row({ raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["Inflation", "bad tag", "Inflation"] } }),
       row({ id: "q2", raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["inflation"] } }),
-    ]);
+    ], AS_OF);
     expect(result.map(({ tag }) => tag)).toEqual(["inflation"]);
   });
 
@@ -55,7 +58,50 @@ describe("buildDiscussionObservations", () => {
     const result = buildDiscussionObservations([
       row({ raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["生成ai"] } }),
       row({ id: "q2", raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["生成ai"] } }),
-    ]);
+    ], AS_OF);
     expect(result.map(({ tag }) => tag)).toEqual(["生成ai"]);
+  });
+
+  it("builds a 30-day exact-tag share baseline only after 14 observed prior publication days", () => {
+    const history = [];
+    for (let day = 14; day <= 27; day++) {
+      const date = `2026-09-${day}T12:00:00Z`;
+      history.push(
+        row({ id: `tagged-${day}`, published_at: date }),
+        row({ id: `other-${day}`, published_at: date, raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["economics"] } }),
+      );
+    }
+    history.push(
+      row({ id: "recent-inflation", published_at: "2026-09-30T12:00:00Z" }),
+      row({ id: "recent-other", published_at: "2026-09-30T13:00:00Z", raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["economics"] } }),
+    );
+
+    const inflation = buildDiscussionObservations(history, AS_OF).find((item) => item.tag === "inflation");
+    expect(inflation).toMatchObject({
+      recentQuestionCount: 1,
+      recentSampleSize: 2,
+      recentShare: 0.5,
+      priorObservedDays: 14,
+      baselineMedianDailyShare: 0.5,
+      baselineMadDailyShare: 0,
+      baselineStatus: "available",
+    });
+  });
+
+  it("does not fill missing publication dates with zero in the baseline", () => {
+    const history = Array.from({ length: 13 }, (_, index) => {
+      const day = String(index + 14).padStart(2, "0");
+      return row({ id: `q-${day}`, published_at: `2026-09-${day}T12:00:00Z` });
+    });
+    const inflation = buildDiscussionObservations([
+      ...history,
+      row({ id: "recent", published_at: "2026-09-30T12:00:00Z" }),
+    ], AS_OF)[0];
+    expect(inflation).toMatchObject({
+      priorObservedDays: 13,
+      baselineMedianDailyShare: null,
+      baselineMadDailyShare: null,
+      baselineStatus: "insufficient_observed_days",
+    });
   });
 });

@@ -44,13 +44,17 @@ export default function Methodology() {
         <h2 className="text-xl font-bold">Discussion observations</h2>
         <p className="mt-3 text-sm leading-6 text-muted">
           The research queue lists exact Stack Exchange question tags found on
-          individually CC BY-SA 4.0-licensed questions in the last 72 hours,
-          including tags seen once. The API queries are selected in advance,
-          coverage is limited to the listed communities and languages, and
-          counts describe only collected questions. They are not a trend,
-          independent-publisher corroboration, public-opinion measure, or
-          investment lead. Tags and titles remain untranslated; matching across
-          languages is not inferred.
+          individually CC BY-SA 4.0-licensed questions published in the last
+          72 hours. Each tag's recent share of this sample is shown against a
+          median daily share across prior observed publication days in a
+          30-day archive; missing days are not zero-filled, and the baseline
+          stays unavailable until 14 observed days exist. API queries are
+          selected in advance and coverage is limited to the listed
+          communities and languages. This is a one-platform descriptive
+          comparison, not a validated trend, independent-publisher
+          corroboration, public-opinion measure, or investment lead. Tags and
+          titles remain untranslated; matching across languages is not
+          inferred.
         </p>
       </section>
       <section className="panel mt-5 p-7">

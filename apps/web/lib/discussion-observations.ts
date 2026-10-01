@@ -1,3 +1,5 @@
+import { METHODOLOGY } from "./methodology-config";
+
 export type DiscussionEvidence = {
   id: string;
   title: string;
@@ -8,10 +10,16 @@ export type DiscussionEvidence = {
 
 export type DiscussionTopicObservation = {
   tag: string;
-  questionCount: number;
+  recentQuestionCount: number;
+  recentSampleSize: number;
+  recentShare: number;
   communities: string[];
   latestAt: string | null;
   evidence: DiscussionEvidence[];
+  priorObservedDays: number;
+  baselineMedianDailyShare: number | null;
+  baselineMadDailyShare: number | null;
+  baselineStatus: "available" | "insufficient_observed_days";
 };
 
 type StoredDiscussion = {
@@ -23,45 +31,88 @@ type StoredDiscussion = {
   published_at: string | null;
   raw_metadata_json: unknown;
 };
+type RecentDiscussion = StoredDiscussion & { tags: string[]; timestamp: number };
 
 const LICENSE = "CC BY-SA 4.0";
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
-/** Exact tag counts from licensed questions; not a trend or independent-source score. */
+/** Exact tags on licensed Q&A; relative shares are descriptive, never lead scores. */
 export function buildDiscussionObservations(
   rows: StoredDiscussion[],
+  asOf = new Date(),
 ): DiscussionTopicObservation[] {
-  const questions = new Map<string, StoredDiscussion & { tags: string[] }>();
+  const end = asOf.getTime();
+  const currentStart = end - 3 * DAY_MS;
+  const baselineStart = end - METHODOLOGY.dailyMetrics.baselineWindowDays * DAY_MS;
+  const priorStart = new Date(currentStart).toISOString().slice(0, 10);
+  const days = new Map<string, { ids: Set<string>; tagIds: Map<string, Set<string>> }>();
+  const currentItems = new Map<string, RecentDiscussion>();
 
   for (const row of rows) {
-    if (row.source_type !== "stack-exchange" || !row.title_original || !row.source_url) continue;
+    const timestamp = Date.parse(row.published_at ?? "");
+    if (
+      row.source_type !== "stack-exchange" || !row.title_original || !row.source_url ||
+      !Number.isFinite(timestamp) || timestamp < baselineStart || timestamp > end
+    ) continue;
     const metadata = asRecord(row.raw_metadata_json);
     if (metadata.contentLicense !== LICENSE || !Array.isArray(metadata.tags)) continue;
+
     const tags = [...new Set(
       metadata.tags
         .filter((tag): tag is string => typeof tag === "string")
         .map((tag) => tag.trim().normalize("NFC").toLocaleLowerCase())
         .filter((tag) => /^[\p{L}\p{N}][\p{L}\p{N}+.#-]{0,39}$/u.test(tag)),
     )];
-    if (tags.length) questions.set(row.id, { ...row, tags });
-  }
+    if (!tags.length) continue;
 
-  const groups = new Map<string, StoredDiscussion[]>();
-  for (const question of questions.values()) {
-    for (const tag of question.tags) {
-      const group = groups.get(tag) ?? [];
-      group.push(question);
-      groups.set(tag, group);
+    const day = new Date(timestamp).toISOString().slice(0, 10);
+    const dayBucket = days.get(day) ?? { ids: new Set<string>(), tagIds: new Map<string, Set<string>>() };
+    dayBucket.ids.add(row.id);
+    for (const tag of tags) {
+      const ids = dayBucket.tagIds.get(tag) ?? new Set<string>();
+      ids.add(row.id);
+      dayBucket.tagIds.set(tag, ids);
+    }
+    days.set(day, dayBucket);
+
+    if (timestamp >= currentStart) {
+      const prior = currentItems.get(row.id);
+      if (!prior || tags.length > prior.tags.length)
+        currentItems.set(row.id, { ...row, tags, timestamp });
     }
   }
 
-  return [...groups.entries()]
+  const priorDays = [...days.entries()]
+    .filter(([day]) => day < priorStart && Date.parse(`${day}T00:00:00.000Z`) >= baselineStart)
+    .sort(([a], [b]) => a.localeCompare(b));
+  const priorObservedDays = priorDays.length;
+  const baselineReady = priorObservedDays >= METHODOLOGY.dailyMetrics.minimumPriorObservedDaysForBaseline;
+  const currentQuestions = [...currentItems.values()];
+  const recentSampleSize = currentQuestions.length;
+  const recentTags = new Map<string, RecentDiscussion[]>();
+  for (const item of currentQuestions) {
+    for (const tag of item.tags) {
+      const group = recentTags.get(tag) ?? [];
+      group.push(item);
+      recentTags.set(tag, group);
+    }
+  }
+
+  return [...recentTags.entries()]
     .map(([tag, group]) => {
-      const ordered = group.sort(
-        (a, b) => Date.parse(b.published_at ?? "") - Date.parse(a.published_at ?? ""),
-      );
+      const shareByDay = priorDays.map(([day, bucket]) => {
+        const tagged = bucket.tagIds.get(tag)?.size ?? 0;
+        return tagged / bucket.ids.size;
+      });
+      const median = baselineReady ? medianOf(shareByDay) : null;
+      const mad = median === null ? null : medianOf(shareByDay.map((share) => Math.abs(share - median)));
+      const ordered = group.sort((a, b) => b.timestamp - a.timestamp);
       return {
         tag,
-        questionCount: group.length,
+        recentQuestionCount: group.length,
+        recentSampleSize,
+        recentShare: recentSampleSize ? group.length / recentSampleSize : 0,
         communities: [...new Set(group.map((row) => row.source_name).filter((name): name is string => Boolean(name)))].sort(),
         latestAt: ordered[0]?.published_at ?? null,
         evidence: ordered.slice(0, 3).map((row) => ({
@@ -71,10 +122,21 @@ export function buildDiscussionObservations(
           community: row.source_name ?? "Stack Exchange",
           publishedAt: row.published_at,
         })),
+        priorObservedDays,
+        baselineMedianDailyShare: median,
+        baselineMadDailyShare: mad,
+        baselineStatus: baselineReady ? "available" as const : "insufficient_observed_days" as const,
       };
     })
-    .sort((a, b) => b.questionCount - a.questionCount || (b.latestAt ?? "").localeCompare(a.latestAt ?? ""))
+    .sort((a, b) => b.recentQuestionCount - a.recentQuestionCount || (b.latestAt ?? "").localeCompare(a.latestAt ?? ""))
     .slice(0, 12);
+}
+
+function medianOf(values: number[]) {
+  if (!values.length) return null;
+  const ordered = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(ordered.length / 2);
+  return ordered.length % 2 ? ordered[middle] : (ordered[middle - 1] + ordered[middle]) / 2;
 }
 
 function asRecord(value: unknown): Record<string, unknown> {

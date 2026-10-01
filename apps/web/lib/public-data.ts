@@ -35,5 +35,22 @@ export async function recentSourceDocuments(){
 }
 
 export async function recentDiscussionObservations(){
-  return buildDiscussionObservations(await recentSourceDocuments());
+  const db=serverSupabase();
+  if(!db)return null;
+  const since=new Date(Date.now()-30*24*60*60*1000).toISOString();
+  const rows=[];
+  const pageSize=1000;
+  for(let offset=0;offset<5000;offset+=pageSize){
+    const {data,error}=await db.from('source_documents')
+      .select('id,source_type,source_name,title_original,source_url,published_at,raw_metadata_json')
+      .eq('source_type','stack-exchange')
+      .gte('published_at',since)
+      .order('published_at',{ascending:true})
+      .order('id',{ascending:true})
+      .range(offset,offset+pageSize-1);
+    if(error||!data)return null;
+    rows.push(...data);
+    if(data.length<pageSize)break;
+  }
+  return buildDiscussionObservations(rows);
 }
