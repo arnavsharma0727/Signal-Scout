@@ -79,7 +79,7 @@ export default async function Sources() {
       key: "stack-exchange",
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
-        "Keyless daily collection across nine communities plus one-query-at-a-time live Explore search. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. This remains expert Q&A, not representative public opinion; on-demand results are not stored.",
+        "Keyless daily collection across 11 communities plus one-query-at-a-time live Explore search. The current set includes English Politics and Law Q&A with tariff, sanction, and trade title searches. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. All 11 are one expert-Q&A platform operator, not independent sources or representative public opinion; on-demand results are not stored.",
     },
     {
       name: "Mastodon · public hashtag timelines (4 server views)",

@@ -40,8 +40,8 @@ describe("StackExchangeConnector", () => {
       end: new Date("2026-10-01T00:00:00Z"),
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(27);
-    expect(result.requestsUsed).toBe(27);
+    expect(fetchMock).toHaveBeenCalledTimes(33);
+    expect(result.requestsUsed).toBe(33);
     for (const [url] of fetchMock.mock.calls) {
       const params = new URL(String(url)).searchParams;
       expect(params.get("title")).toBeTruthy();
@@ -65,6 +65,7 @@ describe("StackExchangeConnector", () => {
       new Set([
         "economics", "money", "ai", "datascience", "security",
         "es.stackoverflow", "pt.stackoverflow", "ja.stackoverflow", "ru.stackoverflow",
+        "politics", "law",
       ]),
     );
   });

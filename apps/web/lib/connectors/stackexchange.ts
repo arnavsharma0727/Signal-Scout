@@ -17,6 +17,8 @@ const siteQueries: ReadonlyArray<{
   { site: "pt.stackoverflow", languageCode: "pt", terms: ["inteligência artificial", "GPU", "modelo de linguagem"] },
   { site: "ja.stackoverflow", languageCode: "ja", terms: ["生成AI", "LLM", "GPU"] },
   { site: "ru.stackoverflow", languageCode: "ru", terms: ["искусственный интеллект", "LLM", "GPU"] },
+  { site: "politics", languageCode: "en", terms: ["tariffs", "sanctions", "trade"] },
+  { site: "law", languageCode: "en", terms: ["tariffs", "sanctions", "trade"] },
 ];
 const siteLabels: Record<string, string> = {
   economics: "Economics Stack Exchange",
@@ -28,6 +30,8 @@ const siteLabels: Record<string, string> = {
   "pt.stackoverflow": "Stack Overflow em Português",
   "ja.stackoverflow": "スタック・オーバーフロー",
   "ru.stackoverflow": "Stack Overflow на русском",
+  politics: "Politics Stack Exchange",
+  law: "Law Stack Exchange",
 };
 const licenseUrl = "https://creativecommons.org/licenses/by-sa/4.0/";
 

@@ -51,6 +51,26 @@ describe("searchLiveDiscussion", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it("supports a licensed policy discussion community", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      items: [{
+        question_id: 42,
+        title: "How do tariffs affect trade policy?",
+        link: "https://politics.stackexchange.com/questions/42/example",
+        creation_date: 1790734268,
+        content_license: "CC BY-SA 4.0",
+        owner: { display_name: "Contributor", link: "https://politics.stackexchange.com/users/1" },
+      }],
+    }), { status: 200 }));
+    const result = await searchLiveDiscussion("tariffs", "politics", fetchMock, Date.parse("2026-10-01T00:00:00Z"));
+    expect(result[0]).toMatchObject({
+      community: "Politics Stack Exchange",
+      language: "English",
+      title: "How do tariffs affect trade policy?",
+    });
+    expect(new URL(fetchMock.mock.calls[0][0]).searchParams.get("site")).toBe("politics");
+  });
+
   it("returns a clear message when the source rate-limits requests", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 429 }));
     await expect(searchLiveDiscussion("inflation", "economics", fetchMock)).rejects.toThrow("rate-limiting");
