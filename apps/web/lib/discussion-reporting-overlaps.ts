@@ -81,6 +81,10 @@ export function buildDiscussionReportingOverlaps(
   const matchingReports = new Map<string, typeof reports>();
   for (const question of questions.values()) {
     for (const candidate of question.phrases) {
+      // Very short Latin acronyms (AI, GPU, LLM, etc.) collide across unrelated
+      // contexts even on exact token boundaries. Keep these searchable in Explore,
+      // but do not present them as discussion/reporting cues.
+      if (isBroadShortLatinAcronym(candidate.phrase)) continue;
       const phrase = normalizeText(candidate.phrase.replace(/[_-]+/g, " "));
       if (candidate.basis === "community tag" && phrase.length < 3) continue;
       const key = `${question.language}\u0000${candidate.basis}\u0000${phrase}`;
@@ -124,6 +128,11 @@ export function buildDiscussionReportingOverlaps(
     })
     .sort((a, b) => b.questionCount - a.questionCount || (b.latestReportingAt ?? "").localeCompare(a.latestReportingAt ?? ""))
     .slice(0, 20);
+}
+
+function isBroadShortLatinAcronym(value: string) {
+  const compact = normalizeText(value).replace(/\s+/g, "");
+  return /^[a-z]{2,3}$/.test(compact);
 }
 
 function normalizeLanguage(value: string | null) {
