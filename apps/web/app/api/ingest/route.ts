@@ -116,7 +116,13 @@ async function runIngestion() {
       )
         marketConnectors.push(new TheConversationConnector());
       const rssFeeds = getRssFeeds(market.market_code);
-      if (process.env.RSS_ENABLED === "true" && rssFeeds.length)
+      // Publisher feeds are global research context, not company-specific
+      // evidence. Run each configured market feed only for the macro profile.
+      if (
+        process.env.RSS_ENABLED === "true" &&
+        rssFeeds.length &&
+        company.ticker === "MARKET-TALK"
+      )
         marketConnectors.push(new RSSConnector(rssFeeds));
       const aliases = [
         ...(market.company_aliases_json ?? []),
