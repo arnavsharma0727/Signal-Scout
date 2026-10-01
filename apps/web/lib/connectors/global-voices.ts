@@ -11,6 +11,9 @@ export const GLOBAL_VOICES_FEEDS = [
   { language: "pt", label: "Portuguese", host: "pt.globalvoices.org", feedTitle: "Global Voices em Português" },
   { language: "ar", label: "Arabic", host: "ar.globalvoices.org", feedTitle: "Global Voices الأصوات العالمية" },
   { language: "ru", label: "Russian", host: "ru.globalvoices.org", feedTitle: "Global Voices по-русски" },
+  { language: "it", label: "Italian", host: "it.globalvoices.org", feedTitle: "Global Voices in Italiano" },
+  { language: "nl", label: "Dutch", host: "nl.globalvoices.org", feedTitle: "Global Voices in het Nederlands" },
+  { language: "yo", label: "Yoruba", host: "yo.globalvoices.org", feedTitle: "Global Voices ní-Yorùbá" },
 ] as const;
 const MAX_FEED_BYTES = 500_000;
 const SITE_LICENSE_NOTICE =

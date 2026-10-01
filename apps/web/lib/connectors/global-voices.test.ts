@@ -100,7 +100,7 @@ describe("Global Voices CC BY RSS connector", () => {
       publisherIndependenceInferred: false,
     });
     expect(result.metadata).toMatchObject({
-      editionsQueried: ["en", "es", "fr", "pt", "ar", "ru"],
+      editionsQueried: ["en", "es", "fr", "pt", "ar", "ru", "it", "nl", "yo"],
       failedFeeds: [],
       bodyAndMediaRetained: false,
     });
@@ -111,7 +111,28 @@ describe("Global Voices CC BY RSS connector", () => {
       { language: "pt", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
       { language: "ar", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
       { language: "ru", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "it", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "nl", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "yo", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
     ]);
+  });
+
+  it("accepts the verified Italian, Dutch, and Yoruba editions as one publisher", async () => {
+    vi.stubGlobal("fetch", editionFeeds({
+      it: item({ url: "https://it.globalvoices.org/2026/10/01/story/" }),
+      nl: item({ url: "https://nl.globalvoices.org/2026/10/01/story/" }),
+      yo: item({ url: "https://yo.globalvoices.org/2026/10/01/story/" }),
+    }));
+
+    const result = await new GlobalVoicesConnector().fetchDocuments(input);
+
+    expect(result.documents.map(({ languageCode, sourceName }) => [languageCode, sourceName])).toEqual([
+      ["it", "Global Voices · Italian edition"],
+      ["nl", "Global Voices · Dutch edition"],
+      ["yo", "Global Voices · Yoruba edition"],
+    ]);
+    expect(result.documents.every(({ rawMetadata }) => rawMetadata.publisher === "Global Voices")).toBe(true);
+    expect(result.requestsUsed).toBe(9);
   });
 
   it("rejects item-specific conflicting rights, non-publisher links, and out-of-window items", async () => {
@@ -146,7 +167,7 @@ describe("Global Voices CC BY RSS connector", () => {
     expect(result.requestsUsed).toBe(GLOBAL_VOICES_FEEDS.length);
     expect(result.metadata).toMatchObject({
       failedFeeds: ["es"],
-      editionsSucceeded: ["en", "fr", "pt", "ar", "ru"],
+      editionsSucceeded: ["en", "fr", "pt", "ar", "ru", "it", "nl", "yo"],
     });
     expect(result.metadata.editionResults).toContainEqual({
       language: "es",
