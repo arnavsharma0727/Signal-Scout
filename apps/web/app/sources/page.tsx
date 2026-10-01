@@ -87,7 +87,7 @@ export default async function Sources() {
       key: "stack-exchange",
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
-        "Keyless daily collection across 11 communities, re-querying a 30-day window with one page (up to 100 items) per title term, plus one-query-at-a-time live Explore search. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. Results may omit matches beyond the per-query page cap. All 11 are one expert-Q&A platform operator, not independent sources or representative public opinion; on-demand results are not stored.",
+        "Keyless daily collection across 11 communities, re-querying a 30-day window with one page (up to 100 items) per title term, plus on-demand Explore searches across up to four selected communities with a separately supplied phrase for each language. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. Results may omit matches beyond the per-query page cap. All 11 are one expert-Q&A platform operator, not independent sources or representative public opinion; on-demand results are not stored.",
     },
     {
       name: "Mastodon · public hashtag timelines (4 server views)",

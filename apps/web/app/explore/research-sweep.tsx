@@ -25,7 +25,8 @@ export default function ResearchSweep({
 }) {
   const [query, setQuery] = useState("");
   const [gdelt, setGdelt] = useState(true);
-  const [stackExchangeSite, setStackExchangeSite] = useState<string>(DISCUSSION_COMMUNITIES[0].site);
+  const [stackExchangeSites, setStackExchangeSites] = useState<string[]>([DISCUSSION_COMMUNITIES[0].site]);
+  const [stackExchangeTerms, setStackExchangeTerms] = useState<Record<string, string>>({});
   const [lemmy, setLemmy] = useState(false);
   const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
   const [lemmyTermsAccepted, setLemmyTermsAccepted] = useState(false);
@@ -52,7 +53,10 @@ export default function ResearchSweep({
     try {
       setResults(await runResearchSweep(query, {
         gdelt,
-        stackExchangeSite,
+        stackExchangeQueries: stackExchangeSites.map((site) => ({
+          site,
+          query: stackExchangeTerms[site] ?? query,
+        })),
         lemmy,
         lemmyInstances,
         lemmyTermsAccepted,
@@ -73,7 +77,7 @@ export default function ResearchSweep({
       <div className="eyebrow">Live, browser-only source sweep</div>
       <h2 id="research-sweep-title" className="mt-2 text-xl font-semibold">Search one topic across selected sources</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        This sends your phrase directly from this browser to each selected public API. Each result set keeps its own window, count, and limitations; these are not comparable audience measures and are never pooled or stored by Signal Scout. Select citations one by one for your brief.
+        Searches go directly from this browser to each selected public API. For Stack Exchange, enter an equivalent phrase separately for each language; Signal Scout does not auto-translate. Result sets keep their own window, query, count, and limitations—counts are not comparable audience measures and are never pooled or stored. Select citations one by one for your brief.
       </p>
       <form onSubmit={submit} className="mt-5 grid gap-4">
         <label className="block text-sm font-medium">
@@ -93,24 +97,46 @@ export default function ResearchSweep({
             <input className="mt-1" type="checkbox" checked={gdelt} onChange={(event) => setGdelt(event.target.checked)} />
             <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · last 7 days · up to 25 results</span></span>
           </label>
-          <label className="flex items-start gap-2 text-sm leading-6">
-            <input className="mt-1" type="checkbox" checked={Boolean(stackExchangeSite)} onChange={(event) => setStackExchangeSite(event.target.checked ? DISCUSSION_COMMUNITIES[0].site : "")} />
-            <span className="min-w-0 flex-1">
-              <strong>Stack Exchange</strong><span className="block text-xs text-muted">One selected community · title search · CC BY-SA results only · last 30 days</span>
-              <select
-                className="mt-2 block w-full rounded border border-line bg-white px-2 py-1.5 text-xs text-ink"
-                value={stackExchangeSite}
-                onChange={(event) => setStackExchangeSite(event.target.value)}
-                disabled={!stackExchangeSite}
-                aria-label="Stack Exchange community"
-              >
-                <option value="">Choose community</option>
-                {DISCUSSION_COMMUNITIES.map((community) => (
-                  <option key={community.site} value={community.site}>{community.label} · {community.language}</option>
-                ))}
-              </select>
-            </span>
-          </label>
+          <fieldset className="grid gap-2 border-y border-line py-3 text-sm leading-5">
+            <legend className="font-medium">Stack Exchange · choose up to four communities</legend>
+            <p className="text-xs text-muted">Title-only searches, last 30 days; only items marked CC BY-SA 4.0 are shown. Enter equivalent localized phrases yourself. This is expert Q&amp;A, not general forum conversation.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {DISCUSSION_COMMUNITIES.map((community) => {
+                const checked = stackExchangeSites.includes(community.site);
+                return (
+                  <div key={community.site} className="rounded border border-line p-2 text-xs">
+                    <label className="flex items-start gap-2">
+                      <input
+                        className="mt-0.5"
+                        type="checkbox"
+                        checked={checked}
+                        disabled={!checked && stackExchangeSites.length >= 4}
+                        onChange={(event) => setStackExchangeSites((current) => event.target.checked
+                          ? [...current, community.site]
+                          : current.filter((site) => site !== community.site))}
+                      />
+                      <span>{community.label} · {community.language}</span>
+                    </label>
+                    {checked && (
+                      <label className="mt-2 block text-[11px] text-muted">
+                        Search phrase to send to this community
+                        <input
+                          className="mt-1 block w-full rounded border border-line bg-white px-2 py-1.5"
+                          value={stackExchangeTerms[community.site] ?? query}
+                          onChange={(event) => setStackExchangeTerms((current) => ({ ...current, [community.site]: event.target.value }))}
+                          minLength={3}
+                          maxLength={80}
+                          placeholder={`Search phrase in ${community.language}`}
+                          aria-label={`Search phrase for ${community.label}`}
+                          required
+                        />
+                      </label>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </fieldset>
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={lemmy} onChange={(event) => { setLemmy(event.target.checked); setLemmyTermsAccepted(false); }} />
             <span><strong>Lemmy public forums</strong><span className="block text-xs text-muted">Select one or more separate server indexes · up to 20 newest posts each within 7 days</span></span>
@@ -217,7 +243,7 @@ export default function ResearchSweep({
       </form>
       {error && <p role="alert" className="mt-4 text-sm">{error}</p>}
       {searched && !loading && results.length > 0 && (
-        <div className="mt-6 space-y-6 border-t border-line pt-5">
+        <div className="mt-6 grid gap-6 border-t border-line pt-5 md:grid-cols-2">
           {results.map((result) => (
             <section key={result.key} aria-label={result.label}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">

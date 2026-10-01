@@ -9,6 +9,7 @@ import type { ResearchEvidence } from "./research-brief";
 export type ResearchSweepSelection = {
   gdelt: boolean;
   stackExchangeSite?: string;
+  stackExchangeQueries?: readonly { site: string; query: string }[];
   lemmy: boolean;
   lemmyInstances?: readonly LemmyInstance[];
   lemmyTermsAccepted: boolean;
@@ -36,15 +37,23 @@ export async function runResearchSweep(
   now = Date.now(),
 ): Promise<ResearchSweepSourceResult[]> {
   const query = input.trim();
+  const stackExchangeQueries = selection.stackExchangeQueries ?? (selection.stackExchangeSite
+    ? [{ site: selection.stackExchangeSite, query }]
+    : []);
   if (query.length < 2 || query.length > 100) {
     throw new Error("Enter a search phrase between 2 and 100 characters.");
   }
   if (selection.gdelt && query.length < 3) {
     throw new Error("GDELT needs at least 3 characters. Choose another source or lengthen the phrase.");
   }
-  if (selection.stackExchangeSite && query.length < 3) {
-    throw new Error("Stack Exchange needs at least 3 characters. Choose another source or lengthen the phrase.");
+  if (stackExchangeQueries.length > 4) throw new Error("Choose no more than four Stack Exchange communities per sweep.");
+  if (new Set(stackExchangeQueries.map(({ site }) => site)).size !== stackExchangeQueries.length) {
+    throw new Error("Choose each Stack Exchange community only once.");
   }
+  if (stackExchangeQueries.some(({ site, query: term }) =>
+    !DISCUSSION_COMMUNITIES.some((community) => community.site === site) ||
+    term.trim().length < 3 || term.trim().length > 80,
+  )) throw new Error("Each Stack Exchange community needs a listed site and its own 3–80 character search phrase.");
   if (selection.lemmy && !selection.lemmyTermsAccepted) {
     throw new Error("Review and affirm the Lemmy instance terms and age condition before including it.");
   }
@@ -54,11 +63,8 @@ export async function runResearchSweep(
   ))) {
     throw new Error("Choose one or more listed public Lemmy instances.");
   }
-  if (!selection.gdelt && !selection.stackExchangeSite && !selection.lemmy && !selection.mastodon && !selection.wikimediaLanguage && !selection.wikinewsLanguage) {
+  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !selection.wikimediaLanguage && !selection.wikinewsLanguage) {
     throw new Error("Select at least one source.");
-  }
-  if (selection.stackExchangeSite && !DISCUSSION_COMMUNITIES.some(({ site }) => site === selection.stackExchangeSite)) {
-    throw new Error("Choose a listed Stack Exchange community.");
   }
   if (selection.wikimediaLanguage && !WIKIMEDIA_TALK_WIKIS.some(({ language }) => language === selection.wikimediaLanguage)) {
     throw new Error("Choose a listed Wikimedia language edition.");
@@ -88,11 +94,11 @@ export async function runResearchSweep(
       })),
     ));
   }
-  if (selection.stackExchangeSite) {
-    const site = selection.stackExchangeSite;
+  for (const { site, query: termInput } of stackExchangeQueries) {
+    const term = termInput.trim();
     const community = DISCUSSION_COMMUNITIES.find(({ site: candidate }) => candidate === site)!;
-    tasks.push(capture("stack-exchange", community.label, "Questions within 30 days", async () =>
-      (await searchLiveDiscussion(query, site, fetcher, now)).map((item) => ({
+    tasks.push(capture(`stack-exchange:${site}`, community.label, `Title matches within 30 days · query: ${term}`, async () =>
+      (await searchLiveDiscussion(term, site, fetcher, now)).map((item) => ({
         id: `stackexchange:${item.url}`,
         title: item.title,
         url: item.url,
@@ -101,6 +107,7 @@ export async function runResearchSweep(
         language: item.language,
         timeLabel: "Published",
         timeValue: item.createdAt,
+        context: `Stack Exchange title search in ${item.language}: “${term}”; title-only query, not topic prevalence`,
         attribution: `Author: ${item.author}`,
         attributionUrl: item.authorUrl,
         licenseName: "CC BY-SA 4.0",
