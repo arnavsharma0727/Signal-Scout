@@ -27,7 +27,7 @@ export type DiscussionReportingOverlap = {
 const QUESTION_LICENSE = "CC BY-SA 4.0";
 const WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Literal same-language tag/title matches only; never infers sentiment or a causal link. */
+/** Literal same-language community-tag/headline matches only; never infers sentiment or causality. */
 export function buildDiscussionReportingOverlaps(
   rows: OverlapInput[],
   asOf = new Date(),
@@ -71,10 +71,8 @@ export function buildDiscussionReportingOverlaps(
   }
   const matchingReports = new Map<string, typeof reports>();
   for (const question of questions.values()) {
-    const questionTitle = normalizeText(question.row.title_original!);
     for (const tag of question.tags) {
       const phrase = normalizeText(tag.replace(/[_-]+/g, " "));
-      if (!containsPhrase(questionTitle, phrase)) continue;
       const key = `${question.language}\u0000${tag}`;
       const group = groups.get(key) ?? {
         tag,

@@ -35,6 +35,23 @@ describe("discussion-reporting literal overlaps", () => {
     expect(overlap[0].reporting[0].url).toBe("https://globalvoices.org/story");
   });
 
+  it("uses the source-applied tag even when the tag words are absent from the question title", () => {
+    const question = row({
+      title_original: "Will this affect future savings?",
+      raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["central-bank"], query: "future savings" },
+    });
+    const report = row({
+      id: "r-tag-only",
+      source_type: "licensed-reporting",
+      source_name: "Global Voices",
+      source_domain: "globalvoices.org",
+      title_original: "Central bank weighs new measures",
+      source_url: "https://globalvoices.org/tag-only",
+      raw_metadata_json: {},
+    });
+    expect(buildDiscussionReportingOverlaps([question, report], asOf)).toHaveLength(1);
+  });
+
   it("does not bridge languages, partial words, unlicensed Q&A, excluded sources, or stale rows", () => {
     const reports = [
       row({ id: "r-en", source_type: "licensed-analysis", source_name: "The Conversation", source_domain: "theconversation.com", title_original: "Central bank decisions", source_url: "https://theconversation.com/story", raw_metadata_json: {} }),

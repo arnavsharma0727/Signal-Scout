@@ -177,7 +177,7 @@ export default async function Candidates() {
           Discussion–reporting phrase overlaps
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-          Exact same-language Stack Exchange tag phrases must appear in both a question title and a licensed reporting/analysis headline, published within the last seven days. This is a small, query-selected discovery sample—not evidence that discussion caused coverage, that the sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open and review every original item.
+          A Stack Exchange question’s exact community tag must also appear as a whole phrase in a same-language licensed reporting/analysis headline from the last seven days. This is a small, query-selected discovery sample—not evidence that discussion caused coverage, that the sources are independent, or that either reflects public attention. The question is associated through its community tag, not by automatic interpretation of its title. No translation, sentiment, market impact, or thesis is inferred. Open and review every original item.
         </p>
         {overlapsUnavailable ? (
           <p className="mt-4 text-sm text-muted">Cross-source records are unavailable. This is not evidence that no related discussion or reporting exists.</p>
@@ -208,7 +208,7 @@ export default async function Candidates() {
             ))}
           </div>
         ) : (
-          <p className="mt-4 text-sm text-muted">No exact same-language phrase overlaps were found in the available seven-day sample. This does not mean the topic is absent from discussion or reporting.</p>
+          <p className="mt-4 text-sm text-muted">No exact same-language tag/headline overlaps were found in the available seven-day sample. This does not mean the topic is absent from discussion or reporting.</p>
         )}
       </section>
       {unavailable ? (
