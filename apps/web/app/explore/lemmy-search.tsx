@@ -1,13 +1,15 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { compareLemmyInstances, LemmyView } from "../../lib/lemmy-public";
 import type { ResearchEvidence } from "../../lib/research-brief";
 
 export default function LemmySearch({
+  initialTopic,
   onAdd,
   selectedIds,
 }: {
+  initialTopic: string;
   onAdd: (item: ResearchEvidence) => void;
   selectedIds: ReadonlySet<string>;
 }) {
@@ -17,6 +19,9 @@ export default function LemmySearch({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [termsConfirmed, setTermsConfirmed] = useState(false);
+  useEffect(() => {
+    if (initialTopic) setQuery(initialTopic);
+  }, [initialTopic]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,7 +32,7 @@ export default function LemmySearch({
     try {
       const next = await compareLemmyInstances(query);
       setViews(next);
-      if (next.every(({ error: issue }) => issue)) setError("All selected Lemmy instances were unavailable.");
+      if (next.every(({ error: issue }) => issue)) setError("The Lemmy public instance is unavailable.");
     } catch (cause) {
       setViews([]);
       setError(cause instanceof Error ? cause.message : "Public forum search is temporarily unavailable.");

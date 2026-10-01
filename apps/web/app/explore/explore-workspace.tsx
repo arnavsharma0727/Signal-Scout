@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import type { ResearchEvidence } from "../../lib/research-brief";
+import { useEffect, useMemo, useState } from "react";
+import { topicFromFragment, type ResearchEvidence } from "../../lib/research-brief";
 import GdeltSearch from "./gdelt-search";
 import LemmySearch from "./lemmy-search";
 import MastodonSearch from "./mastodon-search";
@@ -11,7 +11,20 @@ import ResearchBrief from "./research-brief";
 
 export default function ExploreWorkspace() {
   const [evidence, setEvidence] = useState<ResearchEvidence[]>([]);
+  const [initialTopic, setInitialTopic] = useState("");
   const selectedIds = useMemo(() => new Set(evidence.map(({ id }) => id)), [evidence]);
+
+  useEffect(() => {
+    const topic = topicFromFragment(window.location.hash);
+    setInitialTopic(topic);
+    if (topic) {
+      window.history.replaceState(
+        window.history.state,
+        "",
+        `${window.location.pathname}${window.location.search}`,
+      );
+    }
+  }, []);
 
   function addEvidence(item: ResearchEvidence) {
     setEvidence((current) => current.some(({ id }) => id === item.id) ? current : [...current, item]);
@@ -24,6 +37,7 @@ export default function ExploreWorkspace() {
   return (
     <>
       <ResearchBrief
+        initialTopic={initialTopic}
         evidence={evidence}
         onRemove={removeEvidence}
         onClear={() => setEvidence([])}
@@ -31,11 +45,11 @@ export default function ExploreWorkspace() {
       <div className="mt-8 border-t border-line pt-5 text-sm text-muted">
         Review a result’s original source, then explicitly add its citation to the brief.
       </div>
-      <TopicSearch onAdd={addEvidence} selectedIds={selectedIds} />
-      <GdeltSearch onAdd={addEvidence} selectedIds={selectedIds} />
+      <TopicSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+      <GdeltSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
       <MastodonSearch onAdd={addEvidence} selectedIds={selectedIds} />
-      <LemmySearch onAdd={addEvidence} selectedIds={selectedIds} />
-      <WikimediaTalkSearch onAdd={addEvidence} selectedIds={selectedIds} />
+      <LemmySearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+      <WikimediaTalkSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
     </>
   );
 }

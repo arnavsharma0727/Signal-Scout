@@ -141,6 +141,12 @@ export default async function Candidates() {
                     </li>
                   ))}
                 </ul>
+                <Link
+                  className="btn mt-4"
+                  href={`/explore#topic=${encodeURIComponent(observation.tag)}`}
+                >
+                  Investigate this topic in Explore
+                </Link>
               </article>
             ))}
           </div>

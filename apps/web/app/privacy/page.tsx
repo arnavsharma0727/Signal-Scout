@@ -45,6 +45,13 @@ export default function Privacy() {
             and attribution.
           </p>
           <p>
+            Lead review can pass an observed topic to Explore in the URL
+            fragment so the phrase fields are prefilled. Fragments are not part
+            of the HTTP request, and Explore clears the fragment after reading
+            it; the phrase is then sent directly to a source only if the
+            visitor submits that source's search form.
+          </p>
+          <p>
             Explore can also request a public hashtag timeline directly from
             mastodon.social. That provider receives the hashtag and the
             visitor's network request; Signal Scout's server does not receive

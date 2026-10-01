@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { searchWikimediaTalk, WikimediaTalkPage, WIKIMEDIA_TALK_WIKIS } from "../../lib/wikimedia-talk";
 import type { ResearchEvidence } from "../../lib/research-brief";
 
@@ -10,9 +10,11 @@ function plainText(html: string) {
 }
 
 export default function WikimediaTalkSearch({
+  initialTopic,
   onAdd,
   selectedIds,
 }: {
+  initialTopic: string;
   onAdd: (item: ResearchEvidence) => void;
   selectedIds: ReadonlySet<string>;
 }) {
@@ -22,6 +24,9 @@ export default function WikimediaTalkSearch({
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (initialTopic) setTopic(initialTopic);
+  }, [initialTopic]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

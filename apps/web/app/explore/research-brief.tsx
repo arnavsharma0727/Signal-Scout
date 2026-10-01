@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   createResearchBriefMarkdown,
   ResearchEvidence,
@@ -16,10 +16,12 @@ const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
 
 export default function ResearchBrief({
   evidence,
+  initialTopic,
   onRemove,
   onClear,
 }: {
   evidence: ResearchEvidence[];
+  initialTopic: string;
   onRemove: (id: string) => void;
   onClear: () => void;
 }) {
@@ -28,6 +30,9 @@ export default function ResearchBrief({
   const [alternatives, setAlternatives] = useState("");
   const [disconfirmingEvidence, setDisconfirmingEvidence] = useState("");
   const [notice, setNotice] = useState("");
+  useEffect(() => {
+    if (initialTopic) setTopic(initialTopic);
+  }, [initialTopic]);
   const counts = useMemo(() => EVIDENCE_CLASSES.map((evidenceClass) => ({
     evidenceClass,
     count: evidence.filter((item) => item.evidenceClass === evidenceClass).length,

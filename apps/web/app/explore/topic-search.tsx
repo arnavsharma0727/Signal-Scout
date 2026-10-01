@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   DISCUSSION_COMMUNITIES,
   LiveDiscussionItem,
@@ -9,9 +9,11 @@ import {
 import type { ResearchEvidence } from "../../lib/research-brief";
 
 export default function TopicSearch({
+  initialTopic,
   onAdd,
   selectedIds,
 }: {
+  initialTopic: string;
   onAdd: (item: ResearchEvidence) => void;
   selectedIds: ReadonlySet<string>;
 }) {
@@ -21,6 +23,9 @@ export default function TopicSearch({
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (initialTopic) setTopic(initialTopic);
+  }, [initialTopic]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

@@ -25,6 +25,12 @@ export type ResearchBriefDraft = {
   exportedAt: string;
 };
 
+/** Read a topic handoff from the URL fragment so it is not sent in the HTTP request path. */
+export function topicFromFragment(hash: string): string {
+  if (!hash.startsWith("#")) return "";
+  return (new URLSearchParams(hash.slice(1)).get("topic") ?? "").trim().slice(0, 100);
+}
+
 /** Build a citation-first handoff; never scores evidence or invents a conclusion. */
 export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
   const lines = [

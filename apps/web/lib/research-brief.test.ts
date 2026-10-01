@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createResearchBriefMarkdown, ResearchEvidence } from "./research-brief";
+import { createResearchBriefMarkdown, ResearchEvidence, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -78,5 +78,17 @@ describe("createResearchBriefMarkdown", () => {
     expect(destinations.length).toBeGreaterThan(0);
     expect(destinations.every((url) => url.startsWith("https://"))).toBe(true);
     expect(markdown).toContain("\\]");
+  });
+});
+
+describe("topicFromFragment", () => {
+  it("decodes a topic handoff from the URL fragment", () => {
+    expect(topicFromFragment(`#topic=${encodeURIComponent("inflation · housing")}`)).toBe("inflation · housing");
+  });
+
+  it("does not accept query-string content and bounds the value", () => {
+    expect(topicFromFragment("")).toBe("");
+    expect(topicFromFragment(`?topic=${encodeURIComponent("not-a-fragment")}`)).toBe("");
+    expect(topicFromFragment(`#topic=${"x".repeat(150)}`)).toHaveLength(100);
   });
 });

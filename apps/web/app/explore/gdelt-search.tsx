@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import {
   GDELT_OUTLET_COUNTRIES,
   GDELT_OUTLET_LANGUAGES,
@@ -12,9 +12,11 @@ import {
 import type { ResearchEvidence } from "../../lib/research-brief";
 
 export default function GdeltSearch({
+  initialTopic,
   onAdd,
   selectedIds,
 }: {
+  initialTopic: string;
   onAdd: (item: ResearchEvidence) => void;
   selectedIds: ReadonlySet<string>;
 }) {
@@ -25,6 +27,9 @@ export default function GdeltSearch({
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (initialTopic) setQuery(initialTopic);
+  }, [initialTopic]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

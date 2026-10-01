@@ -18,6 +18,10 @@ export default function ExplorePage() {
           source has different coverage and rights; these samples are not representative public
           opinion or verified thesis leads. Inspect the linked original discussions.
         </p>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
+          A topic opened from Lead review prefills phrase-based searches and the brief. The handoff stays
+          in the URL fragment, which is not sent in the HTTP request; Mastodon searches require a hashtag.
+        </p>
         <ExploreWorkspace />
         <aside className="mt-8 border-t border-line pt-5 text-xs leading-5 text-muted">
           Searches run directly in your browser against the selected provider. Signal Scout’s server
