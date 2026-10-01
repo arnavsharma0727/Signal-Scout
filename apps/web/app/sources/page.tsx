@@ -141,7 +141,7 @@ export default async function Sources() {
       key: "global-voices",
       enabled: true,
       detail:
-        "Daily keyless English RSS from an international, multilingual community-reporting newsroom. Global Voices' own content defaults to CC BY 3.0 unless an item says otherwise; entries with conflicting item-level rights notices are rejected. Signal Scout retains the unmodified headline, author, date, original link, and limited categories with attribution; story text, descriptions, and media are discarded. This is editorial community reporting, not raw forum discussion, a representative survey, or a proxy for the audience's location.",
+        "Daily keyless RSS from six currently active Global Voices editions: English, Spanish, French, Portuguese, Arabic, and Russian. Each edition is identified from its allowlisted publisher host/title; RSS language metadata is inconsistent, so the reviewed edition supplies the language label. Global Voices-created content defaults to CC BY 3.0 unless an item says otherwise; conflicting item-level rights are rejected. Signal Scout keeps the unmodified edition headline, byline, date, first-party link, and limited categories with attribution; descriptions, story bodies, and media are discarded. Editions share one publisher and may include translated versions; they are never counted as independent outlets or proxies for audience geography. This is editorial reporting, not raw forum discussion or a representative survey.",
     },
     {
       name: "GDELT news",

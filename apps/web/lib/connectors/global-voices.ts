@@ -3,14 +3,20 @@ import { fetchWithRetry } from "./fetch";
 import { makeDocument } from "./normalize";
 import type { Connector, ConnectorResult } from "./types";
 
-export const GLOBAL_VOICES_FEED = "https://globalvoices.org/feed/";
 export const GLOBAL_VOICES_LICENSE = "https://creativecommons.org/licenses/by/3.0/";
-const ALLOWED_HOST = "globalvoices.org";
-const MAX_FEED_BYTES = 1_000_000;
+export const GLOBAL_VOICES_FEEDS = [
+  { language: "en", label: "English", host: "globalvoices.org", feedTitle: "Global Voices" },
+  { language: "es", label: "Spanish", host: "es.globalvoices.org", feedTitle: "Global Voices en Español" },
+  { language: "fr", label: "French", host: "fr.globalvoices.org", feedTitle: "Global Voices en Français" },
+  { language: "pt", label: "Portuguese", host: "pt.globalvoices.org", feedTitle: "Global Voices em Português" },
+  { language: "ar", label: "Arabic", host: "ar.globalvoices.org", feedTitle: "Global Voices الأصوات العالمية" },
+  { language: "ru", label: "Russian", host: "ru.globalvoices.org", feedTitle: "Global Voices по-русски" },
+] as const;
+const MAX_FEED_BYTES = 500_000;
 const SITE_LICENSE_NOTICE =
   "Global Voices-created content is licensed CC BY unless otherwise stated.";
 
-/** Global Voices' CC BY newsroom RSS; full story text and media are discarded. */
+/** Localized Global Voices CC BY feeds; full story text and media are discarded. */
 export class GlobalVoicesConnector implements Connector {
   name = "global-voices";
 
@@ -21,107 +27,109 @@ export class GlobalVoicesConnector implements Connector {
   async fetchDocuments(
     input: Parameters<Connector["fetchDocuments"]>[0],
   ): Promise<ConnectorResult> {
-    const response = await fetchWithRetry(GLOBAL_VOICES_FEED, {
-      headers: { accept: "application/rss+xml, application/xml" },
-    });
-    const finalUrl = new URL(response.url || GLOBAL_VOICES_FEED);
-    if (
-      finalUrl.protocol !== "https:" ||
-      finalUrl.hostname !== ALLOWED_HOST ||
-      finalUrl.pathname !== "/feed/"
-    ) {
-      throw new Error("Global Voices feed resolved outside the approved endpoint");
-    }
-
-    const xml = await readBoundedText(response, MAX_FEED_BYTES);
-    if (xml === null) throw new Error("Global Voices feed exceeded the size limit");
-    const parsed = new XMLParser({
-      ignoreAttributes: false,
-      attributeNamePrefix: "@_",
-    }).parse(xml) as Record<string, any>;
-    const channel = parsed.rss?.channel;
-    if (
-      !channel ||
-      typeof channel.language !== "string" ||
-      !channel.language.toLocaleLowerCase().startsWith("en")
-    ) {
-      throw new Error("Global Voices feed language is missing or unsupported");
-    }
-
-    const rawItems = channel.item ?? [];
-    const items = Array.isArray(rawItems) ? rawItems : [rawItems];
     const documents: ReturnType<typeof makeDocument>[] = [];
-    for (const item of items) {
-      const title = asText(item.title).trim();
-      const author = asText(item["dc:creator"]).trim().slice(0, 200);
-      const publishedAt = asText(item.pubDate).trim();
-      const date = publishedAt ? new Date(publishedAt) : null;
-      let sourceUrl: URL;
+    const failedFeeds: string[] = [];
+    let feedItemsReceived = 0;
+    for (const edition of GLOBAL_VOICES_FEEDS) {
+      const feedUrl = `https://${edition.host}/feed/`;
       try {
-        sourceUrl = new URL(asText(item.link).trim());
-      } catch {
-        continue;
-      }
-      if (
-        !title ||
-        !author ||
-        !date ||
-        !Number.isFinite(date.getTime()) ||
-        date < input.start ||
-        date > input.end ||
-        sourceUrl.protocol !== "https:" ||
-        sourceUrl.hostname !== ALLOWED_HOST ||
-        sourceUrl.pathname === "/" ||
-        !hasNoConflictingItemRights(item)
-      ) {
-        continue;
-      }
+        const response = await fetchWithRetry(feedUrl, {
+          headers: { accept: "application/rss+xml, application/xml" },
+        }, { attempts: 2, timeoutMs: 12_000 });
+        const finalUrl = new URL(response.url || feedUrl);
+        if (
+          finalUrl.protocol !== "https:" ||
+          finalUrl.hostname !== edition.host ||
+          finalUrl.pathname !== "/feed/"
+        ) throw new Error("Feed redirected outside its approved edition host");
 
-      const categories = (Array.isArray(item.category)
-        ? item.category
-        : [item.category]
-      )
-        .map((category: unknown) => asText(category).trim().slice(0, 100))
-        .filter(Boolean)
-        .slice(0, 12);
-      documents.push(
-        makeDocument({
-          marketCode: "INTL",
-          sourceType: "licensed-reporting",
-          sourceName: "Global Voices · community reporting",
-          sourceUrl: sourceUrl.toString(),
-          title,
-          publishedAt: date.toISOString(),
-          languageCode: "en",
-          tier: 2,
-          entityConfidence: 0,
-          raw: {
-            publisher: "Global Voices",
-            author,
-            licenseName: "Creative Commons Attribution 3.0 Unported (CC BY 3.0)",
-            licenseUrl: GLOBAL_VOICES_LICENSE,
-            licenseNotice: SITE_LICENSE_NOTICE,
-            attributionRequired: true,
-            attributionPolicyUrl:
-              "https://globalvoices.org/about/global-voices-attribution-policy/",
-            feedUrl: GLOBAL_VOICES_FEED,
-            categories,
-            titleUnmodified: true,
-            excerptDiscarded: true,
-            articleBodyDiscarded: true,
-            mediaDiscarded: true,
-            geographicMarketInferred: false,
-          },
-        }),
-      );
+        const xml = await readBoundedText(response, MAX_FEED_BYTES);
+        if (xml === null) throw new Error("Feed exceeded its size limit");
+        const parsed = new XMLParser({
+          ignoreAttributes: false,
+          attributeNamePrefix: "@_",
+        }).parse(xml) as Record<string, any>;
+        const channel = parsed.rss?.channel;
+        if (!channel || asText(channel.title).trim() !== edition.feedTitle) {
+          throw new Error("Feed edition identity did not match the approved publisher profile");
+        }
+
+        const rawItems = channel.item ?? [];
+        const items = Array.isArray(rawItems) ? rawItems : [rawItems];
+        feedItemsReceived += items.length;
+        for (const item of items) {
+          const title = asText(item.title).trim();
+          const author = asText(item["dc:creator"]).trim().slice(0, 200);
+          const publishedAt = asText(item.pubDate).trim();
+          const date = publishedAt ? new Date(publishedAt) : null;
+          let sourceUrl: URL;
+          try {
+            sourceUrl = new URL(asText(item.link).trim());
+          } catch {
+            continue;
+          }
+          if (
+            !title || !author || !date || !Number.isFinite(date.getTime()) ||
+            date < input.start || date > input.end ||
+            sourceUrl.protocol !== "https:" ||
+            sourceUrl.hostname !== edition.host ||
+            sourceUrl.pathname === "/" ||
+            !hasNoConflictingItemRights(item)
+          ) continue;
+
+          const categories = (Array.isArray(item.category)
+            ? item.category
+            : [item.category]
+          )
+            .map((category: unknown) => asText(category).trim().slice(0, 100))
+            .filter(Boolean)
+            .slice(0, 12);
+          documents.push(makeDocument({
+            marketCode: "INTL",
+            sourceType: "licensed-reporting",
+            sourceName: `Global Voices · ${edition.label} edition`,
+            sourceUrl: sourceUrl.toString(),
+            title,
+            publishedAt: date.toISOString(),
+            languageCode: edition.language,
+            tier: 2,
+            entityConfidence: 0,
+            raw: {
+              publisher: "Global Voices",
+              editionCode: edition.language,
+              editionLabel: edition.label,
+              author,
+              licenseName: "Creative Commons Attribution 3.0 Unported (CC BY 3.0)",
+              licenseUrl: GLOBAL_VOICES_LICENSE,
+              licenseNotice: SITE_LICENSE_NOTICE,
+              attributionRequired: true,
+              attributionPolicyUrl: "https://globalvoices.org/about/global-voices-attribution-policy/",
+              feedUrl,
+              categories,
+              titleUnmodified: true,
+              excerptDiscarded: true,
+              articleBodyDiscarded: true,
+              mediaDiscarded: true,
+              crossEditionDuplicateRisk: true,
+              publisherIndependenceInferred: false,
+              geographicMarketInferred: false,
+            },
+          }));
+        }
+      } catch {
+        failedFeeds.push(edition.language);
+      }
     }
 
     return {
       documents,
-      requestsUsed: 1,
+      requestsUsed: GLOBAL_VOICES_FEEDS.length,
       metadata: {
         resultCount: documents.length,
-        feedItemsReceived: items.length,
+        feedItemsReceived,
+        editionsQueried: GLOBAL_VOICES_FEEDS.map(({ language }) => language),
+        editionsSucceeded: GLOBAL_VOICES_FEEDS.map(({ language }) => language).filter((language) => !failedFeeds.includes(language)),
+        failedFeeds,
         siteLicenseDefault: SITE_LICENSE_NOTICE,
         itemRightsExceptionsRejected: true,
         bodyAndMediaRetained: false,

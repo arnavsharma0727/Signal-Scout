@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { GlobalVoicesConnector } from "./global-voices";
+import { GLOBAL_VOICES_FEEDS, GlobalVoicesConnector } from "./global-voices";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -24,8 +24,16 @@ function item(input: {
   </item>`;
 }
 
-function feed(entries: string, language = "en-US") {
-  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>Global Voices</title><language>${language}</language>${entries}</channel></rss>`;
+function feed(entries: string, title = "Global Voices", language = "en-US") {
+  return `<?xml version="1.0" encoding="UTF-8"?><rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:media="http://search.yahoo.com/mrss/"><channel><title>${title}</title><language>${language}</language>${entries}</channel></rss>`;
+}
+
+function editionFeeds(entriesByLanguage: Record<string, string> = {}) {
+  return vi.fn(async (input: RequestInfo | URL) => {
+    const host = new URL(String(input)).hostname;
+    const edition = GLOBAL_VOICES_FEEDS.find(({ host: candidate }) => candidate === host)!;
+    return new Response(feed(entriesByLanguage[edition.language] ?? "", edition.feedTitle));
+  });
 }
 
 const input = {
@@ -36,20 +44,24 @@ const input = {
 
 describe("Global Voices CC BY RSS connector", () => {
   it("retains attributed metadata only under the site's default CC BY notice", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(feed(item({})))));
+    const fetcher = editionFeeds({ en: item({}) });
+    vi.stubGlobal("fetch", fetcher);
 
     const result = await new GlobalVoicesConnector().fetchDocuments(input);
 
-    expect(result.requestsUsed).toBe(1);
+    expect(result.requestsUsed).toBe(GLOBAL_VOICES_FEEDS.length);
+    expect(fetcher).toHaveBeenCalledTimes(GLOBAL_VOICES_FEEDS.length);
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0]).toMatchObject({
       marketCode: "INTL",
       sourceType: "licensed-reporting",
-      sourceName: "Global Voices · community reporting",
+      sourceName: "Global Voices · English edition",
       titleOriginal: "An international reporting headline",
       excerptOriginal: undefined,
       rawMetadata: {
         publisher: "Global Voices",
+        editionCode: "en",
+        editionLabel: "English",
         author: "Public Byline",
         licenseName: "Creative Commons Attribution 3.0 Unported (CC BY 3.0)",
         licenseUrl: "https://creativecommons.org/licenses/by/3.0/",
@@ -67,6 +79,33 @@ describe("Global Voices CC BY RSS connector", () => {
     expect(serialized).not.toContain("example-image.jpg");
   });
 
+  it("ingests active localized editions using the configured edition language, not the unreliable RSS language field", async () => {
+    const fetcher = editionFeeds({
+      es: item({ title: "Conversación y tecnología", url: "https://es.globalvoices.org/2026/10/01/story/" }),
+      fr: item({ title: "Débat sur l’intelligence artificielle", url: "https://fr.globalvoices.org/2026/10/01/story/" }),
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    const result = await new GlobalVoicesConnector().fetchDocuments(input);
+
+    expect(result.documents).toHaveLength(2);
+    expect(result.documents.map(({ languageCode, sourceName }) => [languageCode, sourceName])).toEqual([
+      ["es", "Global Voices · Spanish edition"],
+      ["fr", "Global Voices · French edition"],
+    ]);
+    expect(result.documents[0].rawMetadata).toMatchObject({
+      publisher: "Global Voices",
+      editionCode: "es",
+      crossEditionDuplicateRisk: true,
+      publisherIndependenceInferred: false,
+    });
+    expect(result.metadata).toMatchObject({
+      editionsQueried: ["en", "es", "fr", "pt", "ar", "ru"],
+      failedFeeds: [],
+      bodyAndMediaRetained: false,
+    });
+  });
+
   it("rejects item-specific conflicting rights, non-publisher links, and out-of-window items", async () => {
     const rows = [
       item({ title: "Rights exception", rights: "All rights reserved" }),
@@ -74,10 +113,7 @@ describe("Global Voices CC BY RSS connector", () => {
       item({ title: "Too old", date: "Tue, 29 Sep 2026 23:59:59 GMT" }),
       item({ title: "Future item", date: "Sat, 03 Oct 2026 00:00:00 GMT" }),
     ];
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(feed(rows.join("")))),
-    );
+    vi.stubGlobal("fetch", editionFeeds({ en: rows.join("") }));
 
     const result = await new GlobalVoicesConnector().fetchDocuments(input);
     expect(result.documents).toHaveLength(0);
@@ -88,14 +124,21 @@ describe("Global Voices CC BY RSS connector", () => {
     });
   });
 
-  it("refuses a feed without an English language declaration", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn().mockResolvedValue(new Response(feed(item({}), "es"))),
-    );
+  it("fails only the edition whose publisher identity does not match and reports a partial feed run", async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const host = new URL(String(input)).hostname;
+      const edition = GLOBAL_VOICES_FEEDS.find(({ host: candidate }) => candidate === host)!;
+      const title = edition.language === "es" ? "Unverified feed" : edition.feedTitle;
+      return new Response(feed("", title));
+    });
+    vi.stubGlobal("fetch", fetcher);
 
-    await expect(new GlobalVoicesConnector().fetchDocuments(input)).rejects.toThrow(
-      "Global Voices feed language is missing or unsupported",
-    );
+    const result = await new GlobalVoicesConnector().fetchDocuments(input);
+
+    expect(result.requestsUsed).toBe(GLOBAL_VOICES_FEEDS.length);
+    expect(result.metadata).toMatchObject({
+      failedFeeds: ["es"],
+      editionsSucceeded: ["en", "fr", "pt", "ar", "ru"],
+    });
   });
 });
