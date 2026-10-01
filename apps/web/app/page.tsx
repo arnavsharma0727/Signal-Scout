@@ -255,7 +255,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                               : d.source_type === "stack-exchange"
                                 ? "Stack Exchange · expert Q&A"
                               : d.source_type === "licensed-forum"
-                                ? "Typst Forum · software community discussion"
+                                ? `${d.raw_metadata_json?.publisher ?? d.source_name} · community discussion`
                               : d.source_type === "wikimedia-talk"
                                 ? "Wikipedia talk-page revision · not market sentiment"
                               : d.source_type === "licensed-analysis"
