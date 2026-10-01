@@ -4,7 +4,7 @@ import { authConfigured, authServerClient } from '../../lib/supabase-auth-server
 
 export const dynamic = 'force-dynamic';
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; sent?: string }> }) {
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string; sent?: string; next?: string }> }) {
   const params = await searchParams;
   const enabled = authConfigured();
   const db = enabled ? await authServerClient() : null;
@@ -22,6 +22,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         : !enabled ? <div className="mt-6 border-t border-line pt-5 text-sm leading-6 text-muted"><p className="font-semibold text-ink">Sign-in is not enabled yet.</p><p className="mt-2">The owner-only database controls are ready. An administrator must configure a production email sender or OAuth provider, set the Supabase redirect allowlist, and then enable Auth for this deployment.</p></div>
         : params.sent ? <p role="status" className="mt-6 border-t border-line pt-5 text-sm leading-6">If the address is eligible, Supabase has sent a sign-in link. Check your inbox and spam folder.</p>
         : <form action={requestSignInLink} className="mt-6 space-y-4 border-t border-line pt-5">
+          <input type="hidden" name="next" value={params.next === '/briefs' ? '/briefs' : '/watchlists'} />
           <label className="block text-sm font-medium" htmlFor="email">Email address</label>
           <input className="w-full rounded border border-line px-3 py-2" id="email" name="email" type="email" autoComplete="email" required maxLength={254}/>
           <button className="btn btn-primary" type="submit">Email me a sign-in link</button>

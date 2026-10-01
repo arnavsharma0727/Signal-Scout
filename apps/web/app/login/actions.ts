@@ -11,9 +11,11 @@ export async function requestSignInLink(formData: FormData) {
   if (!supabase) redirect('/login?error=disabled');
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) redirect('/login?error=disabled');
+  const requestedNext = String(formData.get('next') ?? '');
+  const next = requestedNext === '/briefs' ? '/briefs' : '/watchlists';
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${appUrl.replace(/\/$/, '')}/auth/callback?next=/watchlists` },
+    options: { emailRedirectTo: `${appUrl.replace(/\/$/, '')}/auth/callback?next=${encodeURIComponent(next)}` },
   });
   if (error) redirect('/login?error=send');
   redirect('/login?sent=1');

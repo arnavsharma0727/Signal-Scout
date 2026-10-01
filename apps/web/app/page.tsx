@@ -21,6 +21,7 @@ const nav = [
   ["Coverage", "/coverage"],
   ["Lead review", "/candidates"],
   ["Watchlists", "/watchlists"],
+  ["My briefs", "/briefs"],
   ["Methodology", "/methodology"],
   ["Sources", "/sources"],
 ];

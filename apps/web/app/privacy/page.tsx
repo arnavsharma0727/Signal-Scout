@@ -23,9 +23,10 @@ export default function Privacy() {
         </p>
         <section className="mt-8 space-y-6 leading-7 text-muted">
           <p>
-            Signal Scout currently has no enabled user accounts, contact forms,
-            advertising pixels, or product analytics. The site may receive
-            ordinary server and hosting logs when you visit.
+            Signal Scout has no advertising pixels or product analytics. If
+            account sign-in is enabled, authenticated users can choose to save
+            private research briefs. The site may receive ordinary server and
+            hosting logs when you visit.
           </p>
           <p>
             The current discussion connector stores selected Stack Exchange
@@ -90,16 +91,19 @@ export default function Privacy() {
           </p>
           <p>
             The optional Mastodon trend-discovery action requests public tag
-            suggestions directly from four configured Mastodon instances. The
-            suggestions and brief are transient. The brief holds only citations
-            a visitor explicitly selects and notes the visitor writes, in
-            volatile page memory. It is erased
-            on reload or navigation and is not placed in local storage, sent to
-            Signal Scout, or saved to its database. Copying or downloading a
-            Markdown brief is a visitor-initiated action to the local clipboard
-            or device. A selected social post is represented by its original
-            link and attribution metadata; post text is not copied into the
-            brief.
+            suggestions directly from configured Mastodon instances. Search
+            suggestions and selected citations remain transient in the browser
+            unless the visitor explicitly saves a brief. On save, Signal Scout
+            receives the visitor-written topic, thesis, alternatives, and
+            disconfirmation notes, plus link-only citations from a narrow
+            reviewed source allowlist. The server independently checks every
+            URL and strips tracking parameters; it does not save source titles,
+            excerpts, social post links, post text, author handles, or search
+            queries. The account owner can view and delete their saved briefs;
+            row-level database policies prevent other users from reading them.
+            The brief is not publicly shareable and is not an automated lead.
+            Copying or downloading Markdown remains a visitor-initiated action
+            to the local clipboard or device.
           </p>
           <p>
             The app is hosted by Vercel and uses Supabase for server-side data

@@ -7,6 +7,8 @@ import {
   ResearchEvidenceClass,
   summarizeEvidenceCoverage,
 } from "../../lib/research-brief";
+import { countExcludedPrivateEvidence, preparePrivateEvidenceLinks } from "../../lib/private-research-brief";
+import { saveResearchBrief } from "../briefs/actions";
 
 const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
   "expert Q&A",
@@ -18,12 +20,14 @@ const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
 export default function ResearchBrief({
   evidence,
   initialTopic,
+  saveEnabled,
   onRemove,
   onAssess,
   onClear,
 }: {
   evidence: ResearchEvidence[];
   initialTopic: string;
+  saveEnabled: boolean;
   onRemove: (id: string) => void;
   onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | undefined) => void;
   onClear: () => void;
@@ -41,6 +45,13 @@ export default function ResearchBrief({
     count: evidence.filter((item) => item.evidenceClass === evidenceClass).length,
   })), [evidence]);
   const coverage = useMemo(() => summarizeEvidenceCoverage(evidence), [evidence]);
+  const privateLinks = useMemo(() => preparePrivateEvidenceLinks(evidence.map((item) => ({
+    url: item.url,
+    language: item.language,
+    publishedAt: item.timeValue,
+    assessment: item.researcherAssessment,
+  }))), [evidence]);
+  const excludedCount = useMemo(() => countExcludedPrivateEvidence(evidence), [evidence]);
   const markdown = () => createResearchBriefMarkdown({
     topic,
     workingThesis,
@@ -86,7 +97,7 @@ export default function ResearchBrief({
       <div className="eyebrow">Temporary, in-page workspace</div>
       <h2 id="research-brief-title" className="mt-2 text-xl font-semibold">Build a research brief</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Add source links deliberately, assign each item a supporting, contradicting, or contextual role yourself, then write your hypothesis, alternatives, and disconfirmation test. These are your assessments, not automated sentiment or verified facts. This draft exists only in this open page’s memory—no account, browser storage, or server save. Exporting or copying sends it only to your device or clipboard.
+        Add source links deliberately, assign each item a supporting, contradicting, or contextual role yourself, then write your hypothesis, alternatives, and disconfirmation test. These are your assessments, not automated sentiment or verified facts. The draft stays in this page unless you explicitly save it below. Exporting or copying sends it only to your device or clipboard.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -188,6 +199,23 @@ export default function ResearchBrief({
         <button className="btn" type="button" onClick={copyBrief} disabled={!evidence.length}>Copy Markdown</button>
         <button className="btn" type="button" onClick={clearDraft} disabled={!evidence.length && !topic && !workingThesis && !alternatives && !disconfirmingEvidence}>Clear page draft</button>
       </div>
+      <form action={saveResearchBrief} className="mt-5 border-t border-line pt-4">
+        <input type="hidden" name="topic" value={topic} />
+        <input type="hidden" name="working_thesis" value={workingThesis} />
+        <input type="hidden" name="alternatives" value={alternatives} />
+        <input type="hidden" name="disconfirming_evidence" value={disconfirmingEvidence} />
+        <input type="hidden" name="evidence_links" value={JSON.stringify(privateLinks)} />
+        <input type="hidden" name="selected_count" value={evidence.length} />
+        <div className="flex flex-wrap items-center gap-3">
+          {saveEnabled
+            ? <button className="btn btn-primary" type="submit" disabled={!topic.trim()}>Save privately to my account</button>
+            : <a className="btn btn-primary" href="/login?next=%2Fbriefs">Sign in to save</a>}
+          <a className="text-sm underline underline-offset-2" href="/briefs">My saved briefs</a>
+        </div>
+        <p className="mt-2 text-xs leading-5 text-muted">
+          Saving sends this topic and your notes to Signal Scout and Supabase, plus link-only citations from approved sources. {privateLinks.length} citation(s) will be kept; {excludedCount} other selected item(s) will be omitted. Titles, excerpts, contributor names, social posts, and search queries are not saved. You must be signed in; saved briefs are private and not public leads.
+        </p>
+      </form>
       {notice && <p role="status" className="mt-3 text-xs text-muted">{notice}</p>}
     </section>
   );

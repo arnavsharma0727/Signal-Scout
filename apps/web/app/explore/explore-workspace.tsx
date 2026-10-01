@@ -10,7 +10,7 @@ import WikimediaTalkSearch from "./wikimedia-talk-search";
 import ResearchBrief from "./research-brief";
 import ResearchSweep from "./research-sweep";
 
-export default function ExploreWorkspace() {
+export default function ExploreWorkspace({ saveEnabled }: { saveEnabled: boolean }) {
   const [evidence, setEvidence] = useState<ResearchEvidence[]>([]);
   const [initialTopic, setInitialTopic] = useState("");
   const selectedIds = useMemo(() => new Set(evidence.map(({ id }) => id)), [evidence]);
@@ -38,6 +38,7 @@ export default function ExploreWorkspace() {
   return (
     <>
       <ResearchBrief
+        saveEnabled={saveEnabled}
         initialTopic={initialTopic}
         evidence={evidence}
         onAssess={(id, assessment) => setEvidence((current) =>
