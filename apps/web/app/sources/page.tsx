@@ -40,6 +40,22 @@ function utc(
   return formatTimestamp(value, timeZone);
 }
 
+function globalVoicesEditionSummary(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object" || !("editionResults" in metadata) || !Array.isArray(metadata.editionResults)) return null;
+  const labels: Record<string, string> = { en: "English", es: "Spanish", fr: "French", pt: "Portuguese", ar: "Arabic", ru: "Russian" };
+  const results = metadata.editionResults.flatMap((value) => {
+    if (!value || typeof value !== "object") return [];
+    const item = value as Record<string, unknown>;
+    if (typeof item.language !== "string" || !labels[item.language]) return [];
+    if (item.status === "failed") return [`${labels[item.language]}: unavailable`];
+    if (typeof item.feedItemsReceived !== "number" || typeof item.documentsAccepted !== "number" ||
+      !Number.isInteger(item.feedItemsReceived) || !Number.isInteger(item.documentsAccepted) ||
+      item.feedItemsReceived < 0 || item.documentsAccepted < 0 || item.documentsAccepted > item.feedItemsReceived) return [];
+    return [`${labels[item.language]}: ${item.documentsAccepted} eligible / ${item.feedItemsReceived} feed entries`];
+  });
+  return results.length ? results.join(" · ") : null;
+}
+
 type SourceConfig = {
   name: string;
   key: string;
@@ -182,7 +198,7 @@ export default async function Sources() {
       if (!db) return { source, runs: [] as any[] };
       const { data } = await db
         .from("connector_runs")
-        .select("status,started_at,completed_at,items_stored")
+        .select("status,started_at,completed_at,items_stored,metadata_json")
         .eq("connector_name", source.key)
         .order("started_at", { ascending: false })
         .limit(500);
@@ -273,6 +289,12 @@ export default async function Sources() {
                       ? `${latest.status} · ${latest.items_stored ?? 0} stored`
                       : "none recorded"}
                   </dd>
+                  {source.key === "global-voices" && globalVoicesEditionSummary(latest?.metadata_json) && (
+                    <>
+                      <dt className="text-muted">Latest edition results</dt>
+                      <dd className="col-span-2 leading-5">{globalVoicesEditionSummary(latest?.metadata_json)}</dd>
+                    </>
+                  )}
                   <dt className="text-muted">Records stored / 24h</dt>
                   <dd>
                     {runs.reduce(

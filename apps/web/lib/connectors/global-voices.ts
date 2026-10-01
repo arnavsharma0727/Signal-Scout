@@ -29,9 +29,17 @@ export class GlobalVoicesConnector implements Connector {
   ): Promise<ConnectorResult> {
     const documents: ReturnType<typeof makeDocument>[] = [];
     const failedFeeds: string[] = [];
+    const editionResults: Array<{
+      language: string;
+      feedItemsReceived: number;
+      documentsAccepted: number;
+      status: "completed" | "failed";
+    }> = [];
     let feedItemsReceived = 0;
     for (const edition of GLOBAL_VOICES_FEEDS) {
       const feedUrl = `https://${edition.host}/feed/`;
+      let editionItemCount = 0;
+      let documentsAccepted = 0;
       try {
         const response = await fetchWithRetry(feedUrl, {
           headers: { accept: "application/rss+xml, application/xml" },
@@ -56,6 +64,7 @@ export class GlobalVoicesConnector implements Connector {
 
         const rawItems = channel.item ?? [];
         const items = Array.isArray(rawItems) ? rawItems : [rawItems];
+        editionItemCount = items.length;
         feedItemsReceived += items.length;
         for (const item of items) {
           const title = asText(item.title).trim();
@@ -115,9 +124,12 @@ export class GlobalVoicesConnector implements Connector {
               geographicMarketInferred: false,
             },
           }));
+          documentsAccepted++;
         }
+        editionResults.push({ language: edition.language, feedItemsReceived: editionItemCount, documentsAccepted, status: "completed" });
       } catch {
         failedFeeds.push(edition.language);
+        editionResults.push({ language: edition.language, feedItemsReceived: editionItemCount, documentsAccepted, status: "failed" });
       }
     }
 
@@ -130,6 +142,7 @@ export class GlobalVoicesConnector implements Connector {
         editionsQueried: GLOBAL_VOICES_FEEDS.map(({ language }) => language),
         editionsSucceeded: GLOBAL_VOICES_FEEDS.map(({ language }) => language).filter((language) => !failedFeeds.includes(language)),
         failedFeeds,
+        editionResults,
         siteLicenseDefault: SITE_LICENSE_NOTICE,
         itemRightsExceptionsRejected: true,
         bodyAndMediaRetained: false,

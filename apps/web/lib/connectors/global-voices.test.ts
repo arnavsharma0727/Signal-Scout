@@ -104,6 +104,14 @@ describe("Global Voices CC BY RSS connector", () => {
       failedFeeds: [],
       bodyAndMediaRetained: false,
     });
+    expect(result.metadata.editionResults).toEqual([
+      { language: "en", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "es", feedItemsReceived: 1, documentsAccepted: 1, status: "completed" },
+      { language: "fr", feedItemsReceived: 1, documentsAccepted: 1, status: "completed" },
+      { language: "pt", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "ar", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "ru", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+    ]);
   });
 
   it("rejects item-specific conflicting rights, non-publisher links, and out-of-window items", async () => {
@@ -139,6 +147,12 @@ describe("Global Voices CC BY RSS connector", () => {
     expect(result.metadata).toMatchObject({
       failedFeeds: ["es"],
       editionsSucceeded: ["en", "fr", "pt", "ar", "ru"],
+    });
+    expect(result.metadata.editionResults).toContainEqual({
+      language: "es",
+      feedItemsReceived: 0,
+      documentsAccepted: 0,
+      status: "failed",
     });
   });
 });
