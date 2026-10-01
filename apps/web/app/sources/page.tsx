@@ -3,6 +3,7 @@ import { serverSupabase } from "../../lib/server-supabase";
 import { isHackerNewsIngestionEnabled } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
+import { summarizeConnectorRuns } from "../../lib/source-health";
 
 export const dynamic = "force-dynamic";
 
@@ -202,21 +203,54 @@ export default async function Sources() {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const health = await Promise.all(
     sources.map(async (source) => {
-      if (!db) return { source, runs: [] as any[] };
-      const { data } = await db
-        .from("connector_runs")
-        .select("status,started_at,completed_at,items_stored,metadata_json")
-        .eq("connector_name", source.key)
-        .order("started_at", { ascending: false })
-        .limit(500);
-      const all = data ?? [];
+      if (!db) return { source, runs: [] as any[], latest: undefined, lastSuccess: undefined, historyCapped: false, historyIncomplete: false };
+      const pageSize = 500;
+      const maxPages = 10;
+      const recent: any[] = [];
+      let historyCapped = false;
+      let historyIncomplete = false;
+      for (let page = 0; page < maxPages; page += 1) {
+        const from = page * pageSize;
+        const { data, error } = await db
+          .from("connector_runs")
+          .select("id,status,started_at,completed_at,items_stored,metadata_json")
+          .eq("connector_name", source.key)
+          .gte("started_at", since)
+          .order("started_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error || !data) {
+          historyIncomplete = true;
+          break;
+        }
+        recent.push(...data);
+        if (data.length < pageSize) break;
+        if (page === maxPages - 1) historyCapped = true;
+      }
+      const [latestResult, lastSuccessResult] = await Promise.all([
+        db
+          .from("connector_runs")
+          .select("status,started_at,completed_at,items_stored,metadata_json")
+          .eq("connector_name", source.key)
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        db
+          .from("connector_runs")
+          .select("status,started_at,completed_at,items_stored,metadata_json")
+          .eq("connector_name", source.key)
+          .in("status", ["completed", "partial"])
+          .order("started_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+      ]);
       return {
         source,
-        runs: all.filter((run) => run.started_at >= since),
-        latest: all[0],
-        lastSuccess: all.find(
-          (run) => run.status === "completed" || run.status === "partial",
-        ),
+        runs: recent,
+        latest: latestResult.data ?? undefined,
+        lastSuccess: lastSuccessResult.data ?? undefined,
+        historyCapped,
+        historyIncomplete,
       };
     }),
   );
@@ -240,13 +274,8 @@ export default async function Sources() {
           opinion.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
-          {health.map(({ source, runs, latest, lastSuccess }) => {
-            const errors = runs.filter(
-              (run) => run.status === "failed" || run.status === "partial",
-            ).length;
-            const rate = runs.length
-              ? Math.round((errors / runs.length) * 100)
-              : null;
+          {health.map(({ source, runs, latest, lastSuccess, historyCapped, historyIncomplete }) => {
+            const summary = summarizeConnectorRuns(runs);
             const stale =
               !source.onDemand &&
               source.enabled &&
@@ -293,7 +322,7 @@ export default async function Sources() {
                   <dt className="text-muted">Latest run result</dt>
                   <dd>
                     {latest
-                      ? `${latest.status} · ${latest.items_stored ?? 0} stored`
+                      ? `${latest.status} · ${latest.items_stored ?? 0} stored · ${utc(latest.started_at, timeZone)}`
                       : "none recorded"}
                   </dd>
                   {source.key === "global-voices" && globalVoicesEditionSummary(latest?.metadata_json) && (
@@ -303,17 +332,15 @@ export default async function Sources() {
                     </>
                   )}
                   <dt className="text-muted">Records stored / 24h</dt>
+                  <dd>{historyCapped || historyIncomplete ? `at least ${summary.recordsStored}` : summary.recordsStored}</dd>
+                  <dt className="text-muted">{source.enabled ? "Run error rate / 24h" : "Recorded run outcomes / 24h · source off"}</dt>
                   <dd>
-                    {runs.reduce(
-                      (sum, run) => sum + (run.items_stored ?? 0),
-                      0,
-                    )}
-                  </dd>
-                  <dt className="text-muted">Run error rate / 24h</dt>
-                  <dd>
-                    {rate === null
+                    {summary.errorRatePercent === null
                       ? "no runs"
-                      : `${rate}% (${errors}/${runs.length})`}
+                      : source.enabled
+                        ? `${summary.errorRatePercent}% (${summary.unsuccessfulRuns}/${summary.runCount})`
+                        : `${summary.unsuccessfulRuns} unsuccessful / ${summary.runCount} recorded`}
+                    {historyCapped ? " · history sample capped at 5,000 runs" : historyIncomplete ? " · history query incomplete" : ""}
                   </dd>
                 </dl>}
               </div>
@@ -321,9 +348,11 @@ export default async function Sources() {
           })}
         </div>
         <p className="mt-8 text-xs text-muted">
-          Failed run details are intentionally reduced to safe error codes;
-          request URLs, response bodies, and credentials are not shown. A source
-          is marked stale after 48 hours without a successful run.
+          Run-health figures cover all fetched records from the previous 24
+          hours, up to 5,000 per source. Failed run details are intentionally
+          reduced to safe error codes; request URLs, response bodies, and
+          credentials are not shown. A source is marked stale after 48 hours
+          without a successful run.
         </p>
       </main>
     </div>
