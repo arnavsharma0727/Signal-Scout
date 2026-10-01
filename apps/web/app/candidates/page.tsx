@@ -94,10 +94,12 @@ export default async function Candidates() {
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
           Exact tags on licensed Stack Exchange questions published in the last
           72 hours, compared with their median daily share across prior observed
-          publication days in the 30-day archive. Days with no eligible records
-          are not treated as zero. A baseline stays unavailable until 14
-          observed days exist. This is a query-selected expert Q&amp;A sample
-          from one platform—not a population trend or independent-source count.
+          publication days in the 30-day, one-page-per-query archive. The daily
+          connector re-queries that bounded window; up to 50 results per query
+          may omit additional matches. Days with no eligible records are not
+          treated as zero. A baseline stays unavailable until 14 observed days
+          exist. This is a query-selected expert Q&amp;A sample from one
+          platform—not a population trend or independent-source count.
           Tags remain in their original form; no translation or semantic merge
           is inferred. Open the source questions before drawing conclusions.
         </p>

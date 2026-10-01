@@ -3,6 +3,7 @@ import { fetchWithRetry } from "./fetch";
 import type { Connector, ConnectorResult } from "./types";
 
 const endpoint = "https://api.stackexchange.com/2.3/search/advanced";
+const HISTORY_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
 const siteQueries: ReadonlyArray<{
   site: string;
   languageCode: string;
@@ -62,6 +63,7 @@ export class StackExchangeConnector implements Connector {
     let requestsUsed = 0;
     let stoppedForBackoff = false;
     const rejectedUnlicensed = { count: 0 };
+    const historyStart = new Date(input.end.getTime() - HISTORY_LOOKBACK_MS);
 
     search: for (const { site, languageCode, terms } of siteQueries) {
       for (const term of terms) {
@@ -71,7 +73,9 @@ export class StackExchangeConnector implements Connector {
           site,
           pagesize: "50",
           title: term,
-          fromdate: String(Math.floor(input.start.getTime() / 1000)),
+          // Re-sample the same bounded 30-day window each daily run so the
+          // descriptive baseline need not wait for 14 cron days.
+          fromdate: String(Math.floor(historyStart.getTime() / 1000)),
           todate: String(Math.floor(input.end.getTime() / 1000)),
         });
         const response = await fetchWithRetry(`${endpoint}?${params}`, {
@@ -131,6 +135,7 @@ export class StackExchangeConnector implements Connector {
       requestsUsed,
       metadata: {
         sites: siteQueries.map(({ site }) => site),
+        lookbackDays: 30,
         terms: siteQueries.flatMap(({ site, terms }) =>
           terms.map((term) => ({ site, term })),
         ),
