@@ -53,6 +53,14 @@ export default async function Sources() {
   const db = serverSupabase();
   const sources: SourceConfig[] = [
     {
+      name: "GDELT · global news index",
+      key: "gdelt-public-search",
+      enabled: true,
+      onDemand: true,
+      detail:
+        "Visitor-triggered direct search of the last seven days in GDELT's multilingual index, capped at 25 results. Headlines and source links stay in the browser; GDELT requires citation and allows free use, but index coverage is incomplete and headlines remain publisher material. Not forum discussion or independent-source corroboration.",
+    },
+    {
       name: "RSS / Atom",
       key: "rss",
       enabled: process.env.RSS_ENABLED === "true" && enabledFeeds(),
