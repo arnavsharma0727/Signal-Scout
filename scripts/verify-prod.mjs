@@ -69,7 +69,7 @@ if (!url || !key) {
 } else {
   try {
     const since=new Date(Date.now()-24*60*60*1000).toISOString();
-    const recent=await rest(`source_documents?select=id,source_type,source_domain,market_code,language_code,published_at,raw_metadata_json&published_at=gte.${encodeURIComponent(since)}`);
+    const recent=await rest(`source_documents?select=id,source_type,source_domain,market_code,language_code,title_original,published_at,raw_metadata_json&published_at=gte.${encodeURIComponent(since)}`);
     const eligible=(recent.data??[]).filter(row=>row.source_type!=='hacker-news' && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
     const types=new Set(eligible.map(row=>row.source_type).filter(Boolean));
     const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
