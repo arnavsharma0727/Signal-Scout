@@ -23,16 +23,19 @@ describe("discussion-reporting literal overlaps", () => {
       row(),
       row({ id: "r1", source_type: "licensed-reporting", source_name: "Global Voices", source_domain: "globalvoices.org", title_original: "Central bank weighs new measures", source_url: "https://globalvoices.org/story", raw_metadata_json: {} }),
     ], asOf);
-    expect(overlap).toHaveLength(1);
-    expect(overlap[0]).toMatchObject({
-      tag: "central-bank",
+    expect(overlap).toHaveLength(2);
+    const tagOverlap = overlap.find(({ matchBasis }) => matchBasis === "community tag");
+    const queryOverlap = overlap.find(({ matchBasis }) => matchBasis === "scheduled search phrase");
+    expect(tagOverlap).toMatchObject({
+      phrase: "central-bank",
       language: "en",
       questionCount: 1,
       questionCommunities: ["Economics Stack Exchange"],
       reportingSources: ["Global Voices"],
     });
-    expect(overlap[0].questions[0].url).toContain("stackexchange.com/questions/1");
-    expect(overlap[0].reporting[0].url).toBe("https://globalvoices.org/story");
+    expect(queryOverlap).toMatchObject({ phrase: "central bank", questionCount: 1 });
+    expect(tagOverlap!.questions[0].url).toContain("stackexchange.com/questions/1");
+    expect(tagOverlap!.reporting[0].url).toBe("https://globalvoices.org/story");
   });
 
   it("uses the source-applied tag even when the tag words are absent from the question title", () => {
@@ -50,6 +53,27 @@ describe("discussion-reporting literal overlaps", () => {
       raw_metadata_json: {},
     });
     expect(buildDiscussionReportingOverlaps([question, report], asOf)).toHaveLength(1);
+  });
+
+  it("labels scheduled search phrases separately from community-applied tags", () => {
+    const question = row({
+      title_original: "Interest rate outlook",
+      raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["economics"], query: "interest rate" },
+    });
+    const report = row({
+      id: "r-query",
+      source_type: "licensed-analysis",
+      source_name: "The Conversation",
+      source_domain: "theconversation.com",
+      title_original: "Interest rate outlook across global markets",
+      source_url: "https://theconversation.com/interest-rate",
+      raw_metadata_json: {},
+    });
+    expect(buildDiscussionReportingOverlaps([question, report], asOf)).toContainEqual(expect.objectContaining({
+      phrase: "interest rate",
+      matchBasis: "scheduled search phrase",
+      questionCount: 1,
+    }));
   });
 
   it("does not bridge languages, partial words, unlicensed Q&A, excluded sources, or stale rows", () => {
