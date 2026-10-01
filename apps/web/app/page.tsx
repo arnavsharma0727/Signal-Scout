@@ -227,7 +227,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
       <div className="grid md:grid-cols-3">
         {groups.map(({ key, label, matches }) => {
           const rows = documents.filter(matches);
-          const visible = sampleAcrossSources(rows, 12);
+          const visible = sampleAcrossSources(rows, 18);
           return (
             <div
               className="border-b border-line p-5 md:border-b-0 md:even:border-l"
@@ -236,7 +236,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
               <h2 className="mb-4 text-sm font-semibold">
                 {label}{" "}
                 <span className="ml-2 font-normal text-muted">
-                  {rows.length} items sampled
+                  {rows.length} eligible items collected · {visible.length} shown
                 </span>
               </h2>
               {rows.length === 0 ? (
