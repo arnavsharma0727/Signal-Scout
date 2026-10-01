@@ -226,7 +226,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
       <div className="grid md:grid-cols-3">
         {groups.map(({ key, label, matches }) => {
           const rows = documents.filter(matches);
-          const visible = rows.slice(0, 12);
+          const visible = sampleAcrossSources(rows, 12);
           return (
             <div
               className="border-b border-line p-5 md:border-b-0 md:even:border-l"
@@ -333,6 +333,23 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
       </div>
     </section>
   );
+}
+function sampleAcrossSources(rows: any[], limit: number) {
+  const queues = new Map<string, any[]>();
+  for (const row of rows) {
+    const source = row.source_name || row.source_type || "Unknown source";
+    queues.set(source, [...(queues.get(source) ?? []), row]);
+  }
+  const sample: any[] = [];
+  while (sample.length < limit && queues.size) {
+    for (const [source, queue] of queues) {
+      const row = queue.shift();
+      if (row) sample.push(row);
+      if (!queue.length) queues.delete(source);
+      if (sample.length === limit) break;
+    }
+  }
+  return sample;
 }
 function Info({
   icon,

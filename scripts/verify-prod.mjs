@@ -73,8 +73,8 @@ if (!url || !key) {
     const eligible=(recent.data??[]).filter(row=>row.source_type!=='hacker-news' && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
     const types=new Set(eligible.map(row=>row.source_type).filter(Boolean));
     const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
-    const communities=new Set(eligible.filter(row=>row.source_type==='stack-exchange').map(row=>row.raw_metadata_json?.site).filter(Boolean));
-    const discussions=eligible.filter(row=>['stack-exchange','lemmy','mastodon','bluesky','reddit'].includes(row.source_type));
+    const discussions=eligible.filter(row=>['stack-exchange','lemmy','mastodon','bluesky','reddit'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)));
+    const communities=new Set(discussions.filter(row=>row.source_type==='stack-exchange').map(row=>row.raw_metadata_json?.site).filter(Boolean));
     const news=eligible.filter(row=>['rss','gdelt','news','licensed-reporting'].includes(row.source_type));
     const licensedAnalysis=eligible.filter(row=>row.source_type==='licensed-analysis');
     const officialContext=eligible.filter(row=>row.source_type==='official-policy');
@@ -123,3 +123,11 @@ for (const gate of gates) console.log(`${gate.ok ? 'PASS' : 'FAIL'} ${gate.name}
 const failed = gates.filter(g=>!g.ok).length;
 console.log(`\n${gates.length-failed}/${gates.length} checks passed; ${failed} release gates remain.`);
 if (failed) process.exitCode = 1;
+
+function matchesDiscussionTitle(title, query) {
+  if (!title || typeof query !== 'string') return false;
+  const tokens = value => value.normalize('NFKC').toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  const expected = tokens(query);
+  const present = new Set(tokens(title));
+  return expected.length > 0 && expected.every(token => present.has(token));
+}
