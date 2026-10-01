@@ -95,7 +95,7 @@ export default async function Candidates() {
           Exact tags on licensed Stack Exchange questions published in the last
           72 hours, compared with their median daily share across prior observed
           publication days in the 30-day, one-page-per-query archive. The daily
-          connector re-queries that bounded window; up to 50 results per query
+          connector re-queries that bounded window; up to 100 results per query
           may omit additional matches. Days with no eligible records are not
           treated as zero. A baseline stays unavailable until 14 observed days
           exist. This is a query-selected expert Q&amp;A sample from one

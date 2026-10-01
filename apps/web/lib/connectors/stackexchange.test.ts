@@ -48,7 +48,7 @@ describe("StackExchangeConnector", () => {
       expect(params.get("title")).toBeTruthy();
       expect(params.has("intitle")).toBe(false);
       expect(params.get("fromdate")).toBe(String(Math.floor(Date.parse("2026-09-01T00:00:00Z") / 1000)));
-      expect(params.get("pagesize")).toBe("50");
+      expect(params.get("pagesize")).toBe("100");
     }
     expect(result.documents).toHaveLength(1);
     expect(result.documents[0].marketCode).toBe("INTL");

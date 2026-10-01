@@ -71,7 +71,7 @@ export class StackExchangeConnector implements Connector {
           order: "desc",
           sort: "creation",
           site,
-          pagesize: "50",
+          pagesize: "100",
           title: term,
           // Re-sample the same bounded 30-day window each daily run so the
           // descriptive baseline need not wait for 14 cron days.
