@@ -5,6 +5,7 @@ import {
   createResearchBriefMarkdown,
   ResearchEvidence,
   ResearchEvidenceClass,
+  summarizeEvidenceCoverage,
 } from "../../lib/research-brief";
 
 const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
@@ -37,6 +38,7 @@ export default function ResearchBrief({
     evidenceClass,
     count: evidence.filter((item) => item.evidenceClass === evidenceClass).length,
   })), [evidence]);
+  const coverage = useMemo(() => summarizeEvidenceCoverage(evidence), [evidence]);
   const markdown = () => createResearchBriefMarkdown({
     topic,
     workingThesis,
@@ -132,6 +134,28 @@ export default function ResearchBrief({
         ) : (
           <p className="mt-3 text-sm text-muted">No evidence selected. Use “Add to brief” on a live result below.</p>
         )}
+      </div>
+
+      <div className="mt-5 border-t border-line pt-4" aria-live="polite">
+        <h3 className="font-semibold">Selected-sample coverage</h3>
+        {evidence.length ? (
+          <>
+            <p className="mt-2 text-sm leading-6 text-muted">
+              {coverage.sourceLabels.length} source labels · {coverage.languages.length} languages · {coverage.evidenceClasses.length} evidence classes
+              {coverage.earliest && coverage.latest
+                ? ` · ${new Date(coverage.earliest).toLocaleDateString()}–${new Date(coverage.latest).toLocaleDateString()}`
+                : " · publication dates unavailable"}
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted">
+              {coverage.sourceLabels.join(" · ")} · {coverage.languages.join(" · ")}
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 text-sm text-muted">Coverage appears here after you deliberately select source evidence.</p>
+        )}
+        <p className="mt-2 text-xs leading-5 text-muted">
+          Descriptive inventory only: source labels, languages, and item counts do not establish independent ownership, representative reach, or a market-level signal.
+        </p>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">

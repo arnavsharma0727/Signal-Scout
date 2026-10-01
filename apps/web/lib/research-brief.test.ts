@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createResearchBriefMarkdown, ResearchEvidence, topicFromFragment } from "./research-brief";
+import { createResearchBriefMarkdown, ResearchEvidence, summarizeEvidenceCoverage, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -36,7 +36,36 @@ describe("createResearchBriefMarkdown", () => {
     expect(markdown).toContain("[attribution link](https://economics.stackexchange.com/users/1/researcher)");
     expect(markdown).toContain("[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)");
     expect(markdown).toContain("not an investment recommendation");
+    expect(markdown).toContain("## Selected-sample coverage audit");
+    expect(markdown).toContain("Source labels: Economics Stack Exchange");
+    expect(markdown).toContain("not necessarily an independent publisher");
     expect(markdown).not.toContain("recommendation: buy");
+  });
+
+  it("summarizes language, source labels, evidence classes, and valid date span without calling them independent", () => {
+    const coverage = summarizeEvidenceCoverage([
+      selected,
+      {
+        ...selected,
+        id: "mastodon-1",
+        title: "A public discussion",
+        url: "https://mstdn.jp/@reader/1",
+        source: "Mastodon · mstdn.jp",
+        evidenceClass: "social discussion",
+        language: "Japanese",
+        timeValue: "2026-10-02T12:00:00Z",
+      },
+      { ...selected, id: "bad-date", timeValue: "not-a-date" },
+    ]);
+    expect(coverage.itemCount).toBe(3);
+    expect(coverage.sourceLabels).toEqual(["Economics Stack Exchange", "Mastodon · mstdn.jp"]);
+    expect(coverage.languages).toEqual(["English", "Japanese"]);
+    expect(coverage.evidenceClasses).toEqual([
+      { evidenceClass: "expert Q&A", count: 2 },
+      { evidenceClass: "social discussion", count: 1 },
+    ]);
+    expect(coverage.earliest).toBe("2026-10-01T12:00:00.000Z");
+    expect(coverage.latest).toBe("2026-10-02T12:00:00.000Z");
   });
 
   it("does not invent evidence when the researcher selected none", () => {

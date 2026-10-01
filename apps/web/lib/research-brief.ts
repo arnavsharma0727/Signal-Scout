@@ -25,6 +25,42 @@ export type ResearchBriefDraft = {
   exportedAt: string;
 };
 
+export type EvidenceCoverage = {
+  itemCount: number;
+  sourceLabels: string[];
+  languages: string[];
+  evidenceClasses: { evidenceClass: ResearchEvidenceClass; count: number }[];
+  earliest: string | null;
+  latest: string | null;
+};
+
+/** Descriptive inventory only: labels and items are not counts of independent owners. */
+export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): EvidenceCoverage {
+  const timestamps = evidence
+    .map(({ timeValue }) => Date.parse(timeValue))
+    .filter(Number.isFinite)
+    .sort((a, b) => a - b);
+  const evidenceClasses: ResearchEvidenceClass[] = [
+    "expert Q&A",
+    "social discussion",
+    "news coverage",
+    "editorial discussion",
+  ];
+  return {
+    itemCount: evidence.length,
+    sourceLabels: [...new Set(evidence.map(({ source }) => cleanText(source)).filter(Boolean))].sort(),
+    languages: [...new Set(evidence.map(({ language }) => cleanText(language)).filter(Boolean))].sort(),
+    evidenceClasses: evidenceClasses
+      .map((evidenceClass) => ({
+        evidenceClass,
+        count: evidence.filter((item) => item.evidenceClass === evidenceClass).length,
+      }))
+      .filter(({ count }) => count > 0),
+    earliest: timestamps.length ? new Date(timestamps[0]).toISOString() : null,
+    latest: timestamps.length ? new Date(timestamps[timestamps.length - 1]).toISOString() : null,
+  };
+}
+
 /** Read a topic handoff from the URL fragment so it is not sent in the HTTP request path. */
 export function topicFromFragment(hash: string): string {
   if (!hash.startsWith("#")) return "";
@@ -33,6 +69,7 @@ export function topicFromFragment(hash: string): string {
 
 /** Build a citation-first handoff; never scores evidence or invents a conclusion. */
 export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
+  const coverage = summarizeEvidenceCoverage(draft.evidence);
   const lines = [
     "# Signal Scout research brief",
     "",
@@ -52,6 +89,16 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     "## What would change my mind?",
     "",
     cleanText(draft.disconfirmingEvidence) || "Not written.",
+    "",
+    "## Selected-sample coverage audit",
+    "",
+    `- Selected items: ${coverage.itemCount}`,
+    `- Source labels: ${coverage.sourceLabels.map(escapeMarkdownLabel).join(", ") || "None"}`,
+    `- Languages: ${coverage.languages.map(escapeMarkdownLabel).join(", ") || "None"}`,
+    `- Evidence classes: ${coverage.evidenceClasses.map(({ evidenceClass, count }) => `${escapeMarkdownLabel(evidenceClass)} (${count})`).join(", ") || "None"}`,
+    `- Publication-time span: ${coverage.earliest && coverage.latest ? `${coverage.earliest} to ${coverage.latest}` : "Unavailable"}`,
+    "",
+    "> Coverage is descriptive. A source label, language, item, or domain is not necessarily an independent publisher or population sample.",
     "",
     `## Selected evidence (${draft.evidence.length} items)`,
     "",
