@@ -81,6 +81,19 @@ describe("Lemmy public discussion search", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it.each(["feddit.org", "feddit.uk"] as const)("queries the public API for %s without retaining bodies", async (host) => {
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      expect(url.origin).toBe(`https://${host}`);
+      expect(url.pathname).toBe("/api/v3/search");
+      return Promise.resolve(new Response(JSON.stringify({ posts: [item({ ap_id: `https://${host}/post/42` })] }), { status: 200 }));
+    });
+    const posts = await searchLemmyPosts("semiconductor", host, fetchMock, now);
+    expect(posts).toHaveLength(1);
+    expect(JSON.stringify(posts)).not.toContain("Private-to-the-app body");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("sends a distinct visitor-supplied phrase to each instance and preserves it per view", async () => {
     const requests: URL[] = [];
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
