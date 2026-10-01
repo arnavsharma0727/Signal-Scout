@@ -14,8 +14,12 @@ export const GLOBAL_VOICES_FEEDS = [
   { language: "it", label: "Italian", host: "it.globalvoices.org", feedTitle: "Global Voices in Italiano" },
   { language: "nl", label: "Dutch", host: "nl.globalvoices.org", feedTitle: "Global Voices in het Nederlands" },
   { language: "yo", label: "Yoruba", host: "yo.globalvoices.org", feedTitle: "Global Voices ní-Yorùbá" },
+  { language: "uk", label: "Ukrainian", host: "uk.globalvoices.org", feedTitle: "Global Voices по-українськи" },
+  { language: "el", label: "Greek", host: "el.globalvoices.org", feedTitle: "Global Voices στα Ελληνικά" },
+  { language: "ca", label: "Catalan", host: "ca.globalvoices.org", feedTitle: "Global Voices en Català" },
 ] as const;
 const MAX_FEED_BYTES = 500_000;
+const PUBLICATION_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000;
 const SITE_LICENSE_NOTICE =
   "Global Voices-created content is licensed CC BY unless otherwise stated.";
 
@@ -39,6 +43,7 @@ export class GlobalVoicesConnector implements Connector {
       status: "completed" | "failed";
     }> = [];
     let feedItemsReceived = 0;
+    const publicationStart = new Date(input.end.getTime() - PUBLICATION_LOOKBACK_MS);
     for (const edition of GLOBAL_VOICES_FEEDS) {
       const feedUrl = `https://${edition.host}/feed/`;
       let editionItemCount = 0;
@@ -82,7 +87,7 @@ export class GlobalVoicesConnector implements Connector {
           }
           if (
             !title || !author || !date || !Number.isFinite(date.getTime()) ||
-            date < input.start || date > input.end ||
+            date < publicationStart || date > input.end ||
             sourceUrl.protocol !== "https:" ||
             sourceUrl.hostname !== edition.host ||
             sourceUrl.pathname === "/" ||
@@ -142,6 +147,7 @@ export class GlobalVoicesConnector implements Connector {
       metadata: {
         resultCount: documents.length,
         feedItemsReceived,
+        lookbackDays: 7,
         editionsQueried: GLOBAL_VOICES_FEEDS.map(({ language }) => language),
         editionsSucceeded: GLOBAL_VOICES_FEEDS.map(({ language }) => language).filter((language) => !failedFeeds.includes(language)),
         failedFeeds,

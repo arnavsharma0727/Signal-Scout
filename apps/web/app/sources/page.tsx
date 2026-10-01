@@ -43,7 +43,7 @@ function utc(
 
 function globalVoicesEditionSummary(metadata: unknown) {
   if (!metadata || typeof metadata !== "object" || !("editionResults" in metadata) || !Array.isArray(metadata.editionResults)) return null;
-  const labels: Record<string, string> = { en: "English", es: "Spanish", fr: "French", pt: "Portuguese", ar: "Arabic", ru: "Russian", it: "Italian", nl: "Dutch", yo: "Yoruba" };
+  const labels: Record<string, string> = { en: "English", es: "Spanish", fr: "French", pt: "Portuguese", ar: "Arabic", ru: "Russian", it: "Italian", nl: "Dutch", yo: "Yoruba", uk: "Ukrainian", el: "Greek", ca: "Catalan" };
   const results = metadata.editionResults.flatMap((value) => {
     if (!value || typeof value !== "object") return [];
     const item = value as Record<string, unknown>;
@@ -165,7 +165,7 @@ export default async function Sources() {
       key: "global-voices",
       enabled: true,
       detail:
-        "Daily keyless RSS from nine currently active Global Voices editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, and Yoruba. Each edition is identified from its allowlisted publisher host/title; RSS language metadata is inconsistent, so the reviewed edition supplies the language label. Global Voices-created content defaults to CC BY 3.0 unless an item says otherwise; conflicting item-level rights are rejected. Signal Scout keeps the unmodified edition headline, byline, date, first-party link, and limited categories with attribution; descriptions, story bodies, and media are discarded. Editions share one publisher and may include translated versions; they are never counted as independent outlets or proxies for audience geography. This is editorial reporting, not raw forum discussion or a representative survey.",
+        "Daily keyless RSS from twelve active Global Voices editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. Each edition is identified from its allowlisted publisher host/title; RSS language metadata is inconsistent, so the reviewed edition supplies the language label. Global Voices-created content defaults to CC BY 3.0 unless an item says otherwise; conflicting item-level rights are rejected. Signal Scout keeps the unmodified edition headline, byline, date, first-party link, and limited categories with attribution; descriptions, story bodies, and media are discarded. Items are limited to a rolling seven-day publication window. Editions share one publisher and may include translated versions; they are never counted as independent outlets or proxies for audience geography. This is editorial reporting, not raw forum discussion or a representative survey.",
     },
     {
       name: "GDELT news",

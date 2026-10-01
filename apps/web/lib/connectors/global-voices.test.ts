@@ -100,7 +100,8 @@ describe("Global Voices CC BY RSS connector", () => {
       publisherIndependenceInferred: false,
     });
     expect(result.metadata).toMatchObject({
-      editionsQueried: ["en", "es", "fr", "pt", "ar", "ru", "it", "nl", "yo"],
+      editionsQueried: ["en", "es", "fr", "pt", "ar", "ru", "it", "nl", "yo", "uk", "el", "ca"],
+      lookbackDays: 7,
       failedFeeds: [],
       bodyAndMediaRetained: false,
     });
@@ -114,6 +115,9 @@ describe("Global Voices CC BY RSS connector", () => {
       { language: "it", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
       { language: "nl", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
       { language: "yo", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "uk", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "el", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
+      { language: "ca", feedItemsReceived: 0, documentsAccepted: 0, status: "completed" },
     ]);
   });
 
@@ -132,14 +136,31 @@ describe("Global Voices CC BY RSS connector", () => {
       ["yo", "Global Voices · Yoruba edition"],
     ]);
     expect(result.documents.every(({ rawMetadata }) => rawMetadata.publisher === "Global Voices")).toBe(true);
-    expect(result.requestsUsed).toBe(9);
+    expect(result.requestsUsed).toBe(12);
+  });
+
+  it("accepts verified Ukrainian, Greek, and Catalan editions inside the rolling seven-day window", async () => {
+    vi.stubGlobal("fetch", editionFeeds({
+      uk: item({ date: "Mon, 28 Sep 2026 11:57:12 GMT", url: "https://uk.globalvoices.org/2026/09/28/story/" }),
+      el: item({ date: "Fri, 25 Sep 2026 09:35:11 GMT", url: "https://el.globalvoices.org/2026/09/25/story/" }),
+      ca: item({ date: "Fri, 25 Sep 2026 08:00:52 GMT", url: "https://ca.globalvoices.org/2026/09/25/story/" }),
+    }));
+
+    const result = await new GlobalVoicesConnector().fetchDocuments(input);
+
+    expect(result.documents.map(({ languageCode, sourceName }) => [languageCode, sourceName])).toEqual([
+      ["uk", "Global Voices · Ukrainian edition"],
+      ["el", "Global Voices · Greek edition"],
+      ["ca", "Global Voices · Catalan edition"],
+    ]);
+    expect(result.metadata.lookbackDays).toBe(7);
   });
 
   it("rejects item-specific conflicting rights, non-publisher links, and out-of-window items", async () => {
     const rows = [
       item({ title: "Rights exception", rights: "All rights reserved" }),
       item({ title: "Off-site link", url: "https://example.org/story/" }),
-      item({ title: "Too old", date: "Tue, 29 Sep 2026 23:59:59 GMT" }),
+      item({ title: "Too old", date: "Thu, 24 Sep 2026 23:59:59 GMT" }),
       item({ title: "Future item", date: "Sat, 03 Oct 2026 00:00:00 GMT" }),
     ];
     vi.stubGlobal("fetch", editionFeeds({ en: rows.join("") }));
@@ -167,7 +188,7 @@ describe("Global Voices CC BY RSS connector", () => {
     expect(result.requestsUsed).toBe(GLOBAL_VOICES_FEEDS.length);
     expect(result.metadata).toMatchObject({
       failedFeeds: ["es"],
-      editionsSucceeded: ["en", "fr", "pt", "ar", "ru", "it", "nl", "yo"],
+      editionsSucceeded: ["en", "fr", "pt", "ar", "ru", "it", "nl", "yo", "uk", "el", "ca"],
     });
     expect(result.metadata.editionResults).toContainEqual({
       language: "es",
