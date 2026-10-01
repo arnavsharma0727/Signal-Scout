@@ -1,6 +1,7 @@
 import { searchGdeltNews } from "./gdelt-public";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "./live-topic-search";
 import { searchLemmyPosts } from "./lemmy-public";
+import { MASTODON_INSTANCES, searchPublicHashtag } from "./mastodon-public";
 import { WIKIMEDIA_TALK_WIKIS, searchWikimediaTalk } from "./wikimedia-talk";
 import type { ResearchEvidence } from "./research-brief";
 
@@ -9,11 +10,12 @@ export type ResearchSweepSelection = {
   stackExchangeSite?: string;
   lemmy: boolean;
   lemmyTermsAccepted: boolean;
+  mastodon?: { hashtag: string; instance: string };
   wikimediaLanguage?: string;
 };
 
 export type ResearchSweepSourceResult = {
-  key: "gdelt" | "stack-exchange" | "lemmy" | "wikimedia";
+  key: "gdelt" | "stack-exchange" | "lemmy" | "mastodon" | "wikimedia";
   label: string;
   window: string;
   evidence: ResearchEvidence[];
@@ -43,7 +45,7 @@ export async function runResearchSweep(
   if (selection.lemmy && !selection.lemmyTermsAccepted) {
     throw new Error("Review and affirm the Lemmy instance terms and age condition before including it.");
   }
-  if (!selection.gdelt && !selection.stackExchangeSite && !selection.lemmy && !selection.wikimediaLanguage) {
+  if (!selection.gdelt && !selection.stackExchangeSite && !selection.lemmy && !selection.mastodon && !selection.wikimediaLanguage) {
     throw new Error("Select at least one source.");
   }
   if (selection.stackExchangeSite && !DISCUSSION_COMMUNITIES.some(({ site }) => site === selection.stackExchangeSite)) {
@@ -51,6 +53,9 @@ export async function runResearchSweep(
   }
   if (selection.wikimediaLanguage && !WIKIMEDIA_TALK_WIKIS.some(({ language }) => language === selection.wikimediaLanguage)) {
     throw new Error("Choose a listed Wikimedia language edition.");
+  }
+  if (selection.mastodon && !MASTODON_INSTANCES.some(({ host }) => host === selection.mastodon!.instance)) {
+    throw new Error("Choose a listed Mastodon server.");
   }
 
   const tasks: Promise<ResearchSweepSourceResult>[] = [];
@@ -104,6 +109,25 @@ export async function runResearchSweep(
         timeValue: post.publishedAt,
         attribution: `Lemmy author: ${post.author}`,
         attributionUrl: post.authorUrl ?? post.url,
+      })),
+    ));
+  }
+  if (selection.mastodon) {
+    const { hashtag, instance } = selection.mastodon;
+    const server = MASTODON_INSTANCES.find(({ host }) => host === instance)!;
+    tasks.push(capture("mastodon", `Mastodon · ${server.label}`, "Up to 20 newest public hashtag posts", async () =>
+      (await searchPublicHashtag(hashtag, fetcher, now, server.host)).map((post) => ({
+        id: `mastodon:${post.url}`,
+        title: `Public post by @${post.authorHandle}`,
+        url: post.url,
+        source: `Mastodon · ${post.originServer} via ${server.host}`,
+        evidenceClass: "social discussion" as const,
+        language: post.language ?? "not provided",
+        timeLabel: "Published",
+        timeValue: post.createdAt,
+        context: `Hashtag #${hashtag.replace(/^#+/, "")}; server timeline is not a geographic market proxy`,
+        attribution: `Author: ${post.authorHandle}`,
+        attributionUrl: post.authorUrl,
       })),
     ));
   }

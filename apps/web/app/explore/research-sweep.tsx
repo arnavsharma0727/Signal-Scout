@@ -5,6 +5,7 @@ import {
   DISCUSSION_COMMUNITIES,
 } from "../../lib/live-topic-search";
 import { WIKIMEDIA_TALK_WIKIS } from "../../lib/wikimedia-talk";
+import { MASTODON_INSTANCES, MastodonInstance } from "../../lib/mastodon-public";
 import {
   runResearchSweep,
   ResearchSweepSourceResult,
@@ -25,6 +26,9 @@ export default function ResearchSweep({
   const [stackExchangeSite, setStackExchangeSite] = useState<string>(DISCUSSION_COMMUNITIES[0].site);
   const [lemmy, setLemmy] = useState(false);
   const [lemmyTermsAccepted, setLemmyTermsAccepted] = useState(false);
+  const [mastodonEnabled, setMastodonEnabled] = useState(false);
+  const [mastodonHashtag, setMastodonHashtag] = useState("");
+  const [mastodonInstance, setMastodonInstance] = useState<MastodonInstance>("mastodon.social");
   const [wikimediaLanguage, setWikimediaLanguage] = useState("");
   const [results, setResults] = useState<ResearchSweepSourceResult[]>([]);
   const [searched, setSearched] = useState(false);
@@ -47,6 +51,7 @@ export default function ResearchSweep({
         stackExchangeSite,
         lemmy,
         lemmyTermsAccepted,
+        mastodon: mastodonEnabled ? { hashtag: mastodonHashtag, instance: mastodonInstance } : undefined,
         wikimediaLanguage,
       }));
     } catch (cause) {
@@ -105,6 +110,34 @@ export default function ResearchSweep({
             <span><strong>Lemmy · lemmy.world</strong><span className="block text-xs text-muted">Federated public forum index · up to 20 newest posts within 7 days</span></span>
           </label>
           <label className="flex items-start gap-2 text-sm leading-6">
+            <input className="mt-1" type="checkbox" checked={mastodonEnabled} onChange={(event) => setMastodonEnabled(event.target.checked)} />
+            <span className="min-w-0 flex-1">
+              <strong>Mastodon public hashtag</strong><span className="block text-xs text-muted">One server’s up-to-20 newest public posts · hashtag search, not phrase search</span>
+              <input
+                className="mt-2 block w-full rounded border border-line bg-white px-2 py-1.5 text-xs text-ink"
+                value={mastodonHashtag}
+                onChange={(event) => setMastodonHashtag(event.target.value)}
+                minLength={1}
+                maxLength={50}
+                placeholder="Hashtag (e.g. inflation)"
+                aria-label="Mastodon hashtag"
+                disabled={!mastodonEnabled}
+                required={mastodonEnabled}
+              />
+              <select
+                className="mt-2 block w-full rounded border border-line bg-white px-2 py-1.5 text-xs text-ink"
+                value={mastodonInstance}
+                onChange={(event) => setMastodonInstance(event.target.value as MastodonInstance)}
+                disabled={!mastodonEnabled}
+                aria-label="Mastodon server"
+              >
+                {MASTODON_INSTANCES.map((server) => (
+                  <option key={server.host} value={server.host}>{server.label}</option>
+                ))}
+              </select>
+            </span>
+          </label>
+          <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={Boolean(wikimediaLanguage)} onChange={(event) => setWikimediaLanguage(event.target.checked ? WIKIMEDIA_TALK_WIKIS[0].language : "")} />
             <span className="min-w-0 flex-1">
               <strong>Wikimedia talk pages</strong><span className="block text-xs text-muted">Collaborative editorial discussion · up to 20 pages edited within 90 days</span>
@@ -134,6 +167,11 @@ export default function ResearchSweep({
               {" "}before sending this search to that instance.
             </span>
           </label>
+        )}
+        {mastodonEnabled && (
+          <p className="text-xs leading-5 text-muted">
+            Mastodon servers are not country proxies. Posts remain their authors’ content; the sweep keeps only the post link, author attribution, timestamp, and language in its selectable citation model, not post text.
+          </p>
         )}
         <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
           {loading ? "Searching selected sources…" : "Run source sweep"}

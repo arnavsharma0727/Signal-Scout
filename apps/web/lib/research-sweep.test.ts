@@ -41,6 +41,21 @@ describe("runResearchSweep", () => {
           community: { name: "economy" },
         }] }));
       }
+      if (url.hostname === "mastodon.social") {
+        return new Response(JSON.stringify([{
+          id: "15",
+          url: "https://mastodon.social/@reader/15",
+          created_at: new Date(NOW - 60_000).toISOString(),
+          visibility: "public",
+          content: "<p>Post body should not enter the research evidence record</p>",
+          account: {
+            display_name: "Reader",
+            acct: "reader",
+            url: "https://mastodon.social/@reader",
+            bot: false,
+          },
+        }]));
+      }
       if (url.hostname === "en.wikipedia.org") {
         return new Response(JSON.stringify({ query: { search: [{
           pageid: 14,
@@ -56,14 +71,16 @@ describe("runResearchSweep", () => {
       stackExchangeSite: "economics",
       lemmy: true,
       lemmyTermsAccepted: true,
+      mastodon: { hashtag: "markets", instance: "mastodon.social" },
       wikimediaLanguage: "en",
     }, fetcher, NOW);
 
-    expect(fetcher).toHaveBeenCalledTimes(4);
+    expect(fetcher).toHaveBeenCalledTimes(5);
     expect(results.map(({ key, evidence, error }) => [key, evidence.length, error])).toEqual([
       ["gdelt", 1, null],
       ["stack-exchange", 1, null],
       ["lemmy", 1, null],
+      ["mastodon", 1, null],
       ["wikimedia", 1, null],
     ]);
     expect(results[1].evidence[0]).toMatchObject({
@@ -72,7 +89,12 @@ describe("runResearchSweep", () => {
     });
     expect(results[2].evidence[0].evidenceClass).toBe("social discussion");
     expect(JSON.stringify(results[2].evidence)).not.toContain("post body");
+    expect(JSON.stringify(results[3].evidence)).not.toContain("Post body");
     expect(results[3].evidence[0]).toMatchObject({
+      evidenceClass: "social discussion",
+      context: expect.stringContaining("not a geographic market proxy"),
+    });
+    expect(results[4].evidence[0]).toMatchObject({
       evidenceClass: "editorial discussion",
       context: expect.stringContaining("not a general forum"),
     });
