@@ -1,5 +1,6 @@
 import { makeDocument } from "./normalize";
 import { fetchWithRetry } from "./fetch";
+import { matchesStackExchangeTitleQuery } from "../source-policy";
 import type { Connector, ConnectorResult } from "./types";
 
 const endpoint = "https://api.stackexchange.com/2.3/search/advanced";
@@ -63,6 +64,7 @@ export class StackExchangeConnector implements Connector {
     let requestsUsed = 0;
     let stoppedForBackoff = false;
     const rejectedUnlicensed = { count: 0 };
+    const rejectedTitleMismatch = { count: 0 };
     const historyStart = new Date(input.end.getTime() - HISTORY_LOOKBACK_MS);
 
     search: for (const { site, languageCode, terms } of siteQueries) {
@@ -90,10 +92,17 @@ export class StackExchangeConnector implements Connector {
             continue;
           }
           if (!item.title || !item.link || !item.owner?.display_name) continue;
+          const title = decodeEntities(item.title);
+          // Enforce the API's documented title constraint locally as well.
+          // This prevents malformed/upstream-mismatched results from entering
+          // discussion baselines or being surfaced as on-topic evidence.
+          if (!matchesStackExchangeTitleQuery(title, term)) {
+            rejectedTitleMismatch.count++;
+            continue;
+          }
           const publishedAt = item.creation_date
             ? new Date(item.creation_date * 1000).toISOString()
             : undefined;
-          const title = decodeEntities(item.title);
           documents.push(
             makeDocument({
               marketCode: "INTL",
@@ -141,6 +150,7 @@ export class StackExchangeConnector implements Connector {
         ),
         resultCount: unique.length,
         rejectedUnlicensed: rejectedUnlicensed.count,
+        rejectedTitleMismatch: rejectedTitleMismatch.count,
         stoppedForBackoff,
       },
     };

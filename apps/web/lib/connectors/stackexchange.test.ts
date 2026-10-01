@@ -27,6 +27,14 @@ describe("StackExchangeConnector", () => {
               content_license: null,
               owner: { display_name: "Unknown" },
             },
+            {
+              title: "Unrelated but licensed question",
+              link: "https://economics.stackexchange.com/questions/125/example",
+              creation_date: 1790734268,
+              content_license: "CC BY-SA 4.0",
+              tags: ["economics"],
+              owner: { display_name: "Researcher" },
+            },
           ] : [],
         }),
         { status: 200, headers: { "content-type": "application/json" } },
@@ -43,6 +51,7 @@ describe("StackExchangeConnector", () => {
     expect(fetchMock).toHaveBeenCalledTimes(33);
     expect(result.requestsUsed).toBe(33);
     expect(result.metadata).toMatchObject({ lookbackDays: 30 });
+    expect(result.metadata.rejectedTitleMismatch).toBe(1);
     for (const [url] of fetchMock.mock.calls) {
       const params = new URL(String(url)).searchParams;
       expect(params.get("title")).toBeTruthy();
@@ -78,7 +87,7 @@ describe("StackExchangeConnector", () => {
     const fetchMock = vi.fn().mockImplementation(() => {
       calls++;
       const items = calls === 16 ? [{
-        title: "¿Cómo implementar un modelo de lenguaje?",
+        title: "¿Cómo implementar inteligencia artificial?",
         link: "https://es.stackoverflow.com/questions/123/example",
         creation_date: 1790734268,
         content_license: "CC BY-SA 4.0",

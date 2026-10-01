@@ -52,5 +52,7 @@ export async function recentDiscussionObservations(){
     rows.push(...data);
     if(data.length<pageSize)break;
   }
-  return buildDiscussionObservations(rows);
+  return buildDiscussionObservations(rows.filter(row =>
+    matchesStackExchangeTitleQuery(row.title_original, row.raw_metadata_json?.query)
+  ));
 }
