@@ -50,18 +50,13 @@ describe("source takedown safeguards", () => {
       data: [{ fingerprint: sourceUrlFingerprint(document.canonicalUrl) }],
       error: null,
     });
+    const range = vi.fn(() => query());
     const db = {
-      from: vi.fn(() => ({ select: vi.fn(() => ({ in: query })) })),
+      from: vi.fn(() => ({ select: vi.fn(() => ({ order: vi.fn(() => ({ range })) })) })),
     };
     const result = await excludeTakedownBlockedDocuments(db, [document]);
     expect(result).toEqual({ documents: [], excluded: 1 });
-    expect(query).toHaveBeenCalledWith(
-      "fingerprint",
-      expect.arrayContaining([
-        document.contentHash,
-        sourceUrlFingerprint(document.canonicalUrl),
-      ]),
-    );
+    expect(range).toHaveBeenCalledWith(0, 999);
 
     query.mockResolvedValue({
       data: null,
@@ -70,5 +65,25 @@ describe("source takedown safeguards", () => {
     await expect(
       excludeTakedownBlockedDocuments(db, [document]),
     ).rejects.toThrow("Takedown blocklist check failed");
+  });
+
+  it("paginates a large takedown blocklist and finds content fingerprints", async () => {
+    const fingerprints = Array.from({ length: 1001 }, (_, index) => `dummy-${String(index).padStart(4, "0")}`);
+    fingerprints[999] = document.contentHash;
+    const range = vi.fn((from: number, to: number) => Promise.resolve({
+      data: fingerprints.slice(from, to + 1).map((fingerprint) => ({ fingerprint })),
+      error: null,
+    }));
+    const db = {
+      from: vi.fn(() => ({
+        select: vi.fn(() => ({
+          order: vi.fn(() => ({ range })),
+        })),
+      })),
+    };
+
+    const result = await excludeTakedownBlockedDocuments(db, [document]);
+    expect(result).toEqual({ documents: [], excluded: 1 });
+    expect(range.mock.calls).toEqual([[0, 999], [1000, 1999]]);
   });
 });

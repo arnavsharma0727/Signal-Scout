@@ -58,14 +58,22 @@ export async function excludeTakedownBlockedDocuments(
   const fingerprints = [
     ...new Set(fingerprintByDocument.flatMap((x) => x.fingerprints)),
   ];
-  const { data, error } = await db
-    .from("source_takedown_blocks")
-    .select("fingerprint")
-    .in("fingerprint", fingerprints);
-  if (error) throw new Error("Takedown blocklist check failed");
-  const blocked = new Set(
-    (data ?? []).map((row: { fingerprint: string }) => row.fingerprint),
-  );
+  const blocked = new Set<string>();
+  const pageSize = 1000;
+  // Scan the usually small blocklist in bounded pages. A huge `.in()` filter
+  // built from every incoming document can exceed PostgREST URL limits and
+  // prevent otherwise valid high-volume source batches from being ingested.
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error } = await db
+      .from("source_takedown_blocks")
+      .select("fingerprint")
+      .order("fingerprint", { ascending: true })
+      .range(offset, offset + pageSize - 1);
+    if (error || !data) throw new Error("Takedown blocklist check failed");
+    for (const row of data as Array<{ fingerprint: string }>)
+      blocked.add(row.fingerprint);
+    if (data.length < pageSize) break;
+  }
   const allowed = fingerprintByDocument
     .filter(
       (entry) =>
