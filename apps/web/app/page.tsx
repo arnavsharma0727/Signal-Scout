@@ -323,6 +323,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                       {d.source_type === "licensed-reporting" && (
                         <p className="mt-1 text-[10px] leading-4 text-muted">
                           <span className="font-medium">{d.raw_metadata_json?.publisher ?? d.source_name}</span>
+                          {d.raw_metadata_json?.editionLabel && <> · {d.raw_metadata_json.editionLabel} edition</>}
                           {d.raw_metadata_json?.author && <> · By {d.raw_metadata_json.author}</>}
                           {d.raw_metadata_json?.licenseUrl && <> · <a className="underline" href={d.raw_metadata_json.licenseUrl} target="_blank" rel="noreferrer">{d.raw_metadata_json?.licenseName ?? "license"}</a></>}
                           {" · unmodified headline; story text/media not retained"}
