@@ -64,12 +64,6 @@ describe("runResearchSweep", () => {
           snippet: "Transient snippet is not retained",
         }] } }));
       }
-      if (url.hostname === "en.wikinews.org") {
-        return new Response(JSON.stringify({ query: {
-          rightsinfo: { text: "Creative Commons Attribution 4.0", url: "https://creativecommons.org/licenses/by/4.0/" },
-          search: [{ title: "International report", timestamp: new Date(NOW - 60_000).toISOString() }],
-        } }));
-      }
       throw new Error("Unexpected provider");
     });
     const results = await runResearchSweep("markets", {
@@ -79,17 +73,15 @@ describe("runResearchSweep", () => {
       lemmyTermsAccepted: true,
       mastodon: { hashtag: "markets", instance: "mastodon.social" },
       wikimediaLanguage: "en",
-      wikinewsLanguage: "en",
     }, fetcher, NOW);
 
-    expect(fetcher).toHaveBeenCalledTimes(6);
+    expect(fetcher).toHaveBeenCalledTimes(5);
     expect(results.map(({ key, evidence, error }) => [key, evidence.length, error])).toEqual([
       ["gdelt", 1, null],
       ["stack-exchange:economics", 1, null],
       ["lemmy:lemmy.world", 1, null],
       ["mastodon", 1, null],
       ["wikimedia", 1, null],
-      ["wikinews", 1, null],
     ]);
     expect(results[1].evidence[0]).toMatchObject({
       evidenceClass: "expert Q&A",
@@ -105,11 +97,6 @@ describe("runResearchSweep", () => {
     expect(results[4].evidence[0]).toMatchObject({
       evidenceClass: "editorial discussion",
       context: expect.stringContaining("not a general forum"),
-    });
-    expect(results[5].evidence[0]).toMatchObject({
-      evidenceClass: "news coverage",
-      context: expect.stringContaining("not a general forum"),
-      licenseName: "Creative Commons Attribution 4.0",
     });
   });
 
@@ -214,7 +201,6 @@ describe("runResearchSweep", () => {
       lemmy: false,
       lemmyTermsAccepted: false,
       wikimediaLanguage: "en",
-      wikinewsLanguage: "en",
     }, fetcher, NOW);
     expect(results[0].error).toMatch(/rate-limiting/);
     expect(results[1]).toMatchObject({ key: "wikimedia", error: null, evidence: [] });

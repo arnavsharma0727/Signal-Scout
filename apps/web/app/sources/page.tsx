@@ -114,12 +114,11 @@ export default async function Sources() {
         "Two modes: visitor-triggered, transient topic search across ten language editions; and one daily keyless scheduled sample of up to 500 newest non-bot, non-minor edits to article talk pages per edition. Scheduled records contain only the unchanged page title, timestamp, edition, and exact revision link; comment text, edit summaries, usernames, and IPs are never requested or stored. The linked revision/history supplies attribution under the applicable project license, usually CC BY-SA 4.0 (with GFDL also applying to many text contributions). Edition samples are capped, language is not audience geography, and collaborative editorial activity is not general investor sentiment or a lead by itself.",
     },
     {
-      name: "Wikinews · multilingual community reporting",
+      name: "Wikinews · archived, not a live source",
       key: "wikinews-public",
-      enabled: true,
-      onDemand: true,
+      enabled: false,
       detail:
-        "Visitor-triggered search of one of nine language editions. The browser requests up to 20 article titles and last-edit dates, checks that edition’s live license is Creative Commons BY/BY-SA, and discards results older than 30 days. Article bodies and snippets are not requested or stored. Wikinews is community-written reporting, not a general discussion forum, independent from the Wikimedia family, or a proxy for contributor/audience geography. Recent matches may be sparse; empty results mean no eligible match in this index, not absence of discussion or news elsewhere.",
+        "The Wikimedia Foundation closed all Wikinews editions effective 2026-05-04; they are read-only archives. A live API search returned only 2024 English results, so Signal Scout removed Wikinews from current-source searches. Archived content is not used as current evidence. See the Wikimedia Foundation’s project-closure announcement and the current distribution list.",
     },
     {
       name: "European Commission Presscorner · official context",

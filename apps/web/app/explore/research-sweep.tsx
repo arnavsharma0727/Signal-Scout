@@ -5,7 +5,6 @@ import {
   DISCUSSION_COMMUNITIES,
 } from "../../lib/live-topic-search";
 import { WIKIMEDIA_TALK_WIKIS } from "../../lib/wikimedia-talk";
-import { WIKINEWS_EDITIONS } from "../../lib/wikinews-search";
 import { LEMMY_INSTANCES, LemmyInstance } from "../../lib/lemmy-public";
 import { MASTODON_INSTANCES, MastodonInstance } from "../../lib/mastodon-public";
 import {
@@ -34,7 +33,6 @@ export default function ResearchSweep({
   const [mastodonHashtag, setMastodonHashtag] = useState("");
   const [mastodonInstance, setMastodonInstance] = useState<MastodonInstance>("mastodon.social");
   const [wikimediaLanguage, setWikimediaLanguage] = useState("");
-  const [wikinewsLanguage, setWikinewsLanguage] = useState("");
   const [results, setResults] = useState<ResearchSweepSourceResult[]>([]);
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -62,7 +60,6 @@ export default function ResearchSweep({
         lemmyTermsAccepted,
         mastodon: mastodonEnabled ? { hashtag: mastodonHashtag, instance: mastodonInstance } : undefined,
         wikimediaLanguage,
-        wikinewsLanguage,
       }));
     } catch (cause) {
       setResults([]);
@@ -210,16 +207,6 @@ export default function ResearchSweep({
                 {WIKIMEDIA_TALK_WIKIS.map((wiki) => (
                   <option key={wiki.language} value={wiki.language}>{wiki.wiki}</option>
                 ))}
-              </select>
-            </span>
-          </label>
-          <label className="flex items-start gap-2 text-sm leading-6">
-            <input className="mt-1" type="checkbox" checked={Boolean(wikinewsLanguage)} onChange={(event) => setWikinewsLanguage(event.target.checked ? WIKINEWS_EDITIONS[0].language : "")} />
-            <span className="min-w-0 flex-1">
-              <strong>Wikinews community reporting</strong><span className="block text-xs text-muted">Multilingual community-written news · up to 20 recent articles; edition license checked live</span>
-              <select className="mt-2 block w-full rounded border border-line bg-white px-2 py-1.5 text-xs text-ink" value={wikinewsLanguage} onChange={(event) => setWikinewsLanguage(event.target.value)} disabled={!wikinewsLanguage} aria-label="Wikinews language edition">
-                <option value="">Choose edition</option>
-                {WIKINEWS_EDITIONS.map((edition) => <option key={edition.language} value={edition.language}>{edition.label}</option>)}
               </select>
             </span>
           </label>

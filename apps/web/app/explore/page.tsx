@@ -42,8 +42,8 @@ export default async function ExplorePage({ searchParams }: { searchParams: Prom
           headlines are transient and linked to their publishers, with GDELT attribution. Wikimedia
           search results are transient snippets with links to the talk-page history for attribution.
           Lemmy searches show titles, author attribution, dates, communities, and original links only;
-          post bodies are discarded. Wikinews returns only recent article titles and links after a
-          live edition-license check; it is community reporting, not forum discussion. Instance
+          post bodies are discarded. Archived Wikinews results are excluded because the project is
+          read-only and no longer publishes current reporting. Instance
           views are incomplete and not country proxies.{" "}
           <Link className="underline text-ink" href="/sources">Source details</Link> ·{" "}
           <Link className="underline text-ink" href="/privacy">Privacy</Link>

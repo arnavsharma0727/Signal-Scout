@@ -3,7 +3,6 @@ import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "./live-topic-searc
 import { LEMMY_INSTANCES, LemmyInstance, searchLemmyPosts } from "./lemmy-public";
 import { MASTODON_INSTANCES, searchPublicHashtag } from "./mastodon-public";
 import { WIKIMEDIA_TALK_WIKIS, searchWikimediaTalk } from "./wikimedia-talk";
-import { WIKINEWS_EDITIONS, searchWikinews } from "./wikinews-search";
 import type { ResearchEvidence } from "./research-brief";
 
 export type ResearchSweepSelection = {
@@ -15,7 +14,6 @@ export type ResearchSweepSelection = {
   lemmyTermsAccepted: boolean;
   mastodon?: { hashtag: string; instance: string };
   wikimediaLanguage?: string;
-  wikinewsLanguage?: string;
 };
 
 export type ResearchSweepSourceResult = {
@@ -63,14 +61,11 @@ export async function runResearchSweep(
   ))) {
     throw new Error("Choose one or more listed public Lemmy instances.");
   }
-  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !selection.wikimediaLanguage && !selection.wikinewsLanguage) {
+  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !selection.wikimediaLanguage) {
     throw new Error("Select at least one source.");
   }
   if (selection.wikimediaLanguage && !WIKIMEDIA_TALK_WIKIS.some(({ language }) => language === selection.wikimediaLanguage)) {
     throw new Error("Choose a listed Wikimedia language edition.");
-  }
-  if (selection.wikinewsLanguage && !WIKINEWS_EDITIONS.some(({ language }) => language === selection.wikinewsLanguage)) {
-    throw new Error("Choose a listed Wikinews language edition.");
   }
   if (selection.mastodon && !MASTODON_INSTANCES.some(({ host }) => host === selection.mastodon!.instance)) {
     throw new Error("Choose a listed Mastodon server.");
@@ -168,27 +163,6 @@ export async function runResearchSweep(
         context: "Article talk page; collaborative editorial discussion, not a general forum",
         attribution: "View page history and contributors",
         attributionUrl: page.historyUrl,
-      })),
-    ));
-  }
-  if (selection.wikinewsLanguage) {
-    const language = selection.wikinewsLanguage;
-    const edition = WIKINEWS_EDITIONS.find(({ language: candidate }) => candidate === language)!;
-    tasks.push(capture("wikinews", edition.label, "Articles updated within 30 days; up to 20", async () =>
-      (await searchWikinews(query, language, fetcher, now)).map((article) => ({
-        id: `wikinews:${article.url}`,
-        title: article.title,
-        url: article.url,
-        source: article.edition,
-        evidenceClass: "news coverage" as const,
-        language: article.language,
-        timeLabel: "Updated",
-        timeValue: article.updatedAt,
-        context: "Community-written news; not a general forum or population-attention measure",
-        attribution: `${article.edition}; ${article.license}`,
-        attributionUrl: article.licenseUrl,
-        licenseName: article.license,
-        licenseUrl: article.licenseUrl,
       })),
     ));
   }
