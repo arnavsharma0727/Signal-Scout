@@ -5,6 +5,30 @@ import type { Connector, ConnectorResult } from "./types";
 
 export const THE_CONVERSATION_EDITIONS = [
   {
+    code: "uk",
+    label: "United Kingdom",
+    language: "en",
+    feed: "https://theconversation.com/uk/articles.atom",
+  },
+  {
+    code: "ca",
+    label: "Canada",
+    language: "en",
+    feed: "https://theconversation.com/ca/articles.atom",
+  },
+  {
+    code: "africa",
+    label: "Africa",
+    language: "en",
+    feed: "https://theconversation.com/africa/articles.atom",
+  },
+  {
+    code: "nz",
+    label: "New Zealand",
+    language: "en",
+    feed: "https://theconversation.com/nz/articles.atom",
+  },
+  {
     code: "au",
     label: "Australia",
     language: "en",

@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { TheConversationConnector } from "./the-conversation";
+import {
+  THE_CONVERSATION_EDITIONS,
+  TheConversationConnector,
+} from "./the-conversation";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -28,9 +31,14 @@ return `<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/200
 
 describe("The Conversation licensed analysis connector", () => {
   it("keeps only unmodified, attributable headline metadata covered by feed rights", async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(new Response(atomFeed(atomEntry({})), { status: 200 }))
-      .mockResolvedValueOnce(new Response(atomFeed(atomEntry({ link: "https://theconversation.com/us/example-2" })), { status: 200 }));
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const edition = THE_CONVERSATION_EDITIONS.find(
+        (candidate) => candidate.feed === String(input),
+      )!;
+      return Promise.resolve(new Response(atomFeed(atomEntry({
+        link: `https://theconversation.com/${edition.code}-example`,
+      })), { status: 200 }));
+    });
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await new TheConversationConnector().fetchDocuments({
@@ -39,9 +47,12 @@ describe("The Conversation licensed analysis connector", () => {
       end: new Date("2026-10-02T00:00:00Z"),
     });
 
-    expect(result.requestsUsed).toBe(2);
-    expect(result.documents).toHaveLength(2);
-    expect(result.documents[0]).toMatchObject({
+    expect(result.requestsUsed).toBe(THE_CONVERSATION_EDITIONS.length);
+    expect(result.documents).toHaveLength(THE_CONVERSATION_EDITIONS.length);
+    const australia = result.documents.find(
+      (document) => document.rawMetadata.edition === "au",
+    );
+    expect(australia).toMatchObject({
       marketCode: "INTL",
       sourceType: "licensed-analysis",
       sourceName: "The Conversation · Australia edition",
@@ -59,7 +70,7 @@ describe("The Conversation licensed analysis connector", () => {
     });
     expect(JSON.stringify(result.documents)).not.toContain("article body");
     expect(JSON.stringify(result.documents)).not.toContain("Feed summary");
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(THE_CONVERSATION_EDITIONS.length);
   });
 
   it("rejects entries without the feed's attribution/no-derivatives rights or with an off-site link", async () => {
@@ -67,9 +78,9 @@ describe("The Conversation licensed analysis connector", () => {
       atomEntry({ title: "No reuse notice", rights: "All rights reserved." }),
       atomEntry({ title: "Unsafe link", link: "https://example.org/not-the-publisher" }),
     ].join(""));
-    vi.stubGlobal("fetch", vi.fn()
-      .mockResolvedValueOnce(new Response(feed, { status: 200 }))
-      .mockResolvedValueOnce(new Response(atomFeed(""), { status: 200 })));
+    vi.stubGlobal("fetch", vi.fn(() =>
+      Promise.resolve(new Response(feed, { status: 200 })),
+    ));
 
     const result = await new TheConversationConnector().fetchDocuments({
       query: "",
@@ -80,17 +91,24 @@ describe("The Conversation licensed analysis connector", () => {
   });
 
   it("keeps a successful edition when the other edition fails", async () => {
-    vi.stubGlobal("fetch", vi.fn()
-      .mockResolvedValueOnce(new Response(atomFeed(atomEntry({})), { status: 200 }))
-      .mockResolvedValueOnce(new Response("unavailable", { status: 503 })));
+    vi.stubGlobal("fetch", vi.fn((input: RequestInfo | URL) => {
+      const edition = THE_CONVERSATION_EDITIONS.find(
+        (candidate) => candidate.feed === String(input),
+      )!;
+      if (edition.code === "us")
+        return Promise.resolve(new Response("unavailable", { status: 503 }));
+      return Promise.resolve(new Response(atomFeed(atomEntry({
+        link: `https://theconversation.com/${edition.code}-example`,
+      })), { status: 200 }));
+    }));
     const result = await new TheConversationConnector().fetchDocuments({
       query: "",
       start: new Date("2026-09-28T00:00:00Z"),
       end: new Date("2026-10-02T00:00:00Z"),
     });
-    expect(result.documents).toHaveLength(1);
+    expect(result.documents).toHaveLength(THE_CONVERSATION_EDITIONS.length - 1);
     expect(result.metadata).toMatchObject({
-      successfulFeeds: 1,
+      successfulFeeds: THE_CONVERSATION_EDITIONS.length - 1,
       failedEditions: ["us"],
     });
   });
