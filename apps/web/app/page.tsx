@@ -210,8 +210,8 @@ function EmptyPanel() {
 function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: import("../lib/time-zones").DisplayTimeZone }) {
   const groups = [
     { key: "discussion", label: "Online discussion", matches: (d: any) => ["stack-exchange", "bluesky", "hacker-news"].includes(d.source_type) },
-    { key: "news", label: "News and licensed analysis", matches: (d: any) => ["rss", "gdelt", "licensed-analysis"].includes(d.source_type) },
-    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "bluesky", "hacker-news", "rss", "gdelt", "licensed-analysis"].includes(d.source_type) },
+    { key: "news", label: "Reporting and licensed analysis", matches: (d: any) => ["rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
+    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "bluesky", "hacker-news", "rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
   ];
   return (
     <section className="panel mt-5 overflow-hidden">
@@ -258,6 +258,8 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                                 ? "Stack Exchange · expert Q&A"
                               : d.source_type === "licensed-analysis"
                                 ? "Licensed expert analysis · not public discussion"
+                              : d.source_type === "licensed-reporting"
+                                ? "Licensed community reporting · not forum chatter"
                               : "RSS / news"}
                         </span>
                         <span>{d.language_code}</span>
@@ -305,6 +307,14 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                           {" · "}
                           {d.raw_metadata_json?.rightsStatement}
                           {" · unmodified headline; summary/body not retained"}
+                        </p>
+                      )}
+                      {d.source_type === "licensed-reporting" && (
+                        <p className="mt-1 text-[10px] leading-4 text-muted">
+                          <span className="font-medium">{d.raw_metadata_json?.publisher ?? d.source_name}</span>
+                          {d.raw_metadata_json?.author && <> · By {d.raw_metadata_json.author}</>}
+                          {d.raw_metadata_json?.licenseUrl && <> · <a className="underline" href={d.raw_metadata_json.licenseUrl} target="_blank" rel="noreferrer">{d.raw_metadata_json?.licenseName ?? "license"}</a></>}
+                          {" · unmodified headline; story text/media not retained"}
                         </p>
                       )}
                       <time

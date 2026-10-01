@@ -9,6 +9,7 @@ import { MOISPressReleaseConnector } from "../../../lib/connectors/mois";
 import { StackExchangeConnector } from "../../../lib/connectors/stackexchange";
 import { EuropeanCommissionConnector } from "../../../lib/connectors/european-commission";
 import { TheConversationConnector } from "../../../lib/connectors/the-conversation";
+import { GlobalVoicesConnector } from "../../../lib/connectors/global-voices";
 import { safeConnectorError } from "../../../lib/connectors/fetch";
 import { matchEntityText } from "../../../lib/entity-matching";
 import { recomputeEntityDailyMetrics } from "../../../lib/recompute-metrics";
@@ -115,6 +116,11 @@ async function runIngestion() {
         market.market_code === "US"
       )
         marketConnectors.push(new TheConversationConnector());
+      if (
+        company.ticker === "MARKET-TALK" &&
+        market.market_code === "US"
+      )
+        marketConnectors.push(new GlobalVoicesConnector());
       const rssFeeds = getRssFeeds(market.market_code);
       // Publisher feeds are global research context, not company-specific
       // evidence. Run each configured market feed only for the macro profile.
@@ -162,6 +168,14 @@ async function runIngestion() {
           else if (connector instanceof TheConversationConnector)
             result = await connector.fetchDocuments({
               query: "current affairs and public-interest research",
+              start,
+              end,
+              marketCode: "INTL",
+              languageCode: "en",
+            });
+          else if (connector instanceof GlobalVoicesConnector)
+            result = await connector.fetchDocuments({
+              query: "international community reporting",
               start,
               end,
               marketCode: "INTL",

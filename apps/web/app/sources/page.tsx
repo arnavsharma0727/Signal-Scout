@@ -128,6 +128,13 @@ export default async function Sources() {
         "Daily keyless Atom collection from the English Australia, U.S., U.K., Canada, Africa, and New Zealand editions. Each retained feed entry must explicitly carry a Creative Commons attribution/no-derivatives notice. Signal Scout keeps the unmodified headline, author byline, publication date, original link, edition, and rights notice; summaries and article bodies are discarded. These are editions within one publisher network, not independent outlets or proxies for audience location; this expert analysis is distinct from forum discussion and breaking-news coverage.",
     },
     {
+      name: "Global Voices · international community reporting",
+      key: "global-voices",
+      enabled: true,
+      detail:
+        "Daily keyless English RSS from an international, multilingual community-reporting newsroom. Global Voices' own content defaults to CC BY 3.0 unless an item says otherwise; entries with conflicting item-level rights notices are rejected. Signal Scout retains the unmodified headline, author, date, original link, and limited categories with attribution; story text, descriptions, and media are discarded. This is editorial community reporting, not raw forum discussion, a representative survey, or a proxy for the audience's location.",
+    },
+    {
       name: "GDELT news",
       key: "gdelt",
       enabled: process.env.GDELT_ENABLED === "true",

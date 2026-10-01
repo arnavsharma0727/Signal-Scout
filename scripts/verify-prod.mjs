@@ -75,7 +75,7 @@ if (!url || !key) {
     const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
     const communities=new Set(eligible.filter(row=>row.source_type==='stack-exchange').map(row=>row.raw_metadata_json?.site).filter(Boolean));
     const discussions=eligible.filter(row=>['stack-exchange','lemmy','mastodon','bluesky','reddit'].includes(row.source_type));
-    const news=eligible.filter(row=>['rss','gdelt','news'].includes(row.source_type));
+    const news=eligible.filter(row=>['rss','gdelt','news','licensed-reporting'].includes(row.source_type));
     const licensedAnalysis=eligible.filter(row=>row.source_type==='licensed-analysis');
     const officialContext=eligible.filter(row=>row.source_type==='official-policy');
     if(eligible.length>=20)pass('>=20 eligible live source records / 24h',`${eligible.length} records; ${domains.size} host labels across ${types.size} stored source types (hostnames are not proof of independent owners)`);
@@ -84,8 +84,8 @@ if (!url || !key) {
     else fail('scheduled public discussion collection','No eligible scheduled discussion records in the last 24 hours');
     if(officialContext.length>0)pass('institutional context is retained separately',`${officialContext.length} official-policy records; not counted as news or public discussion`);
     else fail('institutional context is retained separately','No recent official-policy records');
-    if(news.length>0)pass('independent/news-source records are available',`${news.length} recent RSS/GDELT/news records`);
-    else fail('independent/news-source records are available','No recent RSS/GDELT/news records; official releases are not substituted for reporting');
+    if(news.length>0)pass('independent/news-source records are available',`${news.length} recent independent reporting/RSS/GDELT/news records`);
+    else fail('independent/news-source records are available','No recent independent reporting/RSS/GDELT/news records; official releases are not substituted for reporting');
     if(licensedAnalysis.length>0)pass('licensed expert analysis is available separately',`${licensedAnalysis.length} records; not counted as public discussion or independent reporting`);
     else fail('licensed expert analysis is available separately','No recent licensed-analysis records');
     if(communities.size>=3)pass('discussion coverage spans multiple expert communities',`${communities.size} Stack Exchange community indexes; all remain one Q&A operator`);
