@@ -14,15 +14,24 @@ export default function About() {
           coverage limits; news and discussion are not treated as interchangeable.
         </p>
         <p className="mt-5 leading-7 text-muted">
-          Discussion collection targets a small, query-selected expert Q&amp;A
-          sample across English, Spanish, Portuguese, Japanese, and Russian
-          Stack Exchange communities. Source items stay in their original
-          language; no translation or cross-language semantic merge is inferred.
-          GDELT news discovery is configured but has not yet produced a
-          successful live run. There is
-          no validated topic classifier, trend detector, or qualified live
-          thesis lead yet. Counts do not represent what a country or population
-          believes.
+          Scheduled sources include licensed international Stack Exchange
+          questions and attributed publisher reporting and analysis. Explore
+          also offers visitor-triggered searches across four public Lemmy
+          instances, four Mastodon server views, Stack Exchange, ten Wikimedia
+          language editions, and GDELT news discovery. Access and result
+          availability vary by source; read the Sources page for current health.
+          Results stay tied to their source and language. No translation or
+          cross-language semantic merge is inferred.
+        </p>
+        <p className="mt-5 leading-7 text-muted">
+          Signal Scout is a conversation-to-research workspace, not a stock
+          analyzer. It does not produce buy/sell recommendations. The current
+          release does not have a validated topic classifier, population-level
+          trend detector, or qualified automated thesis leads. Researchers can
+          select citations, inspect the originals, and write a working thesis,
+          alternatives, and a disconfirmation test themselves. Counts describe
+          only the selected, incomplete samples—not what a country or
+          population believes.
         </p>
       </div>
       <p className="mt-7 text-sm text-muted">

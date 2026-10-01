@@ -18,10 +18,7 @@ export const dynamic = "force-dynamic";
 const nav = [
   ["Briefing", "/"],
   ["Explore", "/explore"],
-  ["Profiles", "/companies"],
-  ["Coverage", "/coverage"],
-  ["Lead review", "/candidates"],
-  ["Watchlists", "/watchlists"],
+  ["Signal review", "/candidates"],
   ["Methodology", "/methodology"],
   ["Sources", "/sources"],
 ];
