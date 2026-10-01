@@ -197,4 +197,48 @@ describe("Global Voices CC BY RSS connector", () => {
       status: "failed",
     });
   });
+
+  it("accepts the Greek publisher's same-host canonical redirect from /feed/ to /feed", async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const edition = GLOBAL_VOICES_FEEDS.find(({ host }) => host === url.hostname)!;
+      const response = new Response(feed(
+        edition.language === "el" ? item({ url: "https://el.globalvoices.org/2026/10/01/story/" }) : "",
+        edition.feedTitle,
+      ));
+      if (edition.language === "el") {
+        Object.defineProperty(response, "url", { value: "https://el.globalvoices.org/feed" });
+      }
+      return response;
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    const result = await new GlobalVoicesConnector().fetchDocuments(input);
+
+    expect(result.documents.map(({ languageCode }) => languageCode)).toEqual(["el"]);
+    expect(result.metadata.failedFeeds).toEqual([]);
+    expect(result.metadata.editionResults).toContainEqual({
+      language: "el",
+      feedItemsReceived: 1,
+      documentsAccepted: 1,
+      status: "completed",
+    });
+  });
+
+  it("still rejects feed redirects with an off-site host or unapproved path", async () => {
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const edition = GLOBAL_VOICES_FEEDS.find(({ host }) => host === url.hostname)!;
+      const response = new Response(feed("", edition.feedTitle));
+      if (edition.language === "es") Object.defineProperty(response, "url", { value: "https://example.org/feed" });
+      if (edition.language === "fr") Object.defineProperty(response, "url", { value: "https://fr.globalvoices.org/feed/private" });
+      return response;
+    });
+    vi.stubGlobal("fetch", fetcher);
+
+    const result = await new GlobalVoicesConnector().fetchDocuments(input);
+
+    expect(result.metadata.failedFeeds).toEqual(["es", "fr"]);
+    expect(result.documents).toHaveLength(0);
+  });
 });

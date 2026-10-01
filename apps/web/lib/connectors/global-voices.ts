@@ -56,7 +56,9 @@ export class GlobalVoicesConnector implements Connector {
         if (
           finalUrl.protocol !== "https:" ||
           finalUrl.hostname !== edition.host ||
-          finalUrl.pathname !== "/feed/"
+          !["/feed", "/feed/"].includes(finalUrl.pathname) ||
+          finalUrl.search !== "" ||
+          finalUrl.hash !== ""
         ) throw new Error("Feed redirected outside its approved edition host");
 
         const xml = await readBoundedText(response, MAX_FEED_BYTES);
