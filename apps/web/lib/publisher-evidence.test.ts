@@ -1,10 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { toPublisherEvidence } from "./publisher-evidence";
+import { matchesOriginalTitlePhrase, toPublisherEvidence } from "./publisher-evidence";
 
 const now = Date.parse("2026-10-01T12:00:00Z");
 const recent = "2026-10-01T10:00:00Z";
 
 describe("reviewed publisher evidence", () => {
+  it("filters headline phrases literally across Latin, accented, and CJK text", () => {
+    expect(matchesOriginalTitlePhrase("Interest rates rise", "interest rates")).toBe(true);
+    expect(matchesOriginalTitlePhrase("Markets await decisions", "rate")).toBe(false);
+    expect(matchesOriginalTitlePhrase("How to build an AI tool", "AI")).toBe(true);
+    expect(matchesOriginalTitlePhrase("Said investors react", "AI")).toBe(false);
+    expect(matchesOriginalTitlePhrase("La inflación aumenta", "inflación")).toBe(true);
+    expect(matchesOriginalTitlePhrase("日本銀行の政策", "日本銀行")).toBe(true);
+    expect(matchesOriginalTitlePhrase("한국은행의 결정", "한국은행")).toBe(true);
+    expect(matchesOriginalTitlePhrase("Anything", "")).toBe(true);
+  });
+
   it("accepts localized Global Voices titles with attribution and CC BY metadata only", () => {
     const result = toPublisherEvidence({
       id: "gv-1", source_type: "licensed-reporting", source_name: "Global Voices · Spanish edition",

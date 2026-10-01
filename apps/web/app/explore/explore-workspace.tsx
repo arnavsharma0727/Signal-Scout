@@ -52,7 +52,7 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
         onClear={() => setEvidence([])}
       />
       <ResearchSweep initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
-      <LicensedPublisherEvidence items={publisherEvidence} onAdd={addEvidence} selectedIds={selectedIds} />
+      <LicensedPublisherEvidence items={publisherEvidence} initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
       <div className="mt-8 border-t border-line pt-5 text-sm text-muted">
         Review a result’s original source, then explicitly add its citation to the brief.
       </div>

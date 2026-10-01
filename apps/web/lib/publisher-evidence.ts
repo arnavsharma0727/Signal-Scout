@@ -96,6 +96,18 @@ export function toPublisherEvidence(
   };
 }
 
+/** Exact phrase filter for original headlines only; intentionally does not translate or infer related topics. */
+export function matchesOriginalTitlePhrase(title: string, rawPhrase: string) {
+  const phrase = rawPhrase.trim().normalize("NFC").toLowerCase().replace(/\s+/g, " ");
+  const normalizedTitle = title.normalize("NFC").toLowerCase();
+  if (!phrase) return true;
+  // CJK text usually has no whitespace between words, so use a literal substring there.
+  if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(phrase))
+    return normalizedTitle.includes(phrase);
+  const escaped = phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\s+/g, "\\s+");
+  return new RegExp(`(?:^|[^\\p{L}\\p{N}])${escaped}(?:$|[^\\p{L}\\p{N}])`, "u").test(normalizedTitle);
+}
+
 function safeHttpsUrl(value: string): URL | null {
   try {
     const url = new URL(value);
