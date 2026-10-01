@@ -281,10 +281,11 @@ export default async function Sources() {
         <div className="eyebrow mb-4">Source configuration and health</div>
         <h1 className="mb-4 text-4xl font-extrabold">Sources</h1>
         <p className="mb-10 max-w-2xl leading-7 text-muted">
-          Configured does not mean recently successful. The cleared discussion
-          connector is a narrow, query-selected Stack Exchange sample across
-          five languages; counts are not representative measures of public
-          opinion.
+          Configured does not mean recently successful. Discussion inputs
+          include query-selected Stack Exchange expert Q&amp;A and narrow,
+          licensed Typst and Fedora community forums. Each source has a
+          different audience and coverage; none is a representative measure of
+          public opinion. Check each source&apos;s health and limits below.
         </p>
         <div className="grid gap-4 md:grid-cols-2">
           {health.map(({ source, runs, latest, lastSuccess, historyCapped, historyIncomplete }) => {
