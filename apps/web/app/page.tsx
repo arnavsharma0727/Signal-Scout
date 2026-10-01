@@ -210,9 +210,9 @@ function EmptyPanel() {
 }
 function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: import("../lib/time-zones").DisplayTimeZone }) {
   const groups = [
-    { key: "discussion", label: "Online discussion", matches: (d: any) => ["stack-exchange", "wikimedia-talk", "bluesky", "hacker-news"].includes(d.source_type) },
+    { key: "discussion", label: "Online discussion", matches: (d: any) => ["stack-exchange", "licensed-forum", "wikimedia-talk", "bluesky", "hacker-news"].includes(d.source_type) },
     { key: "news", label: "Reporting and licensed analysis", matches: (d: any) => ["rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
-    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "wikimedia-talk", "bluesky", "hacker-news", "rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
+    { key: "context", label: "Official and other context", matches: (d: any) => !["stack-exchange", "licensed-forum", "wikimedia-talk", "bluesky", "hacker-news", "rss", "gdelt", "licensed-analysis", "licensed-reporting"].includes(d.source_type) },
   ];
   return (
     <section className="panel mt-5 overflow-hidden">
@@ -255,8 +255,10 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                             ? "Official institutional context · not public discussion"
                             : d.source_type === "hacker-news"
                               ? "Hacker News comment"
-                            : d.source_type === "stack-exchange"
+                              : d.source_type === "stack-exchange"
                                 ? "Stack Exchange · expert Q&A"
+                              : d.source_type === "licensed-forum"
+                                ? "Typst Forum · software community discussion"
                               : d.source_type === "wikimedia-talk"
                                 ? "Wikipedia talk-page revision · not market sentiment"
                               : d.source_type === "licensed-analysis"
@@ -265,7 +267,7 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                                 ? "Licensed community reporting · not forum chatter"
                               : "RSS / news"}
                         </span>
-                        <span>{d.language_code}</span>
+                        <span>{d.language_code ?? "language unassigned"}</span>
                       </div>
                       <a
                         href={d.source_url}
@@ -290,6 +292,14 @@ function EvidencePanel({ documents, timeZone }: { documents: any[]; timeZone: im
                           {" · "}
                           <a className="underline" href={d.raw_metadata_json?.licenseUrl ?? "https://creativecommons.org/licenses/by-sa/4.0/"} target="_blank" rel="noreferrer">CC BY-SA 4.0</a>
                           {" · title shown unmodified"}
+                        </p>
+                      )}
+                      {d.source_type === "licensed-forum" && (
+                        <p className="mt-1 text-[10px] leading-4 text-muted">
+                          <span className="font-medium">{d.raw_metadata_json?.publisher ?? d.source_name}</span>
+                          {d.raw_metadata_json?.author && <> · By {d.raw_metadata_json.author}</>}
+                          {d.raw_metadata_json?.licenseUrl && <> · <a className="underline" href={d.raw_metadata_json.licenseUrl} target="_blank" rel="noreferrer">{d.raw_metadata_json?.licenseName ?? "license"}</a></>}
+                          {" · narrow software community; body not retained"}
                         </p>
                       )}
                       {d.source_type === "wikimedia-talk" && (

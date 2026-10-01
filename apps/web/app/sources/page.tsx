@@ -107,6 +107,13 @@ export default async function Sources() {
         "Keyless daily collection across 11 communities, re-querying a 30-day window with one page (up to 100 items) per title term, plus on-demand Explore searches across up to four selected communities with a separately supplied phrase for each language. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. Results may omit matches beyond the per-query page cap. All 11 are one expert-Q&A platform operator, not independent sources or representative public opinion; on-demand results are not stored.",
     },
     {
+      name: "Typst Forum · licensed community discussion",
+      key: "typst-forum",
+      enabled: true,
+      detail:
+        "Daily keyless request to the forum's public latest RSS feed. Only titles posted on or after the forum's CC BY 4.0 effective cutoff, named author attribution, date, and original topic link are retained; summaries and post bodies are discarded. This is a narrow software-typesetting community, not financial discussion or a proxy for population opinion. Forum locale is not used to infer language or geography; one operator only.",
+    },
+    {
       name: "Mastodon · public hashtag timelines (4 server views)",
       key: "mastodon-public",
       enabled: true,
