@@ -83,8 +83,10 @@ export default async function Sources() {
       key: "rss",
       enabled: process.env.RSS_ENABLED === "true" && enabledFeeds(),
       detail: enabledFeeds()
-        ? "Direct publisher feeds only; review each publisher’s terms before use."
-        : "No direct publisher feeds configured. Google News redirect feeds are rejected; records linked only to news.google.com are excluded from the public evidence feed.",
+        ? process.env.RSS_ENABLED === "true"
+          ? "Optional custom publisher feeds are enabled. Review each publisher’s terms before use. Licensed Global Voices and The Conversation feeds, and the European Commission feed, are listed separately with their own rules and run health."
+          : "Custom publisher feed URLs are configured, but this connector is disabled by RSS_ENABLED. Licensed Global Voices and The Conversation feeds, and the European Commission feed, are listed separately with their own rules and run health."
+        : "No approved custom publisher feeds are configured for this optional connector. Licensed Global Voices and The Conversation feeds, and the European Commission feed, are listed separately with their own rules and run health. Google News redirect feeds are rejected.",
     },
     {
       name: "Korea MOIS official releases",
