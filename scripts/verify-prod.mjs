@@ -114,11 +114,32 @@ if (!url || !key) {
     if(gdeltRuns)pass('GDELT source health reported',`${gdeltRuns.success} successful/partial, ${gdeltRuns.failed} failed, ${gdeltRuns.stored} stored in 24h`);
     else fail('GDELT source health reported','No GDELT run recorded in the last 24 hours');
     try {
-      const leads = await rest('research_leads?select=id,verified_evidence_json,alternative_explanations_json&status=eq.active');
-      const unsupported=leads.data?.filter(x=>!x.verified_evidence_json||!x.alternative_explanations_json)??[];
+      const leads = await rest('research_leads?select=id,independent_source_count,verified_evidence_json,alternative_explanations_json&status=eq.active');
+      const unsupported=leads.data?.filter(x=>!hasEvidence(x.verified_evidence_json)||!hasEvidence(x.alternative_explanations_json)||Number(x.independent_source_count)<2)??[];
       if(unsupported.length===0)pass('no active lead lacks evidence/counter-evidence',`${leads.count??0} active records; no incomplete records`);
       else fail('no active lead lacks evidence/counter-evidence',`${unsupported.length} active records lack required evidence fields`);
-      if(leads.count>0)pass('evidence-qualified lead records exist',`${leads.count} active records`);
+      const links=leads.data?.length
+        ? await rest(`research_lead_documents?select=research_lead_id,document_id,source_documents(source_type,source_domain,raw_metadata_json)&research_lead_id=in.(${leads.data.map(x=>x.id).join(',')})`)
+        : {data:[]};
+      const operatorsByLead=new Map();
+      const blockedByUnclearedSource=new Set();
+      for(const link of links.data??[]){
+        if(!link.document_id)continue;
+        const docs=Array.isArray(link.source_documents)?link.source_documents:link.source_documents?[link.source_documents]:[];
+        for(const document of docs){
+          if(document?.source_type==='hacker-news')blockedByUnclearedSource.add(link.research_lead_id);
+          const operator=reviewedSourceOperator(document);
+          if(!operator)continue;
+          const operators=operatorsByLead.get(link.research_lead_id)??new Set();
+          operators.add(operator);
+          operatorsByLead.set(link.research_lead_id,operators);
+        }
+      }
+      const qualified=(leads.data??[]).filter(x=>Number(x.independent_source_count)>=2&&(operatorsByLead.get(x.id)?.size??0)>=2&&!blockedByUnclearedSource.has(x.id)&&hasEvidence(x.verified_evidence_json)&&hasEvidence(x.alternative_explanations_json));
+      if(leads.count>0&&qualified.length===leads.count)pass('active leads resolve to multiple reviewed source operators',`${qualified.length} active records link at least two known operators`);
+      else if(leads.count>0)fail('active leads resolve to multiple reviewed source operators',`${qualified.length}/${leads.count} active records meet the independent-operator gate`);
+      else pass('active leads resolve to multiple reviewed source operators','No active lead exists to qualify; the UI must continue to show none');
+      if(qualified.length>0)pass('evidence-qualified lead records exist',`${qualified.length} active records pass the linked-operator gate`);
       else fail('evidence-qualified lead records exist','No active evidence-qualified leads; current app must not invent them');
     } catch { fail('active leads have evidence and counter-evidence', 'Lead evidence query failed or required schema is unavailable'); }
   } catch (error) { fail('database-backed research checks', error.message); }
@@ -136,4 +157,23 @@ function matchesDiscussionTitle(title, query) {
   const expected = tokens(query);
   const present = new Set(tokens(title));
   return expected.length > 0 && expected.every(token => present.has(token));
+}
+
+function reviewedSourceOperator(source) {
+  const domain=(source?.source_domain??'').toLowerCase().replace(/^www\./,'');
+  const metadata=source?.raw_metadata_json&&typeof source.raw_metadata_json==='object'?source.raw_metadata_json:{};
+  if(source?.source_type==='stack-exchange')return 'stack-exchange';
+  if(source?.source_type==='licensed-forum'&&domain==='forum.typst.app'&&metadata.publisher==='Typst Forum')return 'typst-forum';
+  if(source?.source_type==='licensed-analysis'&&domain==='theconversation.com'&&metadata.publisher==='The Conversation')return 'the-conversation';
+  if(source?.source_type==='licensed-reporting'&&(domain==='globalvoices.org'||domain.endsWith('.globalvoices.org'))&&metadata.publisher==='Global Voices')return 'global-voices';
+  if(source?.source_type==='official-policy'&&domain==='ec.europa.eu'&&metadata.publisher==='European Commission')return 'european-commission';
+  if(source?.source_type==='official-policy'&&domain==='mois.go.kr'&&metadata.publisher==='Ministry of the Interior and Safety, Republic of Korea')return 'korea-mois';
+  if(source?.source_type==='wikimedia-talk'&&/^(?:[a-z]{2,3}|simple)\.wikipedia\.org$/.test(domain))return 'wikimedia';
+  return null;
+}
+
+function hasEvidence(value) {
+  if(Array.isArray(value))return value.length>0;
+  if(value&&typeof value==='object')return Object.keys(value).length>0;
+  return typeof value==='string'&&value.trim().length>0;
 }

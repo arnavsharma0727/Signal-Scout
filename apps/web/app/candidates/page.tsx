@@ -4,6 +4,7 @@ import { hasUnclearedHackerNewsEvidence } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
 import { recentDiscussionObservations, recentDiscussionReportingOverlaps } from "../../lib/public-data";
+import { passesIndependentEvidenceGate, sourceOperatorsByLead } from "../../lib/research-lead-qualification";
 
 export const dynamic = "force-dynamic";
 
@@ -53,13 +54,14 @@ export default async function Candidates() {
     if (qualified.length) {
       const { data: evidenceLinks, error: evidenceError } = await db
         .from("research_lead_documents")
-        .select("research_lead_id,document_id,source_documents(source_type)")
+        .select("research_lead_id,document_id,source_documents(source_type,source_domain,raw_metadata_json)")
         .in(
           "research_lead_id",
           qualified.map((lead) => lead.id),
         );
       if (evidenceError) unavailable = true;
       const links = evidenceLinks ?? [];
+      const operatorsByLead = sourceOperatorsByLead(links);
       const linkedLeadIds = new Set(
         links
           .filter(
@@ -84,7 +86,8 @@ export default async function Candidates() {
         ? []
         : qualified.filter(
             (lead) =>
-              linkedLeadIds.has(lead.id) && !blockedLeadIds.has(lead.id),
+              linkedLeadIds.has(lead.id) && !blockedLeadIds.has(lead.id) &&
+              passesIndependentEvidenceGate(lead, operatorsByLead.get(lead.id)),
           );
     }
   }
@@ -231,9 +234,11 @@ export default async function Candidates() {
           </h2>
           <p className="mt-3 max-w-xl leading-7 text-muted">
             A lead appears only after the database contains verified evidence,
-            alternative explanations, and at least one linked source record.
-            Current samples do not support an evidence-qualified international
-            research lead.
+            alternative explanations, a recorded independent-source count of
+            at least two, and linked records that resolve to at least two
+            reviewed source operators. Unknown publishers and collection-index
+            domains do not count. Current samples do not support an
+            evidence-qualified international research lead.
           </p>
           <Link className="btn mt-6" href="/">
             Review collected source evidence
@@ -243,8 +248,9 @@ export default async function Candidates() {
         <>
           <p className="mb-5 max-w-3xl text-sm leading-6 text-muted">
             Research prompts for human review, not recommendations. Items
-            without verified evidence, alternative explanations, or linked
-            source records are excluded.
+            without verified evidence, alternative explanations, linked source
+            records, or two independently reviewed source operators are
+            excluded.
           </p>
           <div className="space-y-4">
             {leads.map((lead) => (
