@@ -95,7 +95,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "Optional, visitor-triggered request to one of four public Mastodon servers; up to 20 public posts from that server’s incomplete federated view. The server is not a country proxy and views may overlap. Content remains author-owned and no blanket license is implied. The app displays posts transiently with author/origin-server links and honors content warnings; no posts are stored or analyzed. Not a global timeline or representative measure.",
+        "Optional, visitor-triggered request to one selected public Mastodon server or one request to each of four fixed servers for a side-by-side sample; up to 20 public posts per server’s incomplete federated view. Duplicate posts across views are shown once and marked with the views that returned them; counts are not summed. Servers are not country proxies. Content remains author-owned and no blanket license is implied. Posts are transient with author/origin links and content warnings; nothing is stored or analyzed. Not a global timeline or representative measure.",
     },
     {
       name: "Wikimedia · article talk pages",

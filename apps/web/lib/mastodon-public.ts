@@ -12,6 +12,17 @@ export type MastodonPublicPost = {
   accountMarkedAutomated: boolean;
 };
 
+export type MastodonServerView = {
+  host: MastodonInstance;
+  returnedCount: number;
+  error: string | null;
+};
+
+export type MastodonSample = {
+  post: MastodonPublicPost;
+  seenVia: MastodonInstance[];
+};
+
 type ApiPost = {
   id?: string;
   url?: string | null;
@@ -102,6 +113,50 @@ export async function searchPublicHashtag(
       accountMarkedAutomated: post.account?.bot === true,
     }];
   });
+}
+
+/** Compare one bounded sample per selected instance; results are never persisted. */
+export async function comparePublicHashtag(
+  input: string,
+  fetcher: typeof fetch = fetch,
+  now = Date.now(),
+  instances: readonly MastodonInstance[] = MASTODON_INSTANCES.map(({ host }) => host),
+) {
+  const uniqueInstances = [...new Set(instances)];
+  if (!uniqueInstances.length || uniqueInstances.some(
+    (instance) => !MASTODON_INSTANCES.some((candidate) => candidate.host === instance),
+  )) {
+    throw new Error("Choose one or more supported public Mastodon servers.");
+  }
+
+  const results = await Promise.all(uniqueInstances.map(async (host) => {
+    try {
+      return { host, posts: await searchPublicHashtag(input, fetcher, now, host), error: null };
+    } catch (cause) {
+      return {
+        host,
+        posts: [],
+        error: cause instanceof Error ? cause.message : "This server view is temporarily unavailable.",
+      };
+    }
+  }));
+  const samples = new Map<string, MastodonSample>();
+  for (const result of results) {
+    for (const post of result.posts) {
+      const sample = samples.get(post.url);
+      if (sample) sample.seenVia.push(result.host);
+      else samples.set(post.url, { post, seenVia: [result.host] });
+    }
+  }
+
+  return {
+    views: results.map(({ host, posts, error }) => ({
+      host,
+      returnedCount: posts.length,
+      error,
+    })) satisfies MastodonServerView[],
+    samples: [...samples.values()],
+  };
 }
 
 function safeHttpsUrl(value: string | null | undefined) {

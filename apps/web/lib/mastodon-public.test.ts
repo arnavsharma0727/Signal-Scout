@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { searchPublicHashtag } from "./mastodon-public";
+import { comparePublicHashtag, searchPublicHashtag } from "./mastodon-public";
 
 const post = {
   id: "123",
@@ -63,5 +63,37 @@ describe("searchPublicHashtag", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 401 }));
     await expect(searchPublicHashtag("economics", fetchMock)).rejects.toThrow("No login or workaround");
     expect(fetchMock.mock.calls[0][1]).not.toHaveProperty("headers.Authorization");
+  });
+});
+
+describe("comparePublicHashtag", () => {
+  it("deduplicates overlapping server views but preserves per-server sample counts", async () => {
+    const fetchMock = vi.fn().mockImplementation(() =>
+      Promise.resolve(new Response(JSON.stringify([post]), { status: 200 })),
+    );
+    const result = await comparePublicHashtag("markets", fetchMock, Date.parse("2026-10-01T00:00:00Z"), [
+      "mastodon.social", "mstdn.jp",
+    ]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.views).toEqual([
+      { host: "mastodon.social", returnedCount: 1, error: null },
+      { host: "mstdn.jp", returnedCount: 1, error: null },
+    ]);
+    expect(result.samples).toHaveLength(1);
+    expect(result.samples[0].seenVia).toEqual(["mastodon.social", "mstdn.jp"]);
+  });
+
+  it("keeps successful samples when one server view fails", async () => {
+    const fetchMock = vi.fn().mockImplementation((url: string) =>
+      String(url).includes("mstdn.jp")
+        ? Promise.resolve(new Response("", { status: 429 }))
+        : Promise.resolve(new Response(JSON.stringify([post]), { status: 200 })),
+    );
+    const result = await comparePublicHashtag("markets", fetchMock, Date.parse("2026-10-01T00:00:00Z"), [
+      "mastodon.social", "mstdn.jp",
+    ]);
+    expect(result.views[0].error).toBeNull();
+    expect(result.views[1].error).toContain("rate-limiting");
+    expect(result.samples).toHaveLength(1);
   });
 });
