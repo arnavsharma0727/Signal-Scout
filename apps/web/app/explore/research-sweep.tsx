@@ -30,6 +30,7 @@ export default function ResearchSweep({
   const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
   const [lemmyTermsAccepted, setLemmyTermsAccepted] = useState(false);
   const [mastodonEnabled, setMastodonEnabled] = useState(false);
+  const [bluesky, setBluesky] = useState(true);
   const [mastodonHashtag, setMastodonHashtag] = useState("");
   const [mastodonInstance, setMastodonInstance] = useState<MastodonInstance>("mastodon.social");
   const [wikimediaLanguage, setWikimediaLanguage] = useState("");
@@ -59,6 +60,7 @@ export default function ResearchSweep({
         lemmyInstances,
         lemmyTermsAccepted,
         mastodon: mastodonEnabled ? { hashtag: mastodonHashtag, instance: mastodonInstance } : undefined,
+        bluesky,
         wikimediaLanguage,
       }));
     } catch (cause) {
@@ -90,6 +92,10 @@ export default function ResearchSweep({
           />
         </label>
         <div className="grid gap-3 border-y border-line py-4 md:grid-cols-2">
+          <label className="flex items-start gap-2 text-sm leading-6">
+            <input className="mt-1" type="checkbox" checked={bluesky} onChange={(event) => setBluesky(event.target.checked)} />
+            <span><strong>Bluesky public search</strong><span className="block text-xs text-muted">No account or API key · up to 25 newest indexed posts in 7 days · post text is not retained</span></span>
+          </label>
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={gdelt} onChange={(event) => setGdelt(event.target.checked)} />
             <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · last 7 days · up to 25 results</span></span>
@@ -228,6 +234,7 @@ export default function ResearchSweep({
           {loading ? "Searching selected sources…" : "Run source sweep"}
         </button>
       </form>
+      <p className="mt-3 text-xs leading-5 text-muted">Bluesky results are query-selected and incomplete. Only an attributed source link, date, and language can be added to your local brief; post text is not stored. See <a className="underline" href="https://docs.bsky.app/docs/api/app-bsky-feed-search-posts" target="_blank" rel="noreferrer">Bluesky API documentation</a>.</p>
       {error && <p role="alert" className="mt-4 text-sm">{error}</p>}
       {searched && !loading && results.length > 0 && (
         <div className="mt-6 grid gap-6 border-t border-line pt-5 md:grid-cols-2">

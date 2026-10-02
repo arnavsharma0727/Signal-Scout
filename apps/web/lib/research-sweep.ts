@@ -1,4 +1,5 @@
 import { searchGdeltNews } from "./gdelt-public";
+import { searchBlueskyPosts } from "./bluesky-public";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "./live-topic-search";
 import { LEMMY_INSTANCES, LemmyInstance, searchLemmyPosts } from "./lemmy-public";
 import { MASTODON_INSTANCES, searchPublicHashtag } from "./mastodon-public";
@@ -13,6 +14,7 @@ export type ResearchSweepSelection = {
   lemmyInstances?: readonly LemmyInstance[];
   lemmyTermsAccepted: boolean;
   mastodon?: { hashtag: string; instance: string };
+  bluesky?: boolean;
   wikimediaLanguage?: string;
 };
 
@@ -61,7 +63,7 @@ export async function runResearchSweep(
   ))) {
     throw new Error("Choose one or more listed public Lemmy instances.");
   }
-  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !selection.wikimediaLanguage) {
+  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !selection.bluesky && !selection.wikimediaLanguage) {
     throw new Error("Select at least one source.");
   }
   if (selection.wikimediaLanguage && !WIKIMEDIA_TALK_WIKIS.some(({ language }) => language === selection.wikimediaLanguage)) {
@@ -146,6 +148,22 @@ export async function runResearchSweep(
         context: `Hashtag #${hashtag.replace(/^#+/, "")}; server timeline is not a geographic market proxy`,
         attribution: `Author: ${post.authorHandle}`,
         attributionUrl: post.authorUrl,
+      })),
+    ));
+  }
+  if (selection.bluesky) {
+    tasks.push(capture("bluesky", "Bluesky public search", "Up to 25 newest indexed posts within 7 days", async () =>
+      (await searchBlueskyPosts(query, fetcher, now)).map((post) => ({
+        id: `bluesky:${post.uri}`,
+        title: post.title,
+        url: post.url,
+        source: "Bluesky public AppView",
+        evidenceClass: "social discussion" as const,
+        language: post.language,
+        timeLabel: "Published",
+        timeValue: post.publishedAt,
+        context: `Public search query: “${query}”; indexed subset, not a complete or representative feed`,
+        attribution: `Author: @${post.authorHandle}`,
       })),
     ));
   }
