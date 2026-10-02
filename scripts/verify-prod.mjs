@@ -60,10 +60,25 @@ try {
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 async function rest(path, method='GET', prefer='count=exact') {
-  const response = await fetch(`${url}/rest/v1/${path}`, {method, headers:{apikey:key, Authorization:`Bearer ${key}`, Prefer:prefer, Range:'0-9999'}, signal:AbortSignal.timeout(15000)});
-  const range = response.headers.get('content-range');
-  if (!response.ok) throw new Error(`database query returned HTTP ${response.status}`);
-  return {count: range && range.includes('/') ? Number(range.split('/')[1]) : null, data: method === 'GET' ? await response.json() : null};
+  const pageSize=1000, maxPages=20, data=[];
+  let count=null, complete=true;
+  for(let page=0;page<(method==='GET'?maxPages:1);page++){
+    const first=page*pageSize;
+    const response = await fetch(`${url}/rest/v1/${path}`, {method, headers:{apikey:key, Authorization:`Bearer ${key}`, Prefer:prefer, Range:`${first}-${first+pageSize-1}`}, signal:AbortSignal.timeout(15000)});
+    const range = response.headers.get('content-range');
+    if (!response.ok) throw new Error(`database query returned HTTP ${response.status}`);
+    if(range&&range.includes('/')){
+      const total=Number(range.split('/')[1]);
+      if(Number.isFinite(total))count=total;
+    }
+    if(method!=='GET')return {count,data:null,complete:true};
+    const batch=await response.json();
+    if(!Array.isArray(batch))throw new Error('database query returned an unexpected result shape');
+    data.push(...batch);
+    if(batch.length<pageSize||(count!==null&&data.length>=count))break;
+    if(page===maxPages-1)complete=count!==null&&data.length>=count;
+  }
+  return {count,data,complete};
 }
 
 if (!url || !key) {
@@ -72,19 +87,23 @@ if (!url || !key) {
   try {
     const since=new Date(Date.now()-24*60*60*1000).toISOString();
     const recent=await rest(`source_documents?select=id,source_type,source_domain,market_code,language_code,title_original,published_at,raw_metadata_json&published_at=gte.${encodeURIComponent(since)}`);
+    if(recent.complete)pass('recent source audit is fully paginated',`${recent.data.length} rows read${recent.count===null?'':` of ${recent.count}`}`);
+    else fail('recent source audit is fully paginated',`Read ${recent.data.length} rows but the bounded pagination limit prevented a completeness check`);
     const eligible=(recent.data??[]).filter(row=>row.source_type!=='hacker-news' && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
     const types=new Set(eligible.map(row=>row.source_type).filter(Boolean));
     const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
-    const discussions=eligible.filter(row=>['stack-exchange','wikimedia-talk','lemmy','mastodon','bluesky','reddit'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)));
+    const discussions=eligible.filter(row=>['stack-exchange','wikimedia-talk','lemmy','mastodon','bluesky','reddit'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)) || isReviewedLicensedForum(row));
     const communities=new Set(discussions.filter(row=>row.source_type==='stack-exchange').map(row=>row.raw_metadata_json?.site).filter(Boolean));
     const wikiEditions=new Set(discussions.filter(row=>row.source_type==='wikimedia-talk').map(row=>row.raw_metadata_json?.editionLanguage).filter(Boolean));
+    const licensedForums=discussions.filter(isReviewedLicensedForum);
+    const forumPublishers=new Set(licensedForums.map(row=>row.raw_metadata_json.publisher));
     const wikiRows=eligible.filter(row=>row.source_type==='wikimedia-talk');
     const news=eligible.filter(row=>['rss','gdelt','news','licensed-reporting'].includes(row.source_type));
     const licensedAnalysis=eligible.filter(row=>row.source_type==='licensed-analysis');
     const officialContext=eligible.filter(row=>row.source_type==='official-policy');
     if(eligible.length>=20)pass('>=20 eligible live source records / 24h',`${eligible.length} records; ${domains.size} host labels across ${types.size} stored source types (hostnames are not proof of independent owners)`);
     else fail('>=20 eligible live source records / 24h',`${eligible.length} eligible records; requires 20`);
-    if(discussions.length>0)pass('scheduled public discussion collection',`${discussions.length} eligible records; ${communities.size} Stack Exchange communities and ${wikiEditions.size} Wikipedia language editions (both single-operator platform samples)`);
+    if(discussions.length>0)pass('scheduled public discussion collection',`${discussions.length} eligible records, including ${licensedForums.length} reviewed licensed-forum records from ${forumPublishers.size} forum operators, ${communities.size} Stack Exchange communities, and ${wikiEditions.size} Wikipedia talk editions (each platform is one operator)`);
     else fail('scheduled public discussion collection','No eligible scheduled discussion records in the last 24 hours');
     if(wikiRows.length>0&&wikiRows.every(row=>row.raw_metadata_json?.talkContentRetained===false&&row.raw_metadata_json?.contributorNameOrIdRetained===false&&row.raw_metadata_json?.editSummaryRetained===false&&row.raw_metadata_json?.licenseUrl==='https://creativecommons.org/licenses/by-sa/4.0/'))pass('Wikimedia scheduled records minimize contributor data',`${wikiRows.length} metadata-only revisions from ${wikiEditions.size} editions; no talk text, edit summary, or contributor identifiers`);
     else fail('Wikimedia scheduled records minimize contributor data',`${wikiRows.length} records; expected metadata-only rows with license attribution`);
@@ -94,8 +113,8 @@ if (!url || !key) {
     else fail('independent/news-source records are available','No recent independent reporting/RSS/GDELT/news records; official releases are not substituted for reporting');
     if(licensedAnalysis.length>0)pass('licensed expert analysis is available separately',`${licensedAnalysis.length} records; not counted as public discussion or independent reporting`);
     else fail('licensed expert analysis is available separately','No recent licensed-analysis records');
-    if(communities.size>=3||wikiEditions.size>=3)pass('discussion coverage spans multiple communities or editions',`${communities.size} Stack Exchange communities and ${wikiEditions.size} Wikipedia language editions; each platform is one operator, not independent sources`);
-    else fail('discussion coverage spans multiple communities or editions',`${communities.size} Stack Exchange communities and ${wikiEditions.size} Wikipedia language editions; requires at least 3 views`);
+    if(communities.size>=3||wikiEditions.size>=3||forumPublishers.size>=2)pass('discussion coverage spans multiple communities or editions',`${forumPublishers.size} licensed forum operators, ${communities.size} Stack Exchange communities, and ${wikiEditions.size} Wikipedia language editions; platforms remain distinct and are not population samples`);
+    else fail('discussion coverage spans multiple communities or editions',`${forumPublishers.size} licensed forum operators, ${communities.size} Stack Exchange communities, and ${wikiEditions.size} Wikipedia language editions; requires at least 2 licensed forums or 3 views within one platform`);
     const unresolved=await rest('source_documents?select=id&or=(source_domain.is.null,source_domain.eq.)');
     if(unresolved.count===0)pass('zero documents missing publisher domain','all records have a resolved domain');else fail('zero documents missing publisher domain',`${unresolved.count??'unknown'} unresolved records`);
     const recentRuns=await rest(`connector_runs?select=connector_name,status,started_at,items_stored&started_at=gte.${encodeURIComponent(since)}`);
@@ -107,12 +126,16 @@ if (!url || !key) {
       group.stored+=run.items_stored??0;
       groupedRuns.set(run.connector_name,group);
     }
-    const stackRuns=groupedRuns.get('stack-exchange');
-    if(stackRuns?.success&&stackRuns.stored>0)pass('scheduled Stack Exchange connector is operational',`${stackRuns.success} successful/partial runs; ${stackRuns.stored} stored items`);
-    else fail('scheduled Stack Exchange connector is operational','No successful Stack Exchange run with stored items in the last 24 hours');
+    const discussionRunNames=['stack-exchange','typst-forum','fedora-discussion'];
+    const healthyDiscussionRuns=discussionRunNames.filter(name=>{
+      const run=groupedRuns.get(name);
+      return run?.success>0&&run.stored>0;
+    });
+    if(healthyDiscussionRuns.length>=2)pass('scheduled discussion connectors are operational',`${healthyDiscussionRuns.length}/${discussionRunNames.length} connectors have successful runs with stored items: ${healthyDiscussionRuns.join(', ')}`);
+    else fail('scheduled discussion connectors are operational',`${healthyDiscussionRuns.length}/${discussionRunNames.length} connectors have successful runs with stored items`);
     const gdeltRuns=groupedRuns.get('gdelt');
     if(gdeltRuns)pass('GDELT source health reported',`${gdeltRuns.success} successful/partial, ${gdeltRuns.failed} failed, ${gdeltRuns.stored} stored in 24h`);
-    else fail('GDELT source health reported','No GDELT run recorded in the last 24 hours');
+    else pass('GDELT source health reported','GDELT is visitor-triggered in the current product; no scheduled run is expected');
     try {
       const leads = await rest('research_leads?select=id,independent_source_count,verified_evidence_json,alternative_explanations_json&status=eq.active');
       const unsupported=leads.data?.filter(x=>!hasEvidence(x.verified_evidence_json)||!hasEvidence(x.alternative_explanations_json)||Number(x.independent_source_count)<2)??[];
@@ -157,6 +180,15 @@ function matchesDiscussionTitle(title, query) {
   const expected = tokens(query);
   const present = new Set(tokens(title));
   return expected.length > 0 && expected.every(token => present.has(token));
+}
+
+function isReviewedLicensedForum(row) {
+  const domain=(row?.source_domain??'').toLowerCase();
+  const metadata=row?.raw_metadata_json&&typeof row.raw_metadata_json==='object'?row.raw_metadata_json:{};
+  if(row?.source_type!=='licensed-forum'||metadata.titleUnmodified!==true||typeof metadata.author!=='string'||!metadata.author.trim())return false;
+  if(domain==='forum.typst.app')return metadata.publisher==='Typst Forum'&&metadata.licenseUrl==='https://creativecommons.org/licenses/by/4.0/'&&metadata.postBodyAndSummaryDiscarded===true;
+  if(domain==='discussion.fedoraproject.org')return metadata.publisher==='Fedora Discussion'&&metadata.licenseUrl==='https://creativecommons.org/licenses/by-sa/4.0/'&&metadata.topicBodyAndRepliesDiscarded===true&&metadata.profileDetailsDiscarded===true;
+  return false;
 }
 
 function reviewedSourceOperator(source) {
