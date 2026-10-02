@@ -35,6 +35,13 @@ try {
 } catch (error) { fail('metrics recompute endpoint protected', error.message); }
 
 try {
+  const response = await fetch(`${base}/api/operator/takedown`, {method:'POST',headers:{'content-type':'application/json'},body:'{}',signal:AbortSignal.timeout(10000)});
+  if(response.status===401)pass('operator takedown is configured and protected','Unauthenticated request rejected with HTTP 401');
+  else if(response.status===503)fail('operator takedown is configured and protected','TAKEDOWN_SECRET or server database configuration is missing');
+  else fail('operator takedown is configured and protected',`Expected HTTP 401 without credentials, got HTTP ${response.status}`);
+} catch(error) { fail('operator takedown is configured and protected',error.message); }
+
+try {
   const response = await fetch(`${base}/sources`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
   if (response.ok && page.includes('Disabled unless collection and display rights are explicitly cleared')) pass('uncleared Hacker News source is visibly disabled','rights approval gate is shown');
@@ -85,6 +92,13 @@ if (!url || !key) {
   fail('database-backed research checks', 'Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or keep them in local .env.local); credentials are never printed.');
 } else {
   try {
+    try {
+      await rest('source_takedown_blocks?select=fingerprint&limit=0');
+      await rest('source_takedown_events?select=id&limit=0');
+      pass('production source-takedown migration is installed','operator-only block and audit tables are queryable');
+    } catch {
+      fail('production source-takedown migration is installed','Migration 0012 tables are missing or unavailable to the service role');
+    }
     const since=new Date(Date.now()-24*60*60*1000).toISOString();
     const recent=await rest(`source_documents?select=id,source_type,source_domain,market_code,language_code,title_original,published_at,raw_metadata_json&published_at=gte.${encodeURIComponent(since)}`);
     if(recent.complete)pass('recent source audit is fully paginated',`${recent.data.length} rows read${recent.count===null?'':` of ${recent.count}`}`);
