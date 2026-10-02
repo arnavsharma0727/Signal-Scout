@@ -85,6 +85,7 @@ export async function recentDiscussionObservations(){
     if(error||!data)return null;
     rows.push(...data);
     if(data.length<pageSize)break;
+    if(offset===4000)return null;
   }
   return buildDiscussionObservations(rows.filter(row =>
     matchesStackExchangeTitleQuery(row.title_original, row.raw_metadata_json?.query)
@@ -98,11 +99,23 @@ export async function recentDiscussionReportingOverlaps(){
   const since=new Date(Date.now()-7*24*60*60*1000).toISOString();
   const fields='id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json';
   const [questions,reports]=await Promise.all([
-    db.from('source_documents').select(fields).in('source_type',['stack-exchange','licensed-forum'])
-      .gte('published_at',since).order('published_at',{ascending:false}).limit(2000),
-    db.from('source_documents').select(fields).in('source_type',['licensed-analysis','licensed-reporting'])
-      .gte('published_at',since).order('published_at',{ascending:false}).limit(2000),
+    recentRows(db,fields,['stack-exchange','licensed-forum'],since),
+    recentRows(db,fields,['licensed-analysis','licensed-reporting'],since),
   ]);
-  if(questions.error||reports.error||!questions.data||!reports.data)return null;
-  return buildDiscussionReportingOverlaps([...questions.data,...reports.data]);
+  if(!questions||!reports)return null;
+  return buildDiscussionReportingOverlaps([...questions,...reports]);
+}
+
+async function recentRows(db: NonNullable<ReturnType<typeof serverSupabase>>, fields: string, types: string[], since: string) {
+  const pageSize=1000, maxPages=10, rows: any[]=[];
+  for(let page=0;page<maxPages;page++){
+    const offset=page*pageSize;
+    const {data,error}=await db.from('source_documents').select(fields).in('source_type',types)
+      .gte('published_at',since).order('published_at',{ascending:false}).order('id',{ascending:false})
+      .range(offset,offset+pageSize-1);
+    if(error||!data)return null;
+    rows.push(...data);
+    if(data.length<pageSize)return rows;
+  }
+  return null;
 }
