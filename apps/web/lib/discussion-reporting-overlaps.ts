@@ -148,11 +148,11 @@ function isBroadShortLatinAcronym(value: string) {
 }
 
 const TITLE_PHRASE_STOPWORDS = new Set([
-  "about", "after", "also", "and", "are", "but", "can", "does", "for", "from",
+  "about", "after", "also", "am", "an", "and", "are", "as", "at", "be", "been", "but", "by", "can", "do", "does", "for", "from",
   "have", "how", "into", "its", "just", "more", "not", "our", "out", "should",
-  "than", "that", "the", "their", "them", "there", "these", "they", "this", "those",
-  "through", "under", "using", "was", "were", "what", "when", "where", "which", "with",
-  "would", "your",
+  "he", "her", "here", "his", "i", "if", "in", "is", "it", "me", "my", "no", "of", "on", "or", "she", "so", "than", "that", "the", "their", "them", "there", "these", "they", "this", "those",
+  "through", "to", "under", "up", "us", "using", "was", "we", "were", "what", "when", "where", "which", "who", "why", "will", "with", "you",
+  "would", "your", "trying",
 ]);
 
 /** Candidate terms are excerpts of the original title, not tags or inferred topics. */

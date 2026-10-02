@@ -88,6 +88,29 @@ describe("discussion-reporting literal overlaps", () => {
     });
   });
 
+  it("suppresses grammatical filler phrases from Fedora title overlaps", () => {
+    const forum = row({
+      id: "fedora-filler", source_type: "licensed-forum",
+      source_name: "Fedora Discussion · community forum",
+      source_domain: "discussion.fedoraproject.org", language_code: "en",
+      title_original: "Team is trying to fix it",
+      source_url: "https://discussion.fedoraproject.org/t/team/124",
+      raw_metadata_json: {
+        publisher: "Fedora Discussion", author: "member",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+        titleUnmodified: true, topicBodyAndRepliesDiscarded: true,
+        profileDetailsDiscarded: true,
+      },
+    });
+    const report = row({
+      id: "report-filler", source_type: "licensed-reporting",
+      source_name: "Global Voices", source_domain: "globalvoices.org",
+      title_original: "Team is trying to fix it",
+      source_url: "https://globalvoices.org/filler", raw_metadata_json: {},
+    });
+    expect(buildDiscussionReportingOverlaps([forum, report], asOf)).toEqual([]);
+  });
+
   it("does not treat an unreviewed forum or wrong license as discussion evidence", () => {
     const report = row({
       id: "report", source_type: "licensed-reporting", source_name: "Global Voices",
