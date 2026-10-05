@@ -52,7 +52,7 @@ describe("runResearchSweep", () => {
             id: 13,
             ap_id: "https://lemmy.world/post/13",
             name: "A community discussion",
-            body: "This post body must not enter the brief model",
+            body: "This post body is transiently previewed, never saved",
             published: new Date(NOW - 60_000).toISOString(),
             language_id: 37,
           },
@@ -66,7 +66,7 @@ describe("runResearchSweep", () => {
           url: "https://mastodon.social/@reader/15",
           created_at: new Date(NOW - 60_000).toISOString(),
           visibility: "public",
-          content: "<p>Post body should not enter the research evidence record</p>",
+          content: "<p>Post &amp; body can be inspected without HTML</p>",
           account: {
             display_name: "Reader",
             acct: "reader",
@@ -91,6 +91,7 @@ describe("runResearchSweep", () => {
       lemmy: true,
       lemmyTermsAccepted: true,
       mastodon: { hashtag: "markets", instance: "mastodon.social" },
+      mastodonTermsAccepted: true,
       wikimediaLanguage: "en",
     }, fetcher, NOW);
 
@@ -107,8 +108,8 @@ describe("runResearchSweep", () => {
       licenseName: "CC BY-SA 4.0",
     });
     expect(results[2].evidence[0].evidenceClass).toBe("social discussion");
-    expect(JSON.stringify(results[2].evidence)).not.toContain("post body");
-    expect(JSON.stringify(results[3].evidence)).not.toContain("Post body");
+    expect(results[2].evidence[0].transientPreview).toBe("This post body is transiently previewed, never saved");
+    expect(results[3].evidence[0].transientPreview).toBe("Post & body can be inspected without HTML");
     expect(results[3].evidence[0]).toMatchObject({
       evidenceClass: "social discussion",
       context: expect.stringContaining("not a geographic market proxy"),

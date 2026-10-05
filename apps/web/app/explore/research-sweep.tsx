@@ -32,6 +32,7 @@ export default function ResearchSweep({
   const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
   const [lemmyTermsAccepted, setLemmyTermsAccepted] = useState(false);
   const [mastodonEnabled, setMastodonEnabled] = useState(false);
+  const [mastodonTermsAccepted, setMastodonTermsAccepted] = useState(false);
   const [bluesky, setBluesky] = useState(true);
   const [mastodonHashtag, setMastodonHashtag] = useState("");
   const [mastodonInstance, setMastodonInstance] = useState<MastodonInstance>("mastodon.social");
@@ -63,6 +64,7 @@ export default function ResearchSweep({
         lemmyInstances,
         lemmyTermsAccepted,
         mastodon: mastodonEnabled ? { hashtag: mastodonHashtag, instance: mastodonInstance } : undefined,
+        mastodonTermsAccepted,
         bluesky,
         wikimediaLanguage,
       }));
@@ -145,7 +147,7 @@ export default function ResearchSweep({
           </fieldset>
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={lemmy} onChange={(event) => { setLemmy(event.target.checked); setLemmyTermsAccepted(false); }} />
-            <span><strong>Lemmy public forums</strong><span className="block text-xs text-muted">Select one or more separate server indexes · up to 20 newest posts each within 7 days</span></span>
+            <span><strong>Lemmy public forums</strong><span className="block text-xs text-muted">Select one or more separate server indexes · up to 20 newest posts each within 7 days · short text previews shown transiently</span></span>
           </label>
           {lemmy && (
             <fieldset className="ml-6 grid gap-2 text-xs">
@@ -174,9 +176,9 @@ export default function ResearchSweep({
             </fieldset>
           )}
           <label className="flex items-start gap-2 text-sm leading-6">
-            <input className="mt-1" type="checkbox" checked={mastodonEnabled} onChange={(event) => setMastodonEnabled(event.target.checked)} />
+            <input className="mt-1" type="checkbox" checked={mastodonEnabled} onChange={(event) => { setMastodonEnabled(event.target.checked); setMastodonTermsAccepted(false); }} />
             <span className="min-w-0 flex-1">
-              <strong>Mastodon public hashtag</strong><span className="block text-xs text-muted">One server’s up-to-20 newest public posts · hashtag search, not phrase search</span>
+              <strong>Mastodon public hashtag</strong><span className="block text-xs text-muted">One server’s up-to-20 newest public posts · hashtag search, not phrase search · short text previews shown transiently</span>
               <input
                 className="mt-2 block w-full rounded border border-line bg-white px-2 py-1.5 text-xs text-ink"
                 value={mastodonHashtag}
@@ -191,7 +193,7 @@ export default function ResearchSweep({
               <select
                 className="mt-2 block w-full rounded border border-line bg-white px-2 py-1.5 text-xs text-ink"
                 value={mastodonInstance}
-                onChange={(event) => setMastodonInstance(event.target.value as MastodonInstance)}
+                onChange={(event) => { setMastodonInstance(event.target.value as MastodonInstance); setMastodonTermsAccepted(false); }}
                 disabled={!mastodonEnabled}
                 aria-label="Mastodon server"
               >
@@ -201,6 +203,12 @@ export default function ResearchSweep({
               </select>
             </span>
           </label>
+          {mastodonEnabled && (
+            <label className="flex items-start gap-2 text-xs leading-5 text-muted">
+              <input className="mt-1" type="checkbox" checked={mastodonTermsAccepted} onChange={(event) => setMastodonTermsAccepted(event.target.checked)} required />
+              <span>I reviewed the selected server’s rules and privacy information at <a className="underline" href={`https://${mastodonInstance}`} target="_blank" rel="noreferrer">{mastodonInstance}</a> and confirm I may access its public timeline. Signal Scout does not accept terms for me.</span>
+            </label>
+          )}
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={Boolean(wikimediaLanguage)} onChange={(event) => setWikimediaLanguage(event.target.checked ? WIKIMEDIA_TALK_WIKIS[0].language : "")} />
             <span className="min-w-0 flex-1">
@@ -230,14 +238,14 @@ export default function ResearchSweep({
         )}
         {mastodonEnabled && (
           <p className="text-xs leading-5 text-muted">
-            Mastodon servers are not country proxies. Posts remain their authors’ content; the sweep keeps only the post link, author attribution, timestamp, and language in its selectable citation model, not post text.
+            Mastodon servers are not country proxies. Posts remain their authors’ content. Short plain-text previews are shown only in this browser for manual review; selecting a citation strips the post text. No post text is sent to Signal Scout or saved.
           </p>
         )}
         <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
           {loading ? "Searching selected sources…" : "Run source sweep"}
         </button>
       </form>
-      <p className="mt-3 text-xs leading-5 text-muted">Bluesky results are query-selected and incomplete. Public post text appears transiently here for manual review; selecting a citation strips the text, and only its link, author attribution, date, and language can enter your brief. The query and results stay in your browser and are not sent to Signal Scout’s server. See <a className="underline" href="https://docs.bsky.app/docs/api/app-bsky-feed-search-posts" target="_blank" rel="noreferrer">Bluesky API documentation</a>.</p>
+      <p className="mt-3 text-xs leading-5 text-muted">Public Bluesky, Mastodon, and Lemmy text appears transiently in this browser for manual review; selecting a citation strips the text, and only its link, attribution, date, and language can enter your brief. Searches and results are not sent to Signal Scout’s server or saved. These query-selected samples are incomplete and not representative. See <a className="underline" href="https://docs.bsky.app/docs/api/app-bsky-feed-search-posts" target="_blank" rel="noreferrer">Bluesky API documentation</a>.</p>
       {error && <p role="alert" className="mt-4 text-sm">{error}</p>}
       {searched && !loading && results.length > 0 && (
         <div className="mt-6 grid gap-6 border-t border-line pt-5 md:grid-cols-2">

@@ -12,6 +12,32 @@ export type MastodonPublicPost = {
   accountMarkedAutomated: boolean;
 };
 
+/** Convert provider HTML to safe plain text for transient React rendering. */
+export function mastodonHtmlToTransientText(html: string): string {
+  return html
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, " ")
+    .replace(/<\/(?:p|div|li|blockquote|h[1-6])\s*>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&#(\d+);/g, (_, code: string) => decodeCodePoint(Number(code)))
+    .replace(/&#x([\da-f]+);/gi, (_, code: string) => decodeCodePoint(parseInt(code, 16)))
+    .replace(/&(?:amp|lt|gt|quot|apos|nbsp|#39);/gi, (entity) => ({
+      "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"',
+      "&apos;": "'", "&#39;": "'", "&nbsp;": " ",
+    }[entity.toLowerCase()] ?? entity))
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    .slice(0, 1200);
+}
+
+function decodeCodePoint(value: number): string {
+  return Number.isInteger(value) && value >= 0 && value <= 0x10ffff && !(value >= 0xd800 && value <= 0xdfff)
+    ? String.fromCodePoint(value)
+    : "�";
+}
+
 export type MastodonServerView = {
   host: MastodonInstance;
   tag: string;

@@ -35,8 +35,9 @@ describe("Lemmy public discussion search", () => {
       authorUrl: "https://lemmy.world/u/reader",
       community: "economy",
       languageId: 37,
+      transientPreview: "Private-to-the-app body that should not be retained",
     }]);
-    expect(JSON.stringify(posts)).not.toContain("Private-to-the-app body");
+    expect(posts[0].transientPreview).toContain("Private-to-the-app body");
     const requestUrl = new URL(fetchMock.mock.calls[0][0] as URL);
     expect(requestUrl.origin).toBe("https://lemmy.world");
     expect(requestUrl.searchParams.get("q")).toBe("central bank");
@@ -81,7 +82,7 @@ describe("Lemmy public discussion search", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it.each(["feddit.org", "feddit.uk"] as const)("queries the public API for %s without retaining bodies", async (host) => {
+  it.each(["feddit.org", "feddit.uk"] as const)("queries the public API for %s and returns only a capped transient body preview", async (host) => {
     const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL) => {
       const url = new URL(String(input));
       expect(url.origin).toBe(`https://${host}`);
@@ -90,7 +91,7 @@ describe("Lemmy public discussion search", () => {
     });
     const posts = await searchLemmyPosts("semiconductor", host, fetchMock, now);
     expect(posts).toHaveLength(1);
-    expect(JSON.stringify(posts)).not.toContain("Private-to-the-app body");
+    expect(posts[0].transientPreview).toContain("Private-to-the-app body");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 

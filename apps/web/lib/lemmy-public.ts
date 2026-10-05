@@ -21,6 +21,8 @@ export type LemmyPost = {
   authorUrl: string | null;
   community: string;
   languageId: number | null;
+  /** Short, visitor-only excerpt; omitted when a citation is selected. */
+  transientPreview?: string;
 };
 
 export type LemmyView = {
@@ -37,6 +39,7 @@ type SearchResult = {
       id?: number;
       ap_id?: string;
       name?: string;
+      body?: string;
       published?: string;
       deleted?: boolean;
       removed?: boolean;
@@ -57,7 +60,7 @@ type SearchResult = {
 const MAX_RESULTS = 20;
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Search one public Lemmy instance; post text is never returned or retained. */
+/** Search one public Lemmy instance; post text is returned only for transient browser review. */
 export async function searchLemmyPosts(
   query: string,
   host: LemmyInstance,
@@ -110,6 +113,9 @@ export async function searchLemmyPosts(
       authorUrl: safeHttpsUrl(creator?.actor_id),
       community: community.name,
       languageId: Number.isInteger(post.language_id) ? post.language_id! : null,
+      ...(typeof post.body === "string" && post.body.trim()
+        ? { transientPreview: post.body.trim().slice(0, 1200) }
+        : {}),
     }];
   });
 }

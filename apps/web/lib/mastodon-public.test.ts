@@ -3,6 +3,7 @@ import {
   comparePublicHashtag,
   compareTrendingHashtags,
   fetchTrendingHashtags,
+  mastodonHtmlToTransientText,
   searchPublicHashtag,
 } from "./mastodon-public";
 
@@ -68,6 +69,16 @@ describe("searchPublicHashtag", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 401 }));
     await expect(searchPublicHashtag("economics", fetchMock)).rejects.toThrow("No login or workaround");
     expect(fetchMock.mock.calls[0][1]).not.toHaveProperty("headers.Authorization");
+  });
+});
+
+describe("mastodonHtmlToTransientText", () => {
+  it("converts provider HTML to escaped-renderable plain text and caps long content", () => {
+    expect(mastodonHtmlToTransientText('<p>Rates &amp; markets</p><p>Second &#x1F4AC; line</p>'))
+      .toBe("Rates & markets\nSecond 💬 line");
+    expect(mastodonHtmlToTransientText('<p>before</p><script>alert(1)</script><p>after</p>'))
+      .toBe("before\nafter");
+    expect(mastodonHtmlToTransientText(`<p>${"x".repeat(1400)}</p>`)).toHaveLength(1200);
   });
 });
 

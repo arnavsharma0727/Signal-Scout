@@ -2,7 +2,7 @@ import { searchGdeltNews } from "./gdelt-public";
 import { searchBlueskyPosts } from "./bluesky-public";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "./live-topic-search";
 import { LEMMY_INSTANCES, LemmyInstance, searchLemmyPosts } from "./lemmy-public";
-import { MASTODON_INSTANCES, searchPublicHashtag } from "./mastodon-public";
+import { MASTODON_INSTANCES, mastodonHtmlToTransientText, searchPublicHashtag } from "./mastodon-public";
 import { WIKIMEDIA_TALK_WIKIS, searchWikimediaTalk } from "./wikimedia-talk";
 import type { ResearchEvidence } from "./research-brief";
 
@@ -14,6 +14,7 @@ export type ResearchSweepSelection = {
   lemmyInstances?: readonly LemmyInstance[];
   lemmyTermsAccepted: boolean;
   mastodon?: { hashtag: string; instance: string };
+  mastodonTermsAccepted?: boolean;
   bluesky?: boolean;
   wikimediaLanguage?: string;
 };
@@ -72,6 +73,9 @@ export async function runResearchSweep(
   if (selection.mastodon && !MASTODON_INSTANCES.some(({ host }) => host === selection.mastodon!.instance)) {
     throw new Error("Choose a listed Mastodon server.");
   }
+  if (selection.mastodon && !selection.mastodonTermsAccepted) {
+    throw new Error("Review the selected Mastodon server's rules and privacy information before searching.");
+  }
 
   const tasks: Promise<ResearchSweepSourceResult>[] = [];
   if (selection.gdelt) {
@@ -128,6 +132,7 @@ export async function runResearchSweep(
         timeValue: post.publishedAt,
         attribution: `Lemmy author: ${post.author}`,
         attributionUrl: post.authorUrl ?? post.url,
+        transientPreview: post.transientPreview,
       })),
       ));
     }
@@ -148,6 +153,7 @@ export async function runResearchSweep(
         context: `Hashtag #${hashtag.replace(/^#+/, "")}; server timeline is not a geographic market proxy`,
         attribution: `Author: ${post.authorHandle}`,
         attributionUrl: post.authorUrl,
+        transientPreview: mastodonHtmlToTransientText(post.contentHtml),
       })),
     ));
   }
