@@ -58,10 +58,12 @@ try {
 try {
   const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Recent source evidence') && !page.includes('Hacker News comment') && !page.includes('The remaining U.S.-leaning Hacker News sample is shown below')) pass('public briefing withholds uncleared source material','homepage evidence panel excludes the disabled source');
-  else fail('public briefing withholds uncleared source material',`HTTP ${response.status}; disallowed source may be shown or current evidence panel is missing`);
-  if(response.ok&&page.includes('Wikipedia talk-page revision · not market sentiment')&&page.includes('contributor identifiers not retained')&&page.includes('CC BY-SA 4.0'))pass('Wikimedia discussion attribution and limitations are public','talk-page evidence labels editorial context and links its reuse terms');
-  else fail('Wikimedia discussion attribution and limitations are public','Wikimedia evidence label, privacy note, or license attribution is missing');
+  if (response.ok && page.includes('Find a conversation. Follow its evidence.') && page.includes('Search one topic across selected sources') && !page.includes('Hacker News comment')) pass('public research desk withholds uncleared source material','focused topic-to-brief workflow renders without uncleared source content');
+  else fail('public research desk withholds uncleared source material',`HTTP ${response.status}; focused workflow missing or uncleared source material may be rendered`);
+  const sourcesResponse=await fetch(`${base}/sources`,{redirect:'follow',signal:AbortSignal.timeout(15000)});
+  const sourcesPage=await sourcesResponse.text();
+  if(sourcesResponse.ok&&sourcesPage.includes('Wikimedia · article talk pages')&&sourcesPage.includes('comment text, edit summaries, usernames, and IPs are never requested or stored')&&sourcesPage.includes('CC BY-SA 4.0'))pass('Wikimedia attribution and limitations are public','source methodology states metadata minimization and links applicable license');
+  else fail('Wikimedia attribution and limitations are public','source-methodology page lacks the metadata-retention note or license attribution');
 } catch (error) { fail('public briefing withholds uncleared source material',error.message); }
 
 const url = process.env.SUPABASE_URL;
