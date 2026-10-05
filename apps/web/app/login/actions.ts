@@ -1,10 +1,10 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { authConfigured, authServerClient } from '../../lib/supabase-auth-server';
+import { authServerClient, githubOAuthEnabled } from '../../lib/supabase-auth-server';
 
 export async function requestGitHubSignIn(formData: FormData) {
-  if (!authConfigured()) redirect('/login?error=disabled');
+  if (!(await githubOAuthEnabled())) redirect('/login?error=disabled');
   const supabase = await authServerClient();
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!supabase || !appUrl) redirect('/login?error=disabled');
