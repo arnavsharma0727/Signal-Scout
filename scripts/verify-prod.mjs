@@ -23,6 +23,14 @@ for (const route of ['/', '/about', '/companies', '/coverage', '/candidates', '/
 }
 
 try {
+  const response=await fetch(`${base}/login`,{redirect:'follow',signal:AbortSignal.timeout(15000)});
+  const page=await response.text();
+  if(response.ok&&page.includes('Email me a sign-in link'))pass('private brief account sign-in is configured','login form is available for private account storage');
+  else if(response.ok&&page.includes('Sign-in is not enabled yet.'))fail('private brief account sign-in is configured','production Auth/email delivery is not enabled; private brief saving remains unavailable');
+  else fail('private brief account sign-in is configured',`HTTP ${response.status}; login flow could not be verified`);
+} catch(error) { fail('private brief account sign-in is configured',error.message); }
+
+try {
   const response = await fetch(`${base}/api/ingest`, {signal:AbortSignal.timeout(10000)});
   if (response.status === 401 || response.status === 403) pass('ingestion endpoint protected', `Unauthenticated request returned HTTP ${response.status}`);
   else fail('ingestion endpoint protected', `Expected 401/403, got HTTP ${response.status}`);
