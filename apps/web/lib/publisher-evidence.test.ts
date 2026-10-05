@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchesOriginalTitlePhrase, toPublisherEvidence } from "./publisher-evidence";
+import { matchesOriginalTitlePhrase, matchingPublisherEvidence, toPublisherEvidence } from "./publisher-evidence";
 
 const now = Date.parse("2026-10-01T12:00:00Z");
 const recent = "2026-10-01T10:00:00Z";
@@ -14,6 +14,12 @@ describe("reviewed publisher evidence", () => {
     expect(matchesOriginalTitlePhrase("日本銀行の政策", "日本銀行")).toBe(true);
     expect(matchesOriginalTitlePhrase("한국은행의 결정", "한국은행")).toBe(true);
     expect(matchesOriginalTitlePhrase("Anything", "")).toBe(true);
+  });
+
+  it("does not render unfiltered recent feed items before a topic is chosen", () => {
+    const items = [{ title: "Interest rates rise" }, { title: "A climate report" }];
+    expect(matchingPublisherEvidence(items, "")).toEqual([]);
+    expect(matchingPublisherEvidence(items, "interest rates")).toEqual([items[0]]);
   });
 
   it("accepts localized Global Voices titles with attribution and CC BY metadata only", () => {

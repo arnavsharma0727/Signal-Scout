@@ -33,6 +33,7 @@ export default async function Candidates() {
   const overlapResult = await recentDiscussionReportingOverlaps();
   const overlapsUnavailable = overlapResult === null;
   const overlaps = overlapResult ?? [];
+  const repeatedOverlaps = overlaps.filter((overlap) => overlap.discussionItemCount >= 3);
   const db = serverSupabase();
   let leads: Lead[] = [];
   let unavailable = !db;
@@ -126,9 +127,9 @@ export default async function Candidates() {
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold">{observation.tag}</h3>
                   <span className="mono text-xs text-muted">
-                    {observation.recentQuestionCount} of {observation.recentSampleSize}{" "}
-                    {observation.recentSampleSize === 1 ? "question" : "sampled questions"}
-                    {" · "}{Math.round(observation.recentShare * 100)}% recent share
+                    {observation.recentSampleSize < 20
+                      ? `${observation.recentQuestionCount} tagged · ${observation.recentSampleSize}/20 minimum sample`
+                      : `${observation.recentQuestionCount} of ${observation.recentSampleSize} sampled · ${Math.round(observation.recentShare * 100)}% recent share`}
                     {" · "}
                     {observation.communities.length}{" "}
                     {observation.communities.length === 1 ? "community" : "communities"}
@@ -180,13 +181,13 @@ export default async function Candidates() {
           Discussion–reporting phrase overlaps
         </h2>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
-          A phrase can be a community-applied Stack Exchange tag, a scheduled Stack Exchange search term, or an exact two-to-four-word sequence from a Fedora topic title. It must appear as a whole phrase in a same-language licensed headline from the last seven days; scheduled search terms must also appear in the question title. Generated Fedora phrases are literal title excerpts, not platform tags or classified topics. Search-term matches reflect collector design, not organic topic frequency. Common English function-word phrases and acronym-only Latin phrases of two or three letters (such as AI, GPU, or LLM) are suppressed to reduce generic collisions; this heuristic can also omit relevant phrases. Fedora is a selected Linux community, not a financial forum or population sample. This query-selected sample is not evidence that discussion caused coverage, that sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open every original item.
+          A phrase can be a community-applied Stack Exchange tag, a scheduled Stack Exchange search term, or an exact two-to-four-word sequence from a Fedora topic title. It must appear as a whole phrase in a same-language licensed headline from the last seven days; scheduled search terms must also appear in the question title. Only phrases repeated across at least three distinct discussion records are shown; isolated title collisions are withheld. Generated Fedora phrases are literal title excerpts, not platform tags or classified topics. Search-term matches reflect collector design, not organic topic frequency. Common English function-word phrases and acronym-only Latin phrases of two or three letters (such as AI, GPU, or LLM) are suppressed to reduce generic collisions; this heuristic can also omit relevant phrases. Fedora is a selected Linux community, not a financial forum or population sample. This query-selected sample is not evidence that discussion caused coverage, that sources are independent, or that either reflects public attention. No translation, sentiment, market impact, or thesis is inferred. Open every original item.
         </p>
         {overlapsUnavailable ? (
           <p className="mt-4 text-sm text-muted">Cross-source records are unavailable. This is not evidence that no related discussion or reporting exists.</p>
-        ) : overlaps.length ? (
+        ) : repeatedOverlaps.length ? (
           <div className="mt-5 space-y-5">
-            {overlaps.map((overlap) => (
+            {repeatedOverlaps.map((overlap) => (
               <article className="border-t border-line pt-4" key={`${overlap.language}:${overlap.matchBasis}:${overlap.phrase}`}>
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <h3 className="font-semibold">{overlap.phrase}</h3>
@@ -216,7 +217,7 @@ export default async function Candidates() {
             ))}
           </div>
         ) : (
-          <p className="mt-4 text-sm text-muted">No exact same-language tag or collection-term/headline matches were found in the available seven-day sample. This does not mean the topic is absent from discussion or reporting.</p>
+          <p className="mt-4 text-sm text-muted">{overlaps.length ? "No phrase matched across at least three distinct discussion records; isolated title collisions are withheld. Even repeated overlaps are only prompts to inspect the original evidence, not leads." : "No exact same-language tag or collection-term/headline matches were found in the available seven-day sample. This does not mean the topic is absent from discussion or reporting."}</p>
         )}
       </section>
       {unavailable ? (

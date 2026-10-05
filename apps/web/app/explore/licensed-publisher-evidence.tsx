@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ResearchEvidence } from "../../lib/research-brief";
-import { matchesOriginalTitlePhrase } from "../../lib/publisher-evidence";
+import { matchingPublisherEvidence } from "../../lib/publisher-evidence";
 
 export default function LicensedPublisherEvidence({
   items,
@@ -20,7 +20,7 @@ export default function LicensedPublisherEvidence({
     if (initialTopic) setPhrase(initialTopic);
   }, [initialTopic]);
   const matchingItems = useMemo(
-    () => items.filter(item => matchesOriginalTitlePhrase(item.title, phrase)),
+    () => matchingPublisherEvidence(items, phrase),
     [items, phrase],
   );
   return (
@@ -43,7 +43,7 @@ export default function LicensedPublisherEvidence({
           />
           {phrase && <button className="btn" type="button" onClick={() => setPhrase("")}>Clear</button>}
         </div>
-        <p className="mt-1 text-xs text-muted">Literal original-title match only; no translation, stemming, or semantic expansion. {matchingItems.length} of {items.length} recent eligible items match.</p>
+        <p className="mt-1 text-xs text-muted">Literal original-title match only; no translation, stemming, or semantic expansion. {phrase.trim() ? `${matchingItems.length} of ${items.length} recent eligible items match.` : `${items.length} eligible items are available; enter a topic to filter them.`}</p>
       </div>
       {matchingItems.length ? (
         <ul className="mt-4 divide-y divide-line border-y border-line">
@@ -67,7 +67,7 @@ export default function LicensedPublisherEvidence({
           ))}
         </ul>
       ) : (
-        <p className="mt-4 border-y border-line py-4 text-sm text-muted">{items.length ? "No eligible feed headline contains this exact phrase in the last 72 hours. This is a query-filtered feed sample, not evidence that the topic is absent." : "No eligible feed items are currently stored from the last 72 hours. This may mean a feed was quiet, ingestion did not run, or the strict rights/attribution checks rejected its metadata; it does not mean there was no discussion."}</p>
+        <p className="mt-4 border-y border-line py-4 text-sm text-muted">{!phrase.trim() && items.length ? "Enter a topic above to find exact matches in licensed reporting, analysis, and selected community feeds. Items stay hidden until there is a query; this is not evidence that an unqueried topic is absent." : items.length ? "No eligible feed headline contains this exact phrase in the last 72 hours. This is a query-filtered feed sample, not evidence that the topic is absent." : "No eligible feed items are currently stored from the last 72 hours. This may mean a feed was quiet, ingestion did not run, or the strict rights/attribution checks rejected its metadata; it does not mean there was no discussion."}</p>
       )}
       <p className="mt-3 text-xs leading-5 text-muted">Titles are displayed unmodified with source links. Article bodies, summaries, media, and forum post text are not included in this brief feed.</p>
     </section>

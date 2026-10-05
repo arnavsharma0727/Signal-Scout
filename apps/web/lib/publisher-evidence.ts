@@ -121,6 +121,12 @@ export function matchesOriginalTitlePhrase(title: string, rawPhrase: string) {
   return new RegExp(`(?:^|[^\\p{L}\\p{N}])${escaped}(?:$|[^\\p{L}\\p{N}])`, "u").test(normalizedTitle);
 }
 
+/** Recent items are only surfaced when the visitor has supplied a concrete query. */
+export function matchingPublisherEvidence<T extends { title: string }>(items: T[], phrase: string): T[] {
+  if (!phrase.trim()) return [];
+  return items.filter(item => matchesOriginalTitlePhrase(item.title, phrase));
+}
+
 function safeHttpsUrl(value: string): URL | null {
   try {
     const url = new URL(value);
