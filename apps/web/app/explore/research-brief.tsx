@@ -34,7 +34,7 @@ export default function ResearchBrief({
   authAvailable: boolean;
   saveEnabled: boolean;
   onRemove: (id: string) => void;
-  onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | undefined) => void;
+  onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | "not relevant" | undefined) => void;
   onClear: () => void;
 }) {
   const [topic, setTopic] = useState("");
@@ -105,7 +105,7 @@ export default function ResearchBrief({
       <div className="eyebrow">Temporary, in-page workspace</div>
       <h2 id="research-brief-title" className="mt-2 text-xl font-semibold">Build a research brief</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Add source links deliberately, assign each item a supporting, contradicting, or contextual role yourself, then write your hypothesis, alternatives, and disconfirmation test. These are your assessments, not automated sentiment or verified facts. The draft stays in this page unless you explicitly save it below. Exporting or copying sends it only to your device or clipboard.
+        Add source links deliberately, mark each recent item as supporting, contradicting, context, or not relevant, then write your hypothesis, alternatives, and disconfirmation test. Unassessed or unrelated items cannot count toward the qualification checks. These are your judgments, not automated sentiment or verified facts. The draft stays in this page unless you explicitly save it below. Exporting or copying sends it only to your device or clipboard.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -150,14 +150,14 @@ export default function ResearchBrief({
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <label className="text-xs text-muted">
-                    Researcher assessment
+                    Relevance / thesis assessment
                     <select
                       className="ml-2 rounded border border-line bg-white px-2 py-1 text-xs text-ink"
                       value={item.researcherAssessment ?? ""}
                       onChange={(event) => onAssess(
                         item.id,
                         event.target.value
-                          ? event.target.value as "supports" | "contradicts" | "context"
+                          ? event.target.value as "supports" | "contradicts" | "context" | "not relevant"
                           : undefined,
                       )}
                     >
@@ -165,6 +165,7 @@ export default function ResearchBrief({
                       <option value="supports">Supports thesis</option>
                       <option value="contradicts">Contradicts thesis</option>
                       <option value="context">Context only</option>
+                      <option value="not relevant">Not relevant — excluded from checks</option>
                     </select>
                   </label>
                   <button className="text-xs underline text-muted" type="button" onClick={() => onRemove(item.id)}>Remove</button>

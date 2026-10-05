@@ -67,7 +67,7 @@ export function preparePrivateEvidenceLinks(value: unknown): SavedEvidenceLink[]
     const publishedAt = typeof row.publishedAt === "string" && Number.isFinite(Date.parse(row.publishedAt))
       ? new Date(row.publishedAt).toISOString()
       : null;
-    const assessment = ["supports", "contradicts", "context"].includes(String(row.assessment))
+    const assessment = ["supports", "contradicts", "context", "not relevant"].includes(String(row.assessment))
       ? row.assessment as ResearchEvidence["researcherAssessment"]
       : undefined;
     const language = typeof row.language === "string" && /^[\p{L}\p{M}\p{N} ._-]{1,32}$/u.test(row.language)

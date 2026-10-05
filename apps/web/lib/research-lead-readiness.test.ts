@@ -31,6 +31,26 @@ describe("research lead readiness", () => {
     expect(result.checks.find((check) => check.label === "At least two reviewed source operators")?.passed).toBe(false);
   });
 
+  it("requires explicit relevance assessments for every recent citation", () => {
+    const unreviewed = evidence.map((item) => ({ ...item, researcherAssessment: undefined }));
+    const result = assessResearchLeadReadiness({ ...complete, evidence: unreviewed });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label === "Relevance reviewed for every recent citation")?.passed).toBe(false);
+  });
+
+  it("excludes unrelated conversation from the minimum sample and source-class checks", () => {
+    const result = assessResearchLeadReadiness({
+      ...complete,
+      evidence: evidence.map((item) => item.evidenceClass === "social discussion"
+        ? { ...item, researcherAssessment: "not relevant" }
+        : item),
+    });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label === "At least three recent, relevant, dated citations")?.passed).toBe(false);
+    expect(result.checks.find((check) => check.label === "Discussion plus reporting or expert analysis")?.passed).toBe(false);
+    expect(result.reviewedOperators).not.toContain("Bluesky");
+  });
+
   it("rejects stale, future-dated, undated, and one-sided evidence", () => {
     const incomplete = [
       { ...evidence[0], timeValue: new Date(now - 31 * 86400000).toISOString() },
@@ -39,6 +59,6 @@ describe("research lead readiness", () => {
     ];
     const result = assessResearchLeadReadiness({ ...complete, evidence: incomplete });
     expect(result.readyForHumanReview).toBe(false);
-    expect(result.checks.find((check) => check.label === "At least three recent, dated citations")?.passed).toBe(false);
+    expect(result.checks.find((check) => check.label === "At least three recent, relevant, dated citations")?.passed).toBe(false);
   });
 });

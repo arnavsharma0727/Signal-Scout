@@ -64,6 +64,8 @@ type SourceConfig = {
   detail: string;
   referenceUrl?: string;
   referenceLabel?: string;
+  secondaryReferenceUrl?: string;
+  secondaryReferenceLabel?: string;
   onDemand?: boolean;
 };
 
@@ -101,7 +103,11 @@ export default async function Sources() {
       key: "hacker-news",
       enabled: isHackerNewsIngestionEnabled(),
       detail:
-        "Disabled unless collection and display rights are explicitly cleared. This is a narrow U.S.-leaning sample, not a matched Korea/U.S. forum comparison; prior records are withheld from public evidence views while rights remain under review.",
+        "The official Firebase API is public and keyless, but public API access is not a reuse license. YC’s current Terms prohibit unapproved scraping/data extraction and commercial reuse of site content, so Signal Scout keeps this source disabled until its collection and display rights are explicitly cleared. This would also be a narrow U.S.-leaning community, not a matched international sample; any prior records remain withheld from public evidence views.",
+      referenceUrl: "https://github.com/HackerNews/API",
+      referenceLabel: "Official public API documentation",
+      secondaryReferenceUrl: "https://www.ycombinator.com/legal/",
+      secondaryReferenceLabel: "Y Combinator Terms and Privacy Policy",
     },
     {
       name: "Stack Exchange · international Q&A",
@@ -321,6 +327,11 @@ export default async function Sources() {
                 {source.referenceUrl && (
                   <a className="mt-2 inline-block text-xs underline text-muted" href={source.referenceUrl} target="_blank" rel="noreferrer">
                     {source.referenceLabel ?? "Source policy"}
+                  </a>
+                )}
+                {source.secondaryReferenceUrl && (
+                  <a className="ml-4 mt-2 inline-block text-xs underline text-muted" href={source.secondaryReferenceUrl} target="_blank" rel="noreferrer">
+                    {source.secondaryReferenceLabel ?? "Additional source policy"}
                   </a>
                 )}
                 {source.onDemand ? (

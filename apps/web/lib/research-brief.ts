@@ -14,7 +14,7 @@ export type ResearchEvidence = {
   attributionUrl?: string;
   licenseName?: string;
   licenseUrl?: string;
-  researcherAssessment?: "supports" | "contradicts" | "context";
+  researcherAssessment?: "supports" | "contradicts" | "context" | "not relevant";
   /** Assigned only by reviewed source constructors; never infer independence from labels. */
   sourceOperatorKey?: string;
   sourceOperatorLabel?: string;
@@ -57,13 +57,17 @@ export function assessResearchLeadReadiness(input: {
     const published = Date.parse(item.timeValue);
     return Number.isFinite(published) && published <= now && now - published <= 30 * 86400000;
   });
-  const operators = [...new Set(recentEvidence.flatMap((item) =>
+  const relevanceReviewed = recentEvidence.every((item) => item.researcherAssessment !== undefined);
+  const relevantEvidence = recentEvidence.filter((item) =>
+    item.researcherAssessment !== undefined && item.researcherAssessment !== "not relevant");
+  const operators = [...new Set(relevantEvidence.flatMap((item) =>
     item.sourceOperatorKey && item.sourceOperatorLabel ? [item.sourceOperatorLabel] : []))].sort();
-  const classes = new Set(recentEvidence.map((item) => item.evidenceClass));
-  const assessments = new Set(recentEvidence.map((item) => item.researcherAssessment));
+  const classes = new Set(relevantEvidence.map((item) => item.evidenceClass));
+  const assessments = new Set(relevantEvidence.map((item) => item.researcherAssessment));
   const checks = [
     { label: "Specific topic and working thesis", passed: Boolean(input.topic.trim() && input.workingThesis.trim()), detail: "Write the question being investigated and a tentative explanation." },
-    { label: "At least three recent, dated citations", passed: recentEvidence.length >= 3, detail: `${recentEvidence.length} selected citations are dated within the last 30 days.` },
+    { label: "Relevance reviewed for every recent citation", passed: relevanceReviewed, detail: `${recentEvidence.filter((item) => !item.researcherAssessment).length} recent citations remain unassessed; mark unrelated items “Not relevant.”` },
+    { label: "At least three recent, relevant, dated citations", passed: relevantEvidence.length >= 3, detail: `${relevantEvidence.length} recent citations are marked relevant to the topic; “Not relevant” items are excluded.` },
     { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? operators.join(" · ") : "No reviewed source operator is represented yet." },
     { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
     { label: "Supporting and contradicting evidence reviewed", passed: assessments.has("supports") && assessments.has("contradicts"), detail: "Mark at least one citation as supporting and another as contradicting the thesis." },
@@ -103,6 +107,7 @@ export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): Evidenc
     "supports",
     "contradicts",
     "context",
+    "not relevant",
   ];
   return {
     itemCount: evidence.length,
@@ -183,7 +188,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     "",
     `- Status: ${readiness.readyForHumanReview ? "Checklist met; ready for human review only" : "Not ready for lead review"}`,
     ...readiness.checks.map((check) => `- [${check.passed ? "x" : " "}] ${check.label}: ${check.detail}`),
-    "- This checklist does not confirm a lead, topical relevance, source independence beyond reviewed operator labels, or investment implications.",
+    "- This checklist does not confirm a lead, source independence beyond reviewed operator labels, or investment implications. “Not relevant” citations do not count toward its evidence checks.",
     "",
     `## Selected evidence (${draft.evidence.length} items)`,
     "",

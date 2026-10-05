@@ -20,7 +20,7 @@ const sections = [
   },
   {
     title: "Evidence and human review",
-    body: "Entries retain source links and available publication/fetch times for inspection. Source availability and metadata vary. No translation or inferred stance is currently generated. Check the original source, seek contradictory information, and treat missing evidence as an evidence gap—not evidence that discussion is absent.",
+    body: "The local research-brief checklist requires every recent citation to be marked as supporting, contradicting, context, or not relevant. Unassessed and unrelated items do not count toward its minimum of three recent relevant citations, two reviewed source operators, or discussion-plus-reporting mix. At least one supporting and one contradicting item, an alternative explanation, and a disconfirmation test are also required. Passing means only ready for human review: it does not establish that sources support the same claim, represent a population, or qualify an automatically published lead. Entries retain source links and available publication/fetch times for inspection. No translation or inferred stance is generated.",
   },
 ];
 

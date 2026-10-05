@@ -5,7 +5,7 @@ describe("private research brief citation retention", () => {
   it("keeps only links from sources with a reviewed reuse basis and strips tracking", () => {
     const result = preparePrivateEvidenceLinks([
       { url: "https://economics.stackexchange.com/questions/12/example?utm_source=feed#answer-34", language: "en", publishedAt: "2026-10-01T12:00:00Z", assessment: "supports", title: "Must not persist", attribution: "Private contributor field" },
-      { url: "https://globalvoices.org/2026/10/01/story/?utm_campaign=x", language: "en" },
+      { url: "https://globalvoices.org/2026/10/01/story/?utm_campaign=x", language: "en", assessment: "not relevant" },
       { url: "https://es.globalvoices.org/2026/10/01/historia/?utm_campaign=x", language: "es" },
       { url: "https://forum.typst.app/t/topic/1234?utm_source=x", language: "unassigned" },
       { url: "https://en.wikipedia.org/w/index.php?title=Talk%3AMoney&oldid=12345&utm_source=x", language: "en" },
@@ -21,6 +21,7 @@ describe("private research brief citation retention", () => {
       licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
     });
     expect(result[2]).toMatchObject({ host: "es.globalvoices.org", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" });
+    expect(result[1].assessment).toBe("not relevant");
     expect(result[3]).toMatchObject({ sourceClass: "community forum", licenseUrl: "https://creativecommons.org/licenses/by/4.0/" });
     expect(result[4].url).toBe("https://en.wikipedia.org/w/index.php?title=Talk%3AMoney&oldid=12345");
     expect(JSON.stringify(result)).not.toContain("Must not persist");
