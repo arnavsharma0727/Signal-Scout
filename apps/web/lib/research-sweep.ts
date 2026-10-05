@@ -150,10 +150,12 @@ export async function runResearchSweep(
         language: post.language ?? "not provided",
         timeLabel: "Published",
         timeValue: post.createdAt,
-        context: `Hashtag #${hashtag.replace(/^#+/, "")}; server timeline is not a geographic market proxy`,
+        context: post.contentWarning
+          ? `Content warning: ${post.contentWarning.slice(0, 200)}; preview withheld, open the original post if appropriate`
+          : `Hashtag #${hashtag.replace(/^#+/, "")}; server timeline is not a geographic market proxy`,
         attribution: `Author: ${post.authorHandle}`,
         attributionUrl: post.authorUrl,
-        transientPreview: mastodonHtmlToTransientText(post.contentHtml),
+        transientPreview: post.contentWarning ? undefined : mastodonHtmlToTransientText(post.contentHtml),
       })),
     ));
   }

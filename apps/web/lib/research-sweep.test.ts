@@ -23,6 +23,31 @@ describe("runResearchSweep", () => {
     });
   });
 
+  it("withholds Mastodon bodies when the author attached a content warning", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify([{
+      id: "15",
+      url: "https://mastodon.social/@reader/15",
+      created_at: new Date(NOW - 60_000).toISOString(),
+      visibility: "public",
+      content: "<p>Potentially sensitive post body</p>",
+      spoiler_text: "Sensitive subject",
+      language: "en",
+      account: { acct: "reader", url: "https://mastodon.social/@reader" },
+    }])));
+    const results = await runResearchSweep("markets", {
+      gdelt: false,
+      lemmy: false,
+      lemmyTermsAccepted: false,
+      mastodon: { hashtag: "markets", instance: "mastodon.social" },
+      mastodonTermsAccepted: true,
+      bluesky: false,
+    }, fetcher, NOW);
+
+    expect(results[0].evidence[0].transientPreview).toBeUndefined();
+    expect(results[0].evidence[0].context).toContain("Content warning: Sensitive subject");
+    expect(JSON.stringify(results)).not.toContain("Potentially sensitive post body");
+  });
+
   it("searches selected providers in parallel and preserves provider-specific labels and classes", async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
