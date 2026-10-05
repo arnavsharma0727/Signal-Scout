@@ -4,6 +4,25 @@ import { runResearchSweep } from "./research-sweep";
 const NOW = Date.parse("2026-09-30T12:00:00Z");
 
 describe("runResearchSweep", () => {
+  it("exposes Bluesky text only as a transient result preview", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ posts: [{
+      uri: "at://did:plc:reader/app.bsky.feed.post/xyz",
+      record: { text: "A current public conversation", createdAt: new Date(NOW - 60_000).toISOString(), langs: ["en"] },
+      author: { handle: "reader.example" },
+    }] })));
+    const results = await runResearchSweep("markets", {
+      gdelt: false,
+      lemmy: false,
+      lemmyTermsAccepted: false,
+      bluesky: true,
+    }, fetcher, NOW);
+
+    expect(results[0].evidence[0]).toMatchObject({
+      id: "bluesky:at://did:plc:reader/app.bsky.feed.post/xyz",
+      transientPreview: "A current public conversation",
+    });
+  });
+
   it("searches selected providers in parallel and preserves provider-specific labels and classes", async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));

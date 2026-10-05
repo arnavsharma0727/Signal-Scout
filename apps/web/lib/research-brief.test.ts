@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createResearchBriefMarkdown, ResearchEvidence, summarizeEvidenceCoverage, topicFromFragment } from "./research-brief";
+import { citationWithoutTransientContent, createResearchBriefMarkdown, ResearchEvidence, summarizeEvidenceCoverage, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -18,6 +18,23 @@ const selected: ResearchEvidence = {
 };
 
 describe("createResearchBriefMarkdown", () => {
+  it("strips transient post text when a live result is selected as a citation", () => {
+    const selectedPost = {
+      ...selected,
+      transientPreview: "A transient public post excerpt",
+    };
+    const citation = citationWithoutTransientContent(selectedPost);
+    expect(citation).not.toHaveProperty("transientPreview");
+    expect(createResearchBriefMarkdown({
+      topic: "Trade",
+      workingThesis: "",
+      alternatives: "",
+      disconfirmingEvidence: "",
+      evidence: [citation],
+      exportedAt: "2026-10-01T12:00:00Z",
+    })).not.toContain("A transient public post excerpt");
+  });
+
   it("exports only the supplied hand-written draft and selected source citations", () => {
     const markdown = createResearchBriefMarkdown({
       topic: "Trade",

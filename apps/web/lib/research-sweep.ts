@@ -164,6 +164,7 @@ export async function runResearchSweep(
         timeValue: post.publishedAt,
         sourceOperatorKey: "bluesky",
         sourceOperatorLabel: "Bluesky",
+        transientPreview: post.transientPreview,
         context: `Public search query: “${query}”; indexed subset, not a complete or representative feed`,
         attribution: `Author: @${post.authorHandle}`,
       })),

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { topicFromFragment, type ResearchEvidence } from "../../lib/research-brief";
+import { citationWithoutTransientContent, topicFromFragment, type ResearchEvidence } from "../../lib/research-brief";
 import GdeltSearch from "./gdelt-search";
 import LemmySearch from "./lemmy-search";
 import MastodonSearch from "./mastodon-search";
@@ -29,7 +29,8 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
   }, []);
 
   function addEvidence(item: ResearchEvidence) {
-    setEvidence((current) => current.some(({ id }) => id === item.id) ? current : [...current, item]);
+    const citation = citationWithoutTransientContent(item);
+    setEvidence((current) => current.some(({ id }) => id === citation.id) ? current : [...current, citation]);
   }
 
   function removeEvidence(id: string) {

@@ -25,8 +25,8 @@ for (const route of ['/', '/about', '/companies', '/coverage', '/candidates', '/
 try {
   const response=await fetch(`${base}/login`,{redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page=await response.text();
-  if(response.ok&&page.includes('Email me a sign-in link'))pass('private brief account sign-in is configured','login form is available for private account storage');
-  else if(response.ok&&page.includes('Sign-in is not enabled yet.'))fail('private brief account sign-in is configured','production Auth/email delivery is not enabled; private brief saving remains unavailable');
+  if(response.ok&&page.includes('Continue with GitHub'))pass('private brief account sign-in is configured','Supabase reports GitHub OAuth enabled and the sign-in action is rendered');
+  else if(response.ok&&page.includes('Sign-in is not enabled yet.'))fail('private brief account sign-in is configured','Supabase GitHub OAuth is disabled or Auth configuration is unavailable; private brief sign-in remains unavailable');
   else fail('private brief account sign-in is configured',`HTTP ${response.status}; login flow could not be verified`);
 } catch(error) { fail('private brief account sign-in is configured',error.message); }
 

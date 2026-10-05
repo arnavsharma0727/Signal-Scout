@@ -93,9 +93,12 @@ export default function Privacy() {
           <p>
             Explore can query Bluesky’s public search API from the browser
             without an account or API key. The query is sent to api.bsky.app,
-            not Signal Scout. The app displays only a public post link, author
-            handle, date, and language; post text is discarded from the
-            citation model, and results are not persisted. Search coverage is
+            not Signal Scout. Public post text is displayed transiently in
+            the browser search results so a researcher can inspect the actual
+            conversation. Selecting a citation strips the post text; only a
+            public link, author handle, date, and language remain in the brief.
+            Search queries and results are not sent to Signal Scout's server
+            or persisted by the app. Search coverage is
             incomplete and is not representative of public opinion.
           </p>
           <p>

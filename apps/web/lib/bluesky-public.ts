@@ -1,4 +1,4 @@
-/** Minimal transient search against Bluesky's public AppView; post text is discarded. */
+/** Transient search against Bluesky's public AppView; snippets are for browser-only review, never citations. */
 export type BlueskyPostCitation = {
   uri: string;
   url: string;
@@ -6,6 +6,7 @@ export type BlueskyPostCitation = {
   authorHandle: string;
   publishedAt: string;
   language: string;
+  transientPreview: string;
 };
 
 type SearchResponse = {
@@ -55,6 +56,8 @@ export async function searchBlueskyPosts(
       authorHandle: handle,
       publishedAt: new Date(time).toISOString(),
       language: post.record?.langs?.[0] ?? "not provided",
+      // Displayed only in live browser results; callers strip this before selecting a citation.
+      transientPreview: Array.from(text).slice(0, 300).join(""),
     }];
   });
 }

@@ -237,7 +237,7 @@ export default function ResearchSweep({
           {loading ? "Searching selected sources…" : "Run source sweep"}
         </button>
       </form>
-      <p className="mt-3 text-xs leading-5 text-muted">Bluesky results are query-selected and incomplete. Only an attributed source link, date, and language can be added to your local brief; post text is not stored. See <a className="underline" href="https://docs.bsky.app/docs/api/app-bsky-feed-search-posts" target="_blank" rel="noreferrer">Bluesky API documentation</a>.</p>
+      <p className="mt-3 text-xs leading-5 text-muted">Bluesky results are query-selected and incomplete. Public post text appears transiently here for manual review; selecting a citation strips the text, and only its link, author attribution, date, and language can enter your brief. The query and results stay in your browser and are not sent to Signal Scout’s server. See <a className="underline" href="https://docs.bsky.app/docs/api/app-bsky-feed-search-posts" target="_blank" rel="noreferrer">Bluesky API documentation</a>.</p>
       {error && <p role="alert" className="mt-4 text-sm">{error}</p>}
       {searched && !loading && results.length > 0 && (
         <div className="mt-6 grid gap-6 border-t border-line pt-5 md:grid-cols-2">
@@ -256,6 +256,11 @@ export default function ResearchSweep({
                   {result.evidence.map((item) => (
                     <li key={item.id} className="py-3">
                       <a className="font-medium underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
+                      {item.transientPreview && (
+                        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6" lang={item.language === "not provided" ? undefined : item.language}>
+                          {item.transientPreview}
+                        </p>
+                      )}
                       <p className="mt-1 text-xs text-muted">
                         {item.source} · {item.evidenceClass} · {item.language} · {item.timeLabel}: {new Date(item.timeValue).toLocaleString()}
                         {item.context ? ` · ${item.context}` : ""}

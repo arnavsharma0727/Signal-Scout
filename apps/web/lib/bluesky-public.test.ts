@@ -4,7 +4,7 @@ import { searchBlueskyPosts } from "./bluesky-public";
 const NOW = Date.parse("2026-10-02T12:00:00Z");
 
 describe("searchBlueskyPosts", () => {
-  it("uses public search and returns attributed citations without post text", async () => {
+  it("uses public search and returns an ephemeral preview with an attributed citation", async () => {
     const fetcher = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({ posts: [{
       uri: "at://did:plc:abc/app.bsky.feed.post/xyz",
       record: { text: "private transient body", createdAt: new Date(NOW - 1000).toISOString(), langs: ["en"] },
@@ -21,8 +21,9 @@ describe("searchBlueskyPosts", () => {
       authorHandle: "reader.example",
       publishedAt: new Date(NOW - 1000).toISOString(),
       language: "en",
+      transientPreview: "private transient body",
     }]);
-    expect(JSON.stringify(results)).not.toContain("private transient body");
+    expect(JSON.stringify(results)).toContain("private transient body");
   });
 
   it("excludes stale and malformed records and rejects oversized queries", async () => {

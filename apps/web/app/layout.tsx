@@ -20,7 +20,7 @@ export default async function RootLayout({
       <body>
         {children}
         <footer className="border-t border-line bg-white">
-          <div className="shell flex flex-col gap-4 py-6 text-xs text-muted md:flex-row md:items-center md:justify-between">
+          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-6 py-6 text-xs text-muted max-[639px]:px-[18px] md:flex-row md:items-center md:justify-between">
             <p>For research and information only; not investment advice.</p>
             <div className="flex flex-wrap items-center gap-5">
               <form

@@ -18,7 +18,15 @@ export type ResearchEvidence = {
   /** Assigned only by reviewed source constructors; never infer independence from labels. */
   sourceOperatorKey?: string;
   sourceOperatorLabel?: string;
+  /** Ephemeral source preview for in-browser review; strip before adding a citation to a brief. */
+  transientPreview?: string;
 };
+
+export function citationWithoutTransientContent(item: ResearchEvidence): ResearchEvidence {
+  const citation = { ...item };
+  delete citation.transientPreview;
+  return citation;
+}
 
 export type ResearchBriefDraft = {
   topic: string;

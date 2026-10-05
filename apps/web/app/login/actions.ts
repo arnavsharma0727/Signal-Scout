@@ -3,20 +3,20 @@
 import { redirect } from 'next/navigation';
 import { authConfigured, authServerClient } from '../../lib/supabase-auth-server';
 
-export async function requestSignInLink(formData: FormData) {
+export async function requestGitHubSignIn(formData: FormData) {
   if (!authConfigured()) redirect('/login?error=disabled');
-  const email = String(formData.get('email') ?? '').trim().toLowerCase();
-  if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) redirect('/login?error=email');
   const supabase = await authServerClient();
-  if (!supabase) redirect('/login?error=disabled');
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appUrl) redirect('/login?error=disabled');
+  if (!supabase || !appUrl) redirect('/login?error=disabled');
   const requestedNext = String(formData.get('next') ?? '');
   const next = requestedNext === '/briefs' ? '/briefs' : '/watchlists';
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: `${appUrl.replace(/\/$/, '')}/auth/callback?next=${encodeURIComponent(next)}` },
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      scopes: 'read:user user:email',
+      redirectTo: `${appUrl.replace(/\/$/, '')}/auth/callback?next=${encodeURIComponent(next)}`,
+    },
   });
-  if (error) redirect('/login?error=send');
-  redirect('/login?sent=1');
+  if (error || !data.url) redirect('/login?error=oauth');
+  redirect(data.url);
 }
