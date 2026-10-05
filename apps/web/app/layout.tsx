@@ -47,7 +47,10 @@ export default async function RootLayout({
                   Stored timestamps remain in UTC.
                 </span>
               </form>
-              <nav aria-label="Footer" className="flex gap-5">
+              <nav aria-label="Product information" className="flex flex-wrap gap-x-5 gap-y-2">
+                <Link href="/candidates">Signal review</Link>
+                <Link href="/sources">Sources</Link>
+                <Link href="/methodology">Method</Link>
                 <Link href="/about">About</Link>
                 <Link href="/privacy">Privacy</Link>
                 <Link href="/contact">Contact</Link>

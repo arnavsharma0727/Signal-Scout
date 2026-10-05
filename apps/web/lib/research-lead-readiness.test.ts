@@ -1,0 +1,44 @@
+import { describe, expect, it } from "vitest";
+import { assessResearchLeadReadiness, type ResearchEvidence } from "./research-brief";
+
+const now = Date.parse("2026-10-05T12:00:00Z");
+const evidence: ResearchEvidence[] = [
+  { id: "social", title: "Discussion source", url: "https://bsky.app/profile/a.example/post/1", source: "Bluesky", evidenceClass: "social discussion", language: "en", timeLabel: "Published", timeValue: new Date(now - 3600000).toISOString(), researcherAssessment: "supports", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky" },
+  { id: "news", title: "Reporting source", url: "https://globalvoices.org/story/1", source: "Global Voices", evidenceClass: "news coverage", language: "en", timeLabel: "Published", timeValue: new Date(now - 7200000).toISOString(), researcherAssessment: "contradicts", sourceOperatorKey: "global-voices", sourceOperatorLabel: "Global Voices" },
+  { id: "analysis", title: "Analysis source", url: "https://theconversation.com/story/1", source: "The Conversation", evidenceClass: "expert analysis", language: "en", timeLabel: "Published", timeValue: new Date(now - 10800000).toISOString(), researcherAssessment: "context", sourceOperatorKey: "the-conversation", sourceOperatorLabel: "The Conversation" },
+];
+
+describe("research lead readiness", () => {
+  const complete = {
+    topic: "A concrete international policy change",
+    workingThesis: "A testable explanation based on selected evidence.",
+    alternatives: "The discussion may reflect a scheduled announcement rather than a lasting shift.",
+    disconfirmingEvidence: "A broader independent sample returning to baseline would change my view.",
+    evidence,
+    asOf: now,
+  };
+
+  it("requires the full human-review checklist and at least two reviewed operators", () => {
+    const result = assessResearchLeadReadiness(complete);
+    expect(result.readyForHumanReview).toBe(true);
+    expect(result.reviewedOperators).toEqual(["Bluesky", "Global Voices", "The Conversation"]);
+  });
+
+  it("does not accept multiple items from one operator as independent evidence", () => {
+    const oneOperator = evidence.map((item) => ({ ...item, sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky" }));
+    const result = assessResearchLeadReadiness({ ...complete, evidence: oneOperator });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label === "At least two reviewed source operators")?.passed).toBe(false);
+  });
+
+  it("rejects stale, future-dated, undated, and one-sided evidence", () => {
+    const incomplete = [
+      { ...evidence[0], timeValue: new Date(now - 31 * 86400000).toISOString() },
+      { ...evidence[1], timeValue: new Date(now + 3600000).toISOString() },
+      { ...evidence[2], timeValue: "not-a-date" },
+    ];
+    const result = assessResearchLeadReadiness({ ...complete, evidence: incomplete });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label === "At least three recent, dated citations")?.passed).toBe(false);
+  });
+});

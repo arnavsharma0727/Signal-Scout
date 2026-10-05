@@ -29,6 +29,41 @@ export type ResearchBriefDraft = {
   exportedAt: string;
 };
 
+export type ResearchLeadReadiness = {
+  readyForHumanReview: boolean;
+  checks: Array<{ label: string; passed: boolean; detail: string }>;
+  reviewedOperators: string[];
+};
+
+/** A strict local checklist for a researcher-authored dossier, never an automated finding. */
+export function assessResearchLeadReadiness(input: {
+  topic: string;
+  workingThesis: string;
+  alternatives: string;
+  disconfirmingEvidence: string;
+  evidence: ResearchEvidence[];
+  asOf?: number;
+}): ResearchLeadReadiness {
+  const now = input.asOf ?? Date.now();
+  const recentEvidence = input.evidence.filter((item) => {
+    const published = Date.parse(item.timeValue);
+    return Number.isFinite(published) && published <= now && now - published <= 30 * 86400000;
+  });
+  const operators = [...new Set(recentEvidence.flatMap((item) =>
+    item.sourceOperatorKey && item.sourceOperatorLabel ? [item.sourceOperatorLabel] : []))].sort();
+  const classes = new Set(recentEvidence.map((item) => item.evidenceClass));
+  const assessments = new Set(recentEvidence.map((item) => item.researcherAssessment));
+  const checks = [
+    { label: "Specific topic and working thesis", passed: Boolean(input.topic.trim() && input.workingThesis.trim()), detail: "Write the question being investigated and a tentative explanation." },
+    { label: "At least three recent, dated citations", passed: recentEvidence.length >= 3, detail: `${recentEvidence.length} selected citations are dated within the last 30 days.` },
+    { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? operators.join(" · ") : "No reviewed source operator is represented yet." },
+    { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
+    { label: "Supporting and contradicting evidence reviewed", passed: assessments.has("supports") && assessments.has("contradicts"), detail: "Mark at least one citation as supporting and another as contradicting the thesis." },
+    { label: "Alternative explanation and disconfirmation test", passed: Boolean(input.alternatives.trim() && input.disconfirmingEvidence.trim()), detail: "Record another plausible explanation and what observation would change your mind." },
+  ];
+  return { readyForHumanReview: checks.every((check) => check.passed), checks, reviewedOperators: operators };
+}
+
 export type EvidenceCoverage = {
   itemCount: number;
   sourceLabels: string[];
@@ -96,6 +131,14 @@ export function topicFromFragment(hash: string): string {
 /** Build a citation-first handoff; never scores evidence or invents a conclusion. */
 export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
   const coverage = summarizeEvidenceCoverage(draft.evidence);
+  const readiness = assessResearchLeadReadiness({
+    topic: draft.topic,
+    workingThesis: draft.workingThesis,
+    alternatives: draft.alternatives,
+    disconfirmingEvidence: draft.disconfirmingEvidence,
+    evidence: draft.evidence,
+    asOf: Date.parse(draft.exportedAt),
+  });
   const lines = [
     "# Signal Scout research brief",
     "",
@@ -127,6 +170,12 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     `- Publication-time span: ${coverage.earliest && coverage.latest ? `${coverage.earliest} to ${coverage.latest}` : "Unavailable"}`,
     "",
     "> Coverage is descriptive. A source label, language, item, or domain is not necessarily an independent publisher or population sample.",
+    "",
+    "## Evidence qualification checklist",
+    "",
+    `- Status: ${readiness.readyForHumanReview ? "Checklist met; ready for human review only" : "Not ready for lead review"}`,
+    ...readiness.checks.map((check) => `- [${check.passed ? "x" : " "}] ${check.label}: ${check.detail}`),
+    "- This checklist does not confirm a lead, topical relevance, source independence beyond reviewed operator labels, or investment implications.",
     "",
     `## Selected evidence (${draft.evidence.length} items)`,
     "",

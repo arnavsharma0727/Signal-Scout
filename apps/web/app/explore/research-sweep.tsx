@@ -17,13 +17,15 @@ export default function ResearchSweep({
   initialTopic,
   onAdd,
   selectedIds,
+  onSearchTopic,
 }: {
   initialTopic: string;
   onAdd: (item: ResearchEvidence) => void;
   selectedIds: ReadonlySet<string>;
+  onSearchTopic: (topic: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [gdelt, setGdelt] = useState(true);
+  const [gdelt, setGdelt] = useState(false);
   const [stackExchangeSites, setStackExchangeSites] = useState<string[]>([DISCUSSION_COMMUNITIES[0].site]);
   const [stackExchangeTerms, setStackExchangeTerms] = useState<Record<string, string>>({});
   const [lemmy, setLemmy] = useState(false);
@@ -49,6 +51,7 @@ export default function ResearchSweep({
     setLoading(true);
     setSearched(true);
     setError("");
+    onSearchTopic(query.trim());
     try {
       setResults(await runResearchSweep(query, {
         gdelt,
@@ -76,7 +79,7 @@ export default function ResearchSweep({
       <div className="eyebrow">Live, browser-only source sweep</div>
       <h2 id="research-sweep-title" className="mt-2 text-xl font-semibold">Search one topic across selected sources</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Searches go directly from this browser to each selected public API. For Stack Exchange, enter an equivalent phrase separately for each language; Signal Scout does not auto-translate. Result sets keep their own window, query, count, and limitations—counts are not comparable audience measures and are never pooled or stored. Select citations one by one for your brief.
+        Searches go directly from this browser to public sources, except GDELT, which uses a first-party no-store bridge because its API blocks browser cross-origin calls. For Stack Exchange, enter an equivalent phrase separately for each language; Signal Scout does not auto-translate. Result sets keep their own window, query, count, and limitations—counts are not comparable audience measures and are never pooled or stored. Select citations one by one for your brief.
       </p>
       <form onSubmit={submit} className="mt-5 grid gap-4">
         <label className="block text-sm font-medium">
@@ -98,7 +101,7 @@ export default function ResearchSweep({
           </label>
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={gdelt} onChange={(event) => setGdelt(event.target.checked)} />
-            <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · last 7 days · up to 25 results</span></span>
+            <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · optional · can be slow or rate-limited · up to 25 results</span></span>
           </label>
           <fieldset className="grid gap-2 border-y border-line py-3 text-sm leading-5">
             <legend className="font-medium">Stack Exchange · choose up to four communities</legend>

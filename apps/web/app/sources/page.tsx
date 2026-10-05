@@ -77,7 +77,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "Visitor-triggered direct search of the last seven days in GDELT's multilingual index, capped at 25 results, with optional publisher-outlet country and original-language filters. Country describes the outlet, not its audience. Headlines and source links stay in the browser; GDELT requires citation and allows free use, but index coverage is incomplete and headlines remain publisher material. Not forum discussion or independent-source corroboration.",
+        "Optional visitor-triggered search of the last seven days in GDELT's multilingual index, capped at 25 results, through a first-party no-store bridge. Searches are not persisted; GDELT may be slow or rate-limited. Publisher country describes the outlet, not its audience. Headlines remain publisher material; this is news discovery, not forum discussion or independent-source corroboration.",
     },
     {
       name: "RSS / Atom",
@@ -183,20 +183,21 @@ export default async function Sources() {
     {
       name: "GDELT news",
       key: "gdelt",
-      enabled: process.env.GDELT_ENABLED === "true",
-      detail:
-        process.env.GDELT_ENABLED === "true"
-          ? "One global query per daily ingestion, capped at 50 results and paced to GDELT’s five-second guidance. This is news discovery metadata, not forum discussion; reuse is cited to the GDELT Project."
-          : "Disabled after HTTP 429 rate limiting.",
+      enabled: false,
+      onDemand: true,
+      referenceUrl: "https://www.gdeltproject.org/",
+      referenceLabel: "GDELT Project",
+      detail: "Optional, visitor-triggered search through a first-party no-store request bridge. Up to 25 indexed headlines from the last seven days; no scheduled ingestion or query/result persistence. A recent live check received HTTP 429 and timed out; results may be unavailable or delayed. Headlines remain publisher material; outlet country describes the publisher, not the audience. This is news discovery, not public discussion or an independent-source count.",
     },
     {
-      name: "Bluesky public posts",
+      name: "Bluesky · transient public search",
       key: "bluesky",
-      enabled: process.env.BLUESKY_ENABLED === "true",
+      enabled: false,
+      onDemand: true,
+      referenceUrl: "https://docs.bsky.app/docs/api/app-bsky-feed-get-feed",
+      referenceLabel: "Bluesky public API documentation",
       detail:
-        process.env.BLUESKY_ENABLED === "true"
-          ? "The documented public AppView endpoint is configured, but requests have returned HTTP 403. It remains off pending authorized access, reuse rights, and deletion/retention review."
-          : "Disabled after the documented public AppView endpoint returned HTTP 403; no access-control workaround is used.",
+        "Visitor-triggered query search through the unauthenticated api.bsky.app endpoint; no key or account is used. Up to 25 recent indexed results are shown transiently with a source link, author handle, date, and language. Post text is discarded from the app's citation model; nothing is sent to Signal Scout or persisted. The search index is incomplete, posts remain their authors’ content, and results are not a representative sample. Scheduled ingestion and retention of Bluesky post content are disabled pending a reviewed rights, deletion, and retention basis.",
     },
     {
       name: "YouTube public comments (candidate)",

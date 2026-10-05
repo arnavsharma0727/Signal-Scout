@@ -38,6 +38,19 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
 
   return (
     <>
+      <ResearchSweep initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} onSearchTopic={setInitialTopic} />
+      <LicensedPublisherEvidence items={publisherEvidence} initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+      <details className="panel mt-6 p-5 md:p-6">
+        <summary className="cursor-pointer font-semibold">Specialized source views</summary>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">Optional provider-specific searches for Mastodon hashtag discovery, Lemmy instance comparisons, Stack Exchange question search, Wikimedia talk pages, and GDELT. Each keeps its own query and limitations.</p>
+        <div className="mt-5 space-y-6">
+          <TopicSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+          <GdeltSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+          <MastodonSearch onAdd={addEvidence} selectedIds={selectedIds} />
+          <LemmySearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+          <WikimediaTalkSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
+        </div>
+      </details>
       <ResearchBrief
         saveEnabled={saveEnabled}
         authAvailable={authAvailable}
@@ -51,16 +64,6 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
         onRemove={removeEvidence}
         onClear={() => setEvidence([])}
       />
-      <ResearchSweep initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
-      <LicensedPublisherEvidence items={publisherEvidence} initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
-      <div className="mt-8 border-t border-line pt-5 text-sm text-muted">
-        Review a result’s original source, then explicitly add its citation to the brief.
-      </div>
-      <TopicSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
-      <GdeltSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
-      <MastodonSearch onAdd={addEvidence} selectedIds={selectedIds} />
-      <LemmySearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
-      <WikimediaTalkSearch initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
     </>
   );
 }

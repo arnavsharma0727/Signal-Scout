@@ -1,5 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { searchGdeltNews } from "./gdelt-public";
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("searchGdeltNews", () => {
   it("makes one bounded seven-day request and returns only recent HTTPS-linked articles", async () => {
@@ -40,5 +42,23 @@ describe("searchGdeltNews", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response("", { status: 429 }));
     await expect(searchGdeltNews("tariffs", fetchMock)).rejects.toThrow("rate-limiting");
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("uses a bounded first-party request in the browser instead of a blocked cross-origin call", async () => {
+    vi.stubGlobal("window", {});
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ articles: [{
+      title: "Recent policy update",
+      url: "https://publisher.example/story",
+      seenAt: "2026-09-30T12:00:00.000Z",
+      domain: "publisher.example",
+      language: "English",
+      sourceCountry: "United States",
+    }] }), { status: 200 }));
+    await searchGdeltNews("semiconductor export controls", fetchMock, Date.parse("2026-10-01T12:00:00Z"));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/research/gdelt");
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      query: "semiconductor export controls", outletCountry: "", outletLanguage: "",
+    });
   });
 });

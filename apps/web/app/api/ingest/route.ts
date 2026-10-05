@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { serverSupabase } from "../../../lib/server-supabase";
-import { GDELTConnector } from "../../../lib/connectors/gdelt";
 import { RSSConnector } from "../../../lib/connectors/rss";
-import { BlueskyConnector } from "../../../lib/connectors/bluesky";
 import { HackerNewsConnector } from "../../../lib/connectors/hackernews";
 import { SECEdgarConnector } from "../../../lib/connectors/sec";
 import { MOISPressReleaseConnector } from "../../../lib/connectors/mois";
@@ -69,8 +67,6 @@ async function runIngestion() {
   if (companyError)
     return NextResponse.json({ error: companyError.message }, { status: 500 });
   const connectors: Connector[] = [];
-  if (process.env.BLUESKY_ENABLED === "true")
-    connectors.push(new BlueskyConnector());
   if (isHackerNewsIngestionEnabled())
     connectors.push(new HackerNewsConnector());
   if (process.env.SEC_USER_AGENT) connectors.push(new SECEdgarConnector());
@@ -95,14 +91,6 @@ async function runIngestion() {
         market.market_code === "US"
       )
         marketConnectors.push(new StackExchangeConnector());
-      // GDELT is a global news index. Run one global query per scheduled
-      // ingestion rather than multiplying requests across profiles/markets.
-      if (
-        process.env.GDELT_ENABLED === "true" &&
-        company.ticker === "MARKET-TALK" &&
-        market.market_code === "US"
-      )
-        marketConnectors.push(new GDELTConnector());
       if (
         process.env.MOIS_PRESS_RELEASES_ENABLED === "true" &&
         company.ticker === "MARKET-TALK" &&
@@ -229,8 +217,6 @@ async function runIngestion() {
               end,
               languageCode: "en",
             });
-          else if (connector instanceof GDELTConnector)
-            result = await connector.fetchDocuments({ query, start, end });
           else
             result = await connector.fetchDocuments({
               query,

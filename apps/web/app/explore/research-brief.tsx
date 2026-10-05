@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  assessResearchLeadReadiness,
   createResearchBriefMarkdown,
   ResearchEvidence,
   ResearchEvidenceClass,
@@ -49,6 +50,9 @@ export default function ResearchBrief({
     count: evidence.filter((item) => item.evidenceClass === evidenceClass).length,
   })), [evidence]);
   const coverage = useMemo(() => summarizeEvidenceCoverage(evidence), [evidence]);
+  const readiness = useMemo(() => assessResearchLeadReadiness({
+    topic, workingThesis, alternatives, disconfirmingEvidence, evidence,
+  }), [topic, workingThesis, alternatives, disconfirmingEvidence, evidence]);
   const privateLinks = useMemo(() => preparePrivateEvidenceLinks(evidence.map((item) => ({
     url: item.url,
     language: item.language,
@@ -200,6 +204,20 @@ export default function ResearchBrief({
         <p className="mt-2 text-xs leading-5 text-muted">
           Descriptive inventory only: source labels, languages, and item counts do not establish independent ownership, representative reach, or a market-level signal.
         </p>
+      </div>
+
+      <div className="mt-5 border-t border-line pt-4" aria-live="polite">
+        <div className="eyebrow">Evidence qualification</div>
+        <h3 className="mt-2 font-semibold">{readiness.readyForHumanReview ? "Checklist met — ready for human review" : "Not yet ready for lead review"}</h3>
+        <p className="mt-1 text-xs leading-5 text-muted">This local checklist does not confirm a lead or validate that selected sources support the same claim. Inspect and judge each original source. Nothing is published to the public signal queue.</p>
+        <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          {readiness.checks.map((check) => (
+            <li key={check.label} className="flex items-start gap-2 text-xs leading-5">
+              <span aria-label={check.passed ? "Complete" : "Incomplete"} className="mono w-4 shrink-0 font-semibold">{check.passed ? "✓" : "—"}</span>
+              <span><strong>{check.label}</strong><span className="block text-muted">{check.detail}</span></span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">

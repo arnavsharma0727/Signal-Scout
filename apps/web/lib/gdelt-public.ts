@@ -17,6 +17,7 @@ type GdeltResponse = {
     sourcecountry?: unknown;
   }>;
 };
+type RawGdeltArticle = NonNullable<GdeltResponse["articles"]>[number];
 
 const API = "https://api.gdeltproject.org/api/v2/doc/doc";
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
@@ -76,31 +77,43 @@ export async function searchGdeltNews(
     sort: "DateDesc",
     timespan: "7d",
   });
-  const response = await fetcher(API + "?" + params, {
-    headers: { accept: "application/json" },
-  });
+  const response = typeof window === "undefined"
+    ? await fetcher(API + "?" + params, { headers: { accept: "application/json" } })
+    : await fetcher("/api/research/gdelt", {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify({ query, outletCountry, outletLanguage }),
+    });
   if (response.status === 429) {
     throw new Error("GDELT is rate-limiting requests. Wait at least five seconds before trying again.");
   }
   if (!response.ok) throw new Error("The global news index is temporarily unavailable.");
 
-  const body = (await response.json()) as GdeltResponse;
-  return (Array.isArray(body.articles) ? body.articles : []).flatMap((article) => {
-    if (
-      typeof article.title !== "string" || !article.title.trim() ||
-      typeof article.url !== "string" || typeof article.seendate !== "string"
-    ) return [];
-    const seenAt = parseGdeltDate(article.seendate);
-    const url = safeHttpsUrl(article.url);
+  const body = (await response.json()) as { articles?: unknown[] };
+  return normalizeGdeltArticles(Array.isArray(body.articles) ? body.articles : [], now);
+}
+
+function normalizeGdeltArticles(values: unknown[], now: number): GdeltPublicArticle[] {
+  return values.flatMap((value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return [];
+    const row = value as Record<string, unknown>;
+    const title = typeof row.title === "string" ? row.title.trim() : "";
+    const rawUrl = typeof row.url === "string" ? row.url : "";
+    const seenAt = typeof row.seenAt === "string"
+      ? row.seenAt
+      : typeof row.seendate === "string" ? parseGdeltDate(row.seendate) : "";
+    const url = safeHttpsUrl(rawUrl);
     const published = Date.parse(seenAt);
-    if (!url || !Number.isFinite(published) || published > now || published < now - MAX_AGE_MS) return [];
+    if (!title || !url || !Number.isFinite(published) || published > now || published < now - MAX_AGE_MS) return [];
     return [{
-      title: article.title.trim(),
+      title,
       url,
       seenAt,
-      domain: typeof article.domain === "string" ? article.domain : new URL(url).hostname,
-      language: typeof article.language === "string" ? article.language : "not reported",
-      sourceCountry: typeof article.sourcecountry === "string" ? article.sourcecountry : "not reported",
+      domain: typeof row.domain === "string" ? row.domain : new URL(url).hostname,
+      language: typeof row.language === "string" ? row.language : "not reported",
+      sourceCountry: typeof row.sourceCountry === "string"
+        ? row.sourceCountry
+        : typeof row.sourcecountry === "string" ? row.sourcecountry : "not reported",
     }];
   });
 }

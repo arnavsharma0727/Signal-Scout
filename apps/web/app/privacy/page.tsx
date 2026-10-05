@@ -19,7 +19,7 @@ export default function Privacy() {
           How this prototype handles data
         </h1>
         <p className="mt-3 text-sm text-muted">
-          Last updated: September 30, 2026
+          Last updated: October 5, 2026
         </p>
         <section className="mt-8 space-y-6 leading-7 text-muted">
           <p>
@@ -84,10 +84,19 @@ export default function Privacy() {
           </p>
           <p>
             Explore can also query GDELT’s public multilingual news index
-            directly from the browser. GDELT receives the search phrase and
-            optional publisher-country/language filters. The result headlines
-            and links are displayed transiently; selected citations are not
-            sent to Signal Scout’s server.
+            through a first-party, no-store search endpoint because the
+            provider blocks browser cross-origin requests. The topic and
+            optional publisher-country/language filters pass through Vercel to
+            GDELT; Signal Scout does not persist them or the results. Headlines
+            and links are displayed transiently.
+          </p>
+          <p>
+            Explore can query Bluesky’s public search API from the browser
+            without an account or API key. The query is sent to api.bsky.app,
+            not Signal Scout. The app displays only a public post link, author
+            handle, date, and language; post text is discarded from the
+            citation model, and results are not persisted. Search coverage is
+            incomplete and is not representative of public opinion.
           </p>
           <p>
             The optional Mastodon trend-discovery action requests public tag
