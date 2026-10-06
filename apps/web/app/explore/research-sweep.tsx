@@ -44,6 +44,7 @@ export default function ResearchSweep({
   const [mastodonInstance, setMastodonInstance] = useState<MastodonInstance>("mastodon.social");
   const [wikimediaLanguage, setWikimediaLanguage] = useState("");
   const [results, setResults] = useState<ResearchSweepSourceResult[]>([]);
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(() => new Set());
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -73,6 +74,7 @@ export default function ResearchSweep({
     if (loading) return;
     setLoading(true);
     setSearched(true);
+    setExpandedSources(new Set());
     setError("");
     onSearchTopic(query.trim());
     try {
@@ -331,8 +333,11 @@ export default function ResearchSweep({
       {error && <p role="alert" className="mt-4 text-sm">{error}</p>}
       {searched && !loading && results.length > 0 && (
         <div className="mt-6 grid gap-6 border-t border-line pt-5 md:grid-cols-2">
-          {results.map((result) => (
-            <section key={result.key} aria-label={result.label}>
+          {results.map((result) => {
+            const groups = groupRepeatedPostText(result.evidence);
+            const expanded = expandedSources.has(result.key);
+            const visibleGroups = expanded ? groups : groups.slice(0, 5);
+            return <section key={result.key} aria-label={result.label}>
               <div className="flex flex-wrap items-baseline justify-between gap-2">
                 <h3 className="font-semibold">{result.label}</h3>
                 <span className="text-xs text-muted">
@@ -360,7 +365,7 @@ export default function ResearchSweep({
                   </>;
                 })()}
                 <ul className="mt-2 divide-y divide-line border-y border-line">
-                  {groupRepeatedPostText(result.evidence).map((group) => group.length === 1 ? (
+                  {visibleGroups.map((group) => group.length === 1 ? (
                     <li key={group[0].id} className="py-3">
                       <a className="font-medium underline underline-offset-2" href={group[0].url} target="_blank" rel="noreferrer">{group[0].title}</a>
                       {group[0].transientPreview && (
@@ -403,12 +408,27 @@ export default function ResearchSweep({
                     </li>
                   ))}
                 </ul>
+                {groups.length > 5 && (
+                  <button
+                    className="mt-3 text-xs font-medium underline underline-offset-2"
+                    type="button"
+                    aria-expanded={expanded}
+                    onClick={() => setExpandedSources((current) => {
+                      const next = new Set(current);
+                      if (next.has(result.key)) next.delete(result.key);
+                      else next.add(result.key);
+                      return next;
+                    })}
+                  >
+                    {expanded ? "Show fewer results" : `Show all ${result.evidence.length} results`}
+                  </button>
+                )}
                 </>
               ) : (
                 <p className="mt-2 text-sm text-muted">No eligible results in this source’s selected query/window. This is not evidence that the topic is absent elsewhere.</p>
               )}
-            </section>
-          ))}
+            </section>;
+          })}
         </div>
       )}
     </section>
