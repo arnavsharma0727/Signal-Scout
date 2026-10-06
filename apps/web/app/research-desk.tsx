@@ -45,10 +45,10 @@ export default async function ResearchDesk({ saveStatus = "" }: { saveStatus?: s
 
         <section className="mt-10 flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-sm font-semibold">Signal review</h2>
-            <p className="mt-1 text-sm leading-6 text-muted">Review source-backed observations and the evidence thresholds before treating anything as a lead.</p>
+            <h2 className="text-sm font-semibold">Evidence-qualified leads</h2>
+            <p className="mt-1 text-sm leading-6 text-muted">Only reviewed leads that clear the evidence and source checks appear here. The queue stays empty when none qualify.</p>
           </div>
-          <Link className="btn shrink-0" href="/candidates">Open signal review</Link>
+          <Link className="btn shrink-0" href="/candidates">View lead queue</Link>
         </section>
       </main>
     </div>

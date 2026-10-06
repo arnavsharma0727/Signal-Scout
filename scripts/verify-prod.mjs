@@ -72,7 +72,7 @@ try {
 try {
   const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Find a conversation. Follow its evidence.') && page.includes('Search one topic across selected sources') && !page.includes('Hacker News comment')) pass('public research desk withholds uncleared source material','focused topic-to-brief workflow renders without uncleared source content');
+  if (response.ok && page.includes('Find a conversation. Follow its evidence.') && page.includes('Search one topic across selected sources') && page.includes('Evidence-qualified leads') && page.includes('View lead queue') && !page.includes('Hacker News comment')) pass('public research desk withholds uncleared source material','focused topic-to-brief workflow links directly to the evidence-qualified lead queue without uncleared source content');
   else fail('public research desk withholds uncleared source material',`HTTP ${response.status}; focused workflow missing or uncleared source material may be rendered`);
   if (response.ok && page.includes('Original sources checked') && page.includes('original-source attestations') && page.includes('Download research brief')) pass('local lead dossier requires source-review attestation','the brief exposes the original-source check and distinguishes incomplete research briefs from completed dossiers');
   else fail('local lead dossier requires source-review attestation',`HTTP ${response.status}; original-source review gate or local brief state was not rendered`);
