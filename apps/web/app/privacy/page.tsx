@@ -121,12 +121,13 @@ export default function Privacy() {
             Selected citation metadata is autosaved only in this browser; it
             is not synced unless the visitor explicitly saves a brief. On
             account save, Signal Scout
-            receives the visitor-written topic, thesis, alternatives, and
-            disconfirmation notes, plus link-only citations from a narrow
-            reviewed source allowlist. The server independently checks every
-            URL and strips tracking parameters; it does not save source titles,
-            excerpts, social post links, post text, author handles, or search
-            queries. The account owner can view and delete their saved briefs;
+            receives the visitor-written topic, thesis, alternatives,
+            disconfirmation notes, source-specific paraphrase notes, plus
+            link-only citations from a narrow reviewed source allowlist. The
+            server independently checks every URL and strips tracking
+            parameters; it does not save source titles, excerpts, social post
+            links, post text, author handles, or search queries. The account
+            owner can view and delete their saved briefs;
             row-level database policies prevent other users from reading them.
             The brief is not publicly shareable and is not an automated lead.
             Copying or downloading Markdown remains a visitor-initiated action

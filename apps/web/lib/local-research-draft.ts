@@ -46,6 +46,7 @@ const evidenceSchema = z.object({
   timeLabel: z.string().max(100),
   timeValue: z.string().max(100),
   context: z.string().max(1000).optional(),
+  researcherNote: z.string().max(1000).optional(),
   attribution: z.string().max(500).optional(),
   attributionUrl: httpsUrlSchema.optional(),
   licenseName: z.string().max(200).optional(),

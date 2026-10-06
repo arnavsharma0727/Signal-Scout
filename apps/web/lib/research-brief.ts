@@ -10,6 +10,8 @@ export type ResearchEvidence = {
   timeLabel: string;
   timeValue: string;
   context?: string;
+  /** Researcher-authored paraphrase of what this source contributes. */
+  researcherNote?: string;
   attribution?: string;
   attributionUrl?: string;
   licenseName?: string;
@@ -60,6 +62,8 @@ export function assessResearchLeadReadiness(input: {
   const relevanceReviewed = recentEvidence.every((item) => item.researcherAssessment !== undefined);
   const relevantEvidence = recentEvidence.filter((item) =>
     item.researcherAssessment !== undefined && item.researcherAssessment !== "not relevant");
+  const documentedRelevantEvidence = relevantEvidence.filter((item) =>
+    typeof item.researcherNote === "string" && item.researcherNote.trim().length >= 20);
   const operatorLabels = new Map<string, Set<string>>();
   for (const item of relevantEvidence) {
     if (!item.sourceOperatorKey || !item.sourceOperatorLabel) continue;
@@ -75,6 +79,7 @@ export function assessResearchLeadReadiness(input: {
     { label: "Specific topic and working thesis", passed: Boolean(input.topic.trim() && input.workingThesis.trim()), detail: "Write the question being investigated and a tentative explanation." },
     { label: "Relevance reviewed for every recent citation", passed: relevanceReviewed, detail: `${recentEvidence.filter((item) => !item.researcherAssessment).length} recent citations remain unassessed; mark unrelated items “Not relevant.”` },
     { label: "At least three recent, relevant, dated citations", passed: relevantEvidence.length >= 3, detail: `${relevantEvidence.length} recent citations are marked relevant to the topic; “Not relevant” items are excluded.` },
+    { label: "Source-specific evidence documented", passed: relevantEvidence.length > 0 && documentedRelevantEvidence.length === relevantEvidence.length, detail: `${documentedRelevantEvidence.length}/${relevantEvidence.length} relevant citation(s) have a source-specific paraphrase of at least 20 characters.` },
     { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? `${operators.length} reviewed operator(s): ${operatorDisplay.join(" · ")}` : "No reviewed source operator is represented yet." },
     { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
     { label: "Supporting and contradicting evidence reviewed", passed: assessments.has("supports") && assessments.has("contradicts"), detail: "Mark at least one citation as supporting and another as contradicting the thesis." },
@@ -284,7 +289,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
       item.licenseName && item.licenseUrl ? `[${escapeMarkdownLabel(item.licenseName)}](${safeMarkdownUrl(item.licenseUrl)})` : "",
     ].filter(Boolean).join("; ");
     lines.push(
-      `- [${escapeMarkdownLabel(item.title) || "Open source item"}](${safeMarkdownUrl(item.url)}) — ${cleanText(item.evidenceClass)}; ${escapeMarkdownLabel(item.source)}; ${escapeMarkdownLabel(item.language)}; ${escapeMarkdownLabel(item.timeLabel)}: ${escapeMarkdownLabel(item.timeValue)}${item.researcherAssessment ? `; researcher assessment: ${item.researcherAssessment}` : ""}${attribution ? `; ${attribution}` : ""}`,
+      `- [${escapeMarkdownLabel(item.title) || "Open source item"}](${safeMarkdownUrl(item.url)}) — ${cleanText(item.evidenceClass)}; ${escapeMarkdownLabel(item.source)}; ${escapeMarkdownLabel(item.language)}; ${escapeMarkdownLabel(item.timeLabel)}: ${escapeMarkdownLabel(item.timeValue)}${item.researcherAssessment ? `; researcher assessment: ${item.researcherAssessment}` : ""}${item.researcherNote?.trim() ? `; researcher observation: ${cleanText(item.researcherNote)}` : ""}${attribution ? `; ${attribution}` : ""}`,
     );
   }
 

@@ -29,6 +29,7 @@ export default function ResearchBrief({
   localStorageAvailable,
   onRemove,
   onAssess,
+  onNote,
   onClear,
 }: {
   evidence: ResearchEvidence[];
@@ -38,6 +39,7 @@ export default function ResearchBrief({
   localStorageAvailable: boolean | null;
   onRemove: (id: string) => void;
   onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | "not relevant" | undefined) => void;
+  onNote: (id: string, note: string) => void;
   onClear: () => void;
 }) {
   const [topic, setTopic] = useState("");
@@ -92,6 +94,7 @@ export default function ResearchBrief({
     language: item.language,
     publishedAt: item.timeValue,
     assessment: item.researcherAssessment,
+    researcherNote: item.researcherNote,
   }))), [evidence]);
   const excludedCount = useMemo(() => countExcludedPrivateEvidence(evidence), [evidence]);
   const hasDraftContent = Boolean(
@@ -194,6 +197,17 @@ export default function ResearchBrief({
                     {item.context ? ` · ${item.context}` : ""}
                     {item.attribution ? ` · ${item.attribution}` : ""}
                   </p>
+                  <label className="mt-2 block text-xs leading-5 text-muted">
+                    Source-specific observation · paraphrase what you checked in the original
+                    <textarea
+                      className="mt-1 block min-h-16 w-full resize-y rounded border border-line bg-white px-2 py-1.5 text-sm text-ink outline-none focus:border-ink"
+                      value={item.researcherNote ?? ""}
+                      onChange={(event) => onNote(item.id, event.target.value.slice(0, 1000))}
+                      maxLength={1000}
+                      rows={2}
+                      placeholder="What does this source actually contribute to the thesis? Keep it in your own words."
+                    />
+                  </label>
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <label className="text-xs text-muted">

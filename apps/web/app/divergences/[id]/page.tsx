@@ -4,6 +4,7 @@ import { serverSupabase } from "../../../lib/server-supabase";
 import { hasUnclearedHackerNewsEvidence } from "../../../lib/source-policy";
 import { getDisplayTimeZone } from "../../../lib/display-timezone";
 import { formatTimestamp } from "../../../lib/format-time";
+import { verifiedLeadEvidenceDocumentIds } from "../../../lib/research-lead-qualification";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,10 @@ type Evidence = {
   published_at: string | null;
 };
 type LinkRow = {
+  document_id: string | null;
   relationship_type: string | null;
   source_documents: Evidence | null;
+  sourceObservation?: string;
 };
 type Lead = {
   id: string;
@@ -59,7 +62,7 @@ export default async function DivergenceDetail({
   if (error) return <Unavailable />;
   if (
     !data ||
-    !hasEvidence(data.verified_evidence_json) ||
+    verifiedLeadEvidenceDocumentIds(data.verified_evidence_json) === null ||
     !hasEvidence(data.alternative_explanations_json)
   )
     notFound();
@@ -67,14 +70,28 @@ export default async function DivergenceDetail({
   const { data: linkedData, error: linkedError } = await db
     .from("research_lead_documents")
     .select(
-      "relationship_type,source_documents!inner(id,title_original,excerpt_original,source_url,source_name,source_domain,market_code,source_type,published_at)",
+      "document_id,relationship_type,source_documents!inner(id,title_original,excerpt_original,source_url,source_name,source_domain,market_code,source_type,published_at)",
     )
     .eq("research_lead_id", id);
   if (linkedError) return <Unavailable />;
-  const links = (linkedData ?? []) as unknown as LinkRow[];
+  const evidence = data.verified_evidence_json as Array<{ documentId: string; assessment: string; sourceObservation: string }>;
+  const observationsByDocument = new Map(evidence.map((item) => [item.documentId, item]));
+  const linkedRows = (linkedData ?? []) as unknown as LinkRow[];
+  const linkedDocumentIds = new Set(linkedRows.map(({ document_id }) => document_id).filter((id): id is string => Boolean(id)));
+  if ([...observationsByDocument.keys()].some((documentId) => !linkedDocumentIds.has(documentId))) notFound();
+  const linkedRelationshipMismatch = linkedRows.some((row) => {
+    const expected = row.document_id ? observationsByDocument.get(row.document_id)?.assessment : undefined;
+    return expected === "supports" && isCounter(row.relationship_type) ||
+      expected === "contradicts" && !isCounter(row.relationship_type);
+  });
+  if (linkedRelationshipMismatch) notFound();
+  const links = linkedRows.filter((row) => row.document_id && observationsByDocument.has(row.document_id)).map((row) => ({
+    ...row,
+    sourceObservation: observationsByDocument.get(row.document_id!)?.sourceObservation,
+  }));
   if (
     hasUnclearedHackerNewsEvidence(
-      links.map((row) => row.source_documents?.source_type),
+      linkedRows.map((row) => row.source_documents?.source_type),
     )
   )
     notFound();
@@ -210,6 +227,9 @@ function EvidenceSection({ title, rows, timeZone }: { title: string; rows: LinkR
                   >
                     Published {formatTimestamp(doc.published_at, timeZone)}
                   </time>
+                )}
+                {row.sourceObservation && (
+                  <p className="mt-2 text-sm leading-6 text-muted"><strong className="text-ink">Researcher observation:</strong> {row.sourceObservation}</p>
                 )}
               </li>
             );

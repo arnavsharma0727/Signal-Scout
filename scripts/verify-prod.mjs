@@ -173,7 +173,7 @@ if (!url || !key) {
     else pass('GDELT source health reported','GDELT is visitor-triggered in the current product; no scheduled run is expected');
     try {
       const leads = await rest('research_leads?select=id,independent_source_count,verified_evidence_json,alternative_explanations_json&status=eq.active');
-      const unsupported=leads.data?.filter(x=>!hasEvidence(x.verified_evidence_json)||!hasEvidence(x.alternative_explanations_json)||Number(x.independent_source_count)<2)??[];
+      const unsupported=leads.data?.filter(x=>!verifiedLeadDocumentIds(x.verified_evidence_json)||!hasEvidence(x.alternative_explanations_json)||Number(x.independent_source_count)<2)??[];
       if(unsupported.length===0)pass('no active lead lacks evidence/counter-evidence',`${leads.count??0} active records; no incomplete records`);
       else fail('no active lead lacks evidence/counter-evidence',`${unsupported.length} active records lack required evidence fields`);
       const links=leads.data?.length
@@ -181,8 +181,14 @@ if (!url || !key) {
         : {data:[]};
       const operatorsByLead=new Map();
       const blockedByUnclearedSource=new Set();
+      const linkedDocumentsByLead=new Map();
+      const verifiedDocumentsByLead=new Map((leads.data??[]).map(lead=>[lead.id,verifiedLeadDocumentIds(lead.verified_evidence_json)]));
       for(const link of links.data??[]){
         if(!link.document_id)continue;
+        const linkedDocuments=linkedDocumentsByLead.get(link.research_lead_id)??new Set();
+        linkedDocuments.add(link.document_id);
+        linkedDocumentsByLead.set(link.research_lead_id,linkedDocuments);
+        if(!verifiedDocumentsByLead.get(link.research_lead_id)?.has(link.document_id))continue;
         const docs=Array.isArray(link.source_documents)?link.source_documents:link.source_documents?[link.source_documents]:[];
         for(const document of docs){
           if(document?.source_type==='hacker-news')blockedByUnclearedSource.add(link.research_lead_id);
@@ -193,7 +199,11 @@ if (!url || !key) {
           operatorsByLead.set(link.research_lead_id,operators);
         }
       }
-      const qualified=(leads.data??[]).filter(x=>Number(x.independent_source_count)>=2&&(operatorsByLead.get(x.id)?.size??0)>=2&&!blockedByUnclearedSource.has(x.id)&&hasEvidence(x.verified_evidence_json)&&hasEvidence(x.alternative_explanations_json));
+      const qualified=(leads.data??[]).filter(x=>{
+        const verified=verifiedDocumentsByLead.get(x.id);
+        const linked=linkedDocumentsByLead.get(x.id)??new Set();
+        return verified instanceof Set&&[...verified].every(documentId=>linked.has(documentId))&&Number(x.independent_source_count)>=2&&(operatorsByLead.get(x.id)?.size??0)>=2&&!blockedByUnclearedSource.has(x.id)&&hasEvidence(x.alternative_explanations_json);
+      });
       if(leads.count>0&&qualified.length===leads.count)pass('active leads resolve to multiple reviewed source operators',`${qualified.length} active records link at least two known operators`);
       else if(leads.count>0)fail('active leads resolve to multiple reviewed source operators',`${qualified.length}/${leads.count} active records meet the independent-operator gate`);
       else pass('active leads resolve to multiple reviewed source operators','No active lead exists to qualify; the UI must continue to show none');
@@ -243,4 +253,18 @@ function hasEvidence(value) {
   if(Array.isArray(value))return value.length>0;
   if(value&&typeof value==='object')return Object.keys(value).length>0;
   return typeof value==='string'&&value.trim().length>0;
+}
+
+function verifiedLeadDocumentIds(value) {
+  if(!Array.isArray(value)||value.length<3)return null;
+  const ids=new Set();
+  const assessments=new Set();
+  for(const item of value){
+    if(!item||typeof item!=='object'||Array.isArray(item))return null;
+    const id=typeof item.documentId==='string'?item.documentId.trim():'';
+    if(!id||ids.has(id)||!['supports','contradicts','context'].includes(item.assessment)||typeof item.sourceObservation!=='string'||item.sourceObservation.trim().length<20)return null;
+    ids.add(id);
+    assessments.add(item.assessment);
+  }
+  return assessments.has('supports')&&assessments.has('contradicts')?ids:null;
 }

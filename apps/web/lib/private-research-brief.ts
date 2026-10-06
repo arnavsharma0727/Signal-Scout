@@ -7,6 +7,7 @@ export type SavedEvidenceLink = {
   language: string;
   publishedAt: string | null;
   assessment: ResearchEvidence["researcherAssessment"];
+  researcherNote: string | null;
   licenseUrl: string | null;
 };
 
@@ -70,10 +71,13 @@ export function preparePrivateEvidenceLinks(value: unknown): SavedEvidenceLink[]
     const assessment = ["supports", "contradicts", "context", "not relevant"].includes(String(row.assessment))
       ? row.assessment as ResearchEvidence["researcherAssessment"]
       : undefined;
+    const researcherNote = typeof row.researcherNote === "string" && row.researcherNote.trim().length <= 1000
+      ? row.researcherNote.trim() || null
+      : null;
     const language = typeof row.language === "string" && /^[\p{L}\p{M}\p{N} ._-]{1,32}$/u.test(row.language)
       ? row.language
       : "not provided";
-    result.push({ ...policy, language, publishedAt, assessment });
+    result.push({ ...policy, language, publishedAt, assessment, researcherNote });
   }
   return result;
 }
@@ -84,6 +88,7 @@ export function countExcludedPrivateEvidence(evidence: ResearchEvidence[]) {
     language: item.language,
     publishedAt: item.timeValue,
     assessment: item.researcherAssessment,
+    researcherNote: item.researcherNote,
   })));
   return Math.max(0, evidence.length - eligible.length);
 }

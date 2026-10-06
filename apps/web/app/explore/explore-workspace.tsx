@@ -92,6 +92,9 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
             ? { ...item, researcherAssessment: assessment }
             : item),
         )}
+        onNote={(id, researcherNote) => setEvidence((current) =>
+          current.map((item) => item.id === id ? { ...item, researcherNote } : item),
+        )}
         onRemove={removeEvidence}
         onClear={() => setEvidence([])}
       />

@@ -70,6 +70,7 @@ describe("createResearchBriefMarkdown", () => {
     expect(markdown).toContain("[A licensed question](https://economics.stackexchange.com/questions/1/example)");
     expect(markdown).toContain("By Researcher; CC BY-SA 4.0");
     expect(markdown).toContain("Sample context");
+    expect(markdown).not.toContain("Researcher observation:");
     expect(markdown).toContain("[attribution link](https://economics.stackexchange.com/users/1/researcher)");
     expect(markdown).toContain("[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)");
     expect(markdown).toContain("not an investment recommendation");
@@ -97,6 +98,19 @@ describe("createResearchBriefMarkdown", () => {
     expect(markdown).toContain("researcher assessment: supports");
     expect(markdown).toContain("researcher assessment: contradicts");
     expect(markdown).not.toContain("automated sentiment");
+  });
+
+  it("includes the researcher's source-specific paraphrase in the exported evidence record", () => {
+    const markdown = createResearchBriefMarkdown({
+      topic: "Electricity prices",
+      workingThesis: "A tentative thesis",
+      alternatives: "Separate tariff changes may explain the price move.",
+      disconfirmingEvidence: "A broader matched sample would change my view.",
+      evidence: [{ ...selected, researcherAssessment: "supports", researcherNote: "This source describes a household electricity bill increase." }],
+      exportedAt: "2026-10-01T12:00:00Z",
+    });
+    expect(markdown).toContain("researcher observation: This source describes a household electricity bill increase.");
+    expect(markdown).toContain("Source-specific evidence documented");
   });
 
   it("summarizes language, source labels, evidence classes, and valid date span without calling them independent", () => {

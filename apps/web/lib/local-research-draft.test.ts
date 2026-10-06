@@ -6,6 +6,7 @@ const citation: ResearchEvidence = {
   id: "bsky:post-1", title: "A public post", url: "https://bsky.app/profile/example/post/1",
   source: "Bluesky", evidenceClass: "social discussion", language: "en",
   timeLabel: "Published", timeValue: "2026-10-05T12:00:00.000Z",
+  researcherNote: "The post describes a claimed local cost increase.",
   sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky",
   transientPreview: "This text must never be persisted",
 };

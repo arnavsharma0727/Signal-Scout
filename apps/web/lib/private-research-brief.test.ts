@@ -4,7 +4,7 @@ import { preparePrivateEvidenceLinks, privateCitationPolicy } from "./private-re
 describe("private research brief citation retention", () => {
   it("keeps only links from sources with a reviewed reuse basis and strips tracking", () => {
     const result = preparePrivateEvidenceLinks([
-      { url: "https://economics.stackexchange.com/questions/12/example?utm_source=feed#answer-34", language: "en", publishedAt: "2026-10-01T12:00:00Z", assessment: "supports", title: "Must not persist", attribution: "Private contributor field" },
+      { url: "https://economics.stackexchange.com/questions/12/example?utm_source=feed#answer-34", language: "en", publishedAt: "2026-10-01T12:00:00Z", assessment: "supports", researcherNote: "My paraphrase of the evidence actually cited.", title: "Must not persist", attribution: "Private contributor field" },
       { url: "https://globalvoices.org/2026/10/01/story/?utm_campaign=x", language: "en", assessment: "not relevant" },
       { url: "https://es.globalvoices.org/2026/10/01/historia/?utm_campaign=x", language: "es" },
       { url: "https://forum.typst.app/t/topic/1234?utm_source=x", language: "unassigned" },
@@ -18,6 +18,7 @@ describe("private research brief citation retention", () => {
       host: "economics.stackexchange.com",
       sourceClass: "expert Q&A",
       assessment: "supports",
+      researcherNote: "My paraphrase of the evidence actually cited.",
       licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
     });
     expect(result[2]).toMatchObject({ host: "es.globalvoices.org", licenseUrl: "https://creativecommons.org/licenses/by/3.0/" });

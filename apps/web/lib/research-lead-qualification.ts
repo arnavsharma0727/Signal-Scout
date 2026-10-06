@@ -16,6 +16,27 @@ export type ResearchLeadQualification = {
   alternative_explanations_json: unknown;
 };
 
+/** Strict review evidence shape for a public lead: three distinct linked records,
+ * researcher-written source observations, and both supporting and contradictory
+ * assessments. Nonempty JSON blobs alone are not evidence. */
+export function verifiedLeadEvidenceDocumentIds(value: unknown): Set<string> | null {
+  if (!Array.isArray(value) || value.length < 3) return null;
+  const documentIds = new Set<string>();
+  const assessments = new Set<string>();
+  for (const item of value) {
+    const row = asRecord(item);
+    const documentId = typeof row.documentId === "string" ? row.documentId.trim() : "";
+    const assessment = row.assessment;
+    const observation = typeof row.sourceObservation === "string" ? row.sourceObservation.trim() : "";
+    if (!documentId || documentIds.has(documentId) ||
+        !["supports", "contradicts", "context"].includes(String(assessment)) ||
+        observation.length < 20) return null;
+    documentIds.add(documentId);
+    assessments.add(String(assessment));
+  }
+  return assessments.has("supports") && assessments.has("contradicts") ? documentIds : null;
+}
+
 /** Only reviewed connector→operator mappings count; domains/editions alone do not prove independence. */
 export function knownSourceOperator(source: EvidenceSource): string | null {
   const domain = (source.source_domain ?? "").toLocaleLowerCase().replace(/^www\./, "");
@@ -45,10 +66,15 @@ export function knownSourceOperator(source: EvidenceSource): string | null {
   return null;
 }
 
-export function sourceOperatorsByLead(links: ResearchLeadEvidenceLink[]) {
+export function sourceOperatorsByLead(
+  links: ResearchLeadEvidenceLink[],
+  requiredDocumentIdsByLead?: Map<string, Set<string>>,
+) {
   const operators = new Map<string, Set<string>>();
   for (const link of links) {
     if (!link.document_id) continue;
+    const requiredDocumentIds = requiredDocumentIdsByLead?.get(link.research_lead_id);
+    if (requiredDocumentIdsByLead && (!requiredDocumentIds || !requiredDocumentIds.has(link.document_id))) continue;
     const related = Array.isArray(link.source_documents)
       ? link.source_documents
       : link.source_documents
@@ -73,7 +99,7 @@ export function passesIndependentEvidenceGate(
   return Number.isInteger(lead.independent_source_count) &&
     (lead.independent_source_count ?? 0) >= 2 &&
     Boolean(operators && operators.size >= 2) &&
-    hasEvidence(lead.verified_evidence_json) &&
+    verifiedLeadEvidenceDocumentIds(lead.verified_evidence_json) !== null &&
     hasEvidence(lead.alternative_explanations_json);
 }
 

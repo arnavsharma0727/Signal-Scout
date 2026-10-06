@@ -3,7 +3,7 @@ import { serverSupabase } from "../../lib/server-supabase";
 import { hasUnclearedHackerNewsEvidence } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
-import { passesIndependentEvidenceGate, sourceOperatorsByLead } from "../../lib/research-lead-qualification";
+import { passesIndependentEvidenceGate, sourceOperatorsByLead, verifiedLeadEvidenceDocumentIds } from "../../lib/research-lead-qualification";
 import SiteHeader from "../../components/site-header";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export default async function Candidates() {
       .limit(50);
     unavailable = Boolean(error);
     const eligible = ((data ?? []) as unknown as Lead[]).filter((lead) =>
-      hasEvidence(lead.verified_evidence_json) && hasEvidence(lead.alternative_explanations_json));
+      verifiedLeadEvidenceDocumentIds(lead.verified_evidence_json) !== null && hasEvidence(lead.alternative_explanations_json));
 
     if (eligible.length && !error) {
       const { data: evidenceLinks, error: evidenceError } = await db
@@ -49,7 +49,18 @@ export default async function Candidates() {
         .in("research_lead_id", eligible.map(({ id }) => id));
       unavailable = Boolean(evidenceError);
       const links = evidenceLinks ?? [];
-      const operatorsByLead = sourceOperatorsByLead(links);
+      const verifiedDocumentIdsByLead = new Map(eligible.map((lead) => [
+        lead.id,
+        verifiedLeadEvidenceDocumentIds(lead.verified_evidence_json)!,
+      ]));
+      const operatorsByLead = sourceOperatorsByLead(links, verifiedDocumentIdsByLead);
+      const linkedDocumentIdsByLead = new Map<string, Set<string>>();
+      for (const link of links) {
+        if (!link.document_id) continue;
+        const documentIds = linkedDocumentIdsByLead.get(link.research_lead_id) ?? new Set<string>();
+        documentIds.add(link.document_id);
+        linkedDocumentIdsByLead.set(link.research_lead_id, documentIds);
+      }
       const linkedLeadIds = new Set(links.filter((link) =>
         link.document_id && !hasUnclearedHackerNewsEvidence([link.source_documents?.[0]?.source_type]))
         .map((link) => link.research_lead_id));
@@ -58,6 +69,7 @@ export default async function Candidates() {
         .map((link) => link.research_lead_id));
       leads = evidenceError ? [] : eligible.filter((lead) =>
         linkedLeadIds.has(lead.id) && !blockedLeadIds.has(lead.id) &&
+        [...verifiedDocumentIdsByLead.get(lead.id)!].every((documentId) => linkedDocumentIdsByLead.get(lead.id)?.has(documentId)) &&
         passesIndependentEvidenceGate(lead, operatorsByLead.get(lead.id)));
     }
   }
