@@ -10,6 +10,7 @@ import {
 } from "../../lib/research-brief";
 import { countExcludedPrivateEvidence, preparePrivateEvidenceLinks } from "../../lib/private-research-brief";
 import { saveResearchBrief } from "../briefs/actions";
+import { LOCAL_RESEARCH_NOTES_KEY, parseLocalResearchNotes, serializeLocalResearchNotes } from "../../lib/local-research-draft";
 
 const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
   "expert Q&A",
@@ -42,9 +43,35 @@ export default function ResearchBrief({
   const [alternatives, setAlternatives] = useState("");
   const [disconfirmingEvidence, setDisconfirmingEvidence] = useState("");
   const [notice, setNotice] = useState("");
+  const [localNotesReady, setLocalNotesReady] = useState(false);
   useEffect(() => {
     if (initialTopic) setTopic(initialTopic);
   }, [initialTopic]);
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LOCAL_RESEARCH_NOTES_KEY);
+      const notes = saved ? parseLocalResearchNotes(saved) : null;
+      if (notes) {
+        setTopic(notes.topic);
+        setWorkingThesis(notes.workingThesis);
+        setAlternatives(notes.alternatives);
+        setDisconfirmingEvidence(notes.disconfirmingEvidence);
+      }
+    } catch {
+      // Browser storage may be disabled; keep the live form usable.
+    }
+    setLocalNotesReady(true);
+  }, []);
+  useEffect(() => {
+    if (!localNotesReady) return;
+    try {
+      window.localStorage.setItem(LOCAL_RESEARCH_NOTES_KEY, serializeLocalResearchNotes({
+        topic, workingThesis, alternatives, disconfirmingEvidence,
+      }));
+    } catch {
+      // Browser storage quota/private-mode errors leave the current form intact.
+    }
+  }, [topic, workingThesis, alternatives, disconfirmingEvidence, localNotesReady]);
   const counts = useMemo(() => EVIDENCE_CLASSES.map((evidenceClass) => ({
     evidenceClass,
     count: evidence.filter((item) => item.evidenceClass === evidenceClass).length,
@@ -97,15 +124,20 @@ export default function ResearchBrief({
     setWorkingThesis("");
     setAlternatives("");
     setDisconfirmingEvidence("");
+    try {
+      window.localStorage.removeItem(LOCAL_RESEARCH_NOTES_KEY);
+    } catch {
+      // The in-page state is cleared even if storage is unavailable.
+    }
     setNotice("The in-memory brief was cleared.");
   }
 
   return (
     <section id="research-brief" className="panel mt-8 p-5 md:p-7" aria-labelledby="research-brief-title">
-      <div className="eyebrow">Temporary, in-page workspace</div>
+      <div className="eyebrow">Saved in this browser · not synced</div>
       <h2 id="research-brief-title" className="mt-2 text-xl font-semibold">Build a research brief</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Add source links deliberately, mark each recent item as supporting, contradicting, context, or not relevant, then write your hypothesis, alternatives, and disconfirmation test. Unassessed or unrelated items cannot count toward the qualification checks. These are your judgments, not automated sentiment or verified facts. The draft stays in this page unless you explicitly save it below. Exporting or copying sends it only to your device or clipboard.
+        Add source links deliberately, mark each recent item as supporting, contradicting, context, or not relevant, then write your hypothesis, alternatives, and disconfirmation test. Unassessed or unrelated items cannot count toward the qualification checks. These are your judgments, not automated sentiment or verified facts. Citations and notes are autosaved only in this browser; they are not sent to Signal Scout unless you explicitly choose account saving. Exporting or copying sends them only to your device or clipboard.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -244,7 +276,7 @@ export default function ResearchBrief({
         <p className="mt-2 text-xs leading-5 text-muted">
           {authAvailable
             ? <>Saving sends this topic and your notes to Signal Scout and Supabase, plus link-only citations from approved sources. {privateLinks.length} citation(s) will be kept; {excludedCount} other selected item(s) will be omitted. Titles, excerpts, contributor names, social posts, and search queries are not saved. You must be signed in; saved briefs are private and not public leads.</>
-            : <>Your draft is not being sent or saved. Copy or download it to keep a local copy; page notes disappear when you leave or reload. Account storage requires deployment authentication to be configured.</>}
+            : <>Your browser draft is saved locally on this device. It is not backed up or synced, and can be lost if browser data is cleared. Account storage requires deployment authentication to be configured.</>}
         </p>
       </form>
       {notice && <p role="status" className="mt-3 text-xs text-muted">{notice}</p>}

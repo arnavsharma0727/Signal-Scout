@@ -60,20 +60,27 @@ export function assessResearchLeadReadiness(input: {
   const relevanceReviewed = recentEvidence.every((item) => item.researcherAssessment !== undefined);
   const relevantEvidence = recentEvidence.filter((item) =>
     item.researcherAssessment !== undefined && item.researcherAssessment !== "not relevant");
-  const operators = [...new Set(relevantEvidence.flatMap((item) =>
-    item.sourceOperatorKey && item.sourceOperatorLabel ? [item.sourceOperatorLabel] : []))].sort();
+  const operatorLabels = new Map<string, Set<string>>();
+  for (const item of relevantEvidence) {
+    if (!item.sourceOperatorKey || !item.sourceOperatorLabel) continue;
+    const labels = operatorLabels.get(item.sourceOperatorKey) ?? new Set<string>();
+    labels.add(item.sourceOperatorLabel);
+    operatorLabels.set(item.sourceOperatorKey, labels);
+  }
+  const operators = [...operatorLabels.keys()].sort();
+  const operatorDisplay = [...operatorLabels.values()].flatMap((labels) => [...labels]).sort();
   const classes = new Set(relevantEvidence.map((item) => item.evidenceClass));
   const assessments = new Set(relevantEvidence.map((item) => item.researcherAssessment));
   const checks = [
     { label: "Specific topic and working thesis", passed: Boolean(input.topic.trim() && input.workingThesis.trim()), detail: "Write the question being investigated and a tentative explanation." },
     { label: "Relevance reviewed for every recent citation", passed: relevanceReviewed, detail: `${recentEvidence.filter((item) => !item.researcherAssessment).length} recent citations remain unassessed; mark unrelated items “Not relevant.”` },
     { label: "At least three recent, relevant, dated citations", passed: relevantEvidence.length >= 3, detail: `${relevantEvidence.length} recent citations are marked relevant to the topic; “Not relevant” items are excluded.` },
-    { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? operators.join(" · ") : "No reviewed source operator is represented yet." },
+    { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? `${operators.length} reviewed operator(s): ${operatorDisplay.join(" · ")}` : "No reviewed source operator is represented yet." },
     { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
     { label: "Supporting and contradicting evidence reviewed", passed: assessments.has("supports") && assessments.has("contradicts"), detail: "Mark at least one citation as supporting and another as contradicting the thesis." },
     { label: "Alternative explanation and disconfirmation test", passed: Boolean(input.alternatives.trim() && input.disconfirmingEvidence.trim()), detail: "Record another plausible explanation and what observation would change your mind." },
   ];
-  return { readyForHumanReview: checks.every((check) => check.passed), checks, reviewedOperators: operators };
+  return { readyForHumanReview: checks.every((check) => check.passed), checks, reviewedOperators: operatorDisplay };
 }
 
 export type EvidenceCoverage = {

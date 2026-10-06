@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { ResearchEvidence } from "../../lib/research-brief";
-import { matchingPublisherEvidence } from "../../lib/publisher-evidence";
+import { matchingOriginalTitlePhrases, matchingPublisherEvidence, parseOriginalTitlePhrases } from "../../lib/publisher-evidence";
 
 export default function LicensedPublisherEvidence({
   items,
@@ -23,6 +23,7 @@ export default function LicensedPublisherEvidence({
     () => matchingPublisherEvidence(items, phrase),
     [items, phrase],
   );
+  const phrases = parseOriginalTitlePhrases(phrase);
   return (
     <section className="mt-8 border-t border-line pt-6" aria-labelledby="publisher-evidence-title">
       <div className="eyebrow">Recent international feeds · last 72 hours</div>
@@ -31,19 +32,20 @@ export default function LicensedPublisherEvidence({
         Publisher RSS/Atom items collected by the scheduled feed job. Only original titles, dates, links, and required attribution metadata are shown. These feeds have uneven language and geographic coverage; they do not measure audience attention. Each publisher is one source operator, regardless of how many editions appear.
       </p>
       <div className="mt-4 max-w-xl">
-        <label className="block text-sm font-medium" htmlFor="publisher-headline-filter">Filter publisher headlines by exact phrase</label>
+        <label className="block text-sm font-medium" htmlFor="publisher-headline-filter">Search publisher headlines with original-language phrases</label>
         <div className="mt-2 flex gap-2">
-          <input
+          <textarea
             id="publisher-headline-filter"
-            className="block min-w-0 flex-1 rounded border border-line bg-white px-3 py-2 font-normal outline-none focus:border-ink"
+            className="block min-h-20 min-w-0 flex-1 resize-y rounded border border-line bg-white px-3 py-2 font-normal outline-none focus:border-ink"
             value={phrase}
             onChange={event => setPhrase(event.target.value)}
-            maxLength={100}
-            placeholder="e.g. inflation or a phrase in another language"
+            maxLength={500}
+            rows={2}
+            placeholder={"One exact phrase per line, e.g.\ninflation\ninflación\n인플레이션"}
           />
           {phrase && <button className="btn" type="button" onClick={() => setPhrase("")}>Clear</button>}
         </div>
-        <p className="mt-1 text-xs text-muted">Literal original-title match only; no translation, stemming, or semantic expansion. {phrase.trim() ? `${matchingItems.length} of ${items.length} recent eligible items match.` : `${items.length} eligible items are available; enter a topic to filter them.`}</p>
+        <p className="mt-1 text-xs leading-5 text-muted">Literal, case-insensitive match against each unmodified original title; no translation, stemming, or semantic expansion. Each headline shows the phrase that matched. {phrases.length ? `${matchingItems.length} of ${items.length} recent eligible items match one or more of your ${phrases.length} phrase${phrases.length === 1 ? "" : "s"}; these query-selected hits are not comparable attention counts.` : `${items.length} eligible items are available; enter one or more phrases.`}</p>
       </div>
       {matchingItems.length ? (
         <ul className="mt-4 divide-y divide-line border-y border-line">
@@ -54,6 +56,7 @@ export default function LicensedPublisherEvidence({
                 <p className="mt-1 text-xs leading-5 text-muted">
                   {item.source} · {item.evidenceClass} · {item.language} · {new Date(item.timeValue).toLocaleString()}
                 </p>
+                <p className="mt-1 text-xs leading-5 text-muted">Matched phrase: {matchingOriginalTitlePhrases(item.title, phrase).join(" · ")}</p>
                 <p className="text-xs leading-5 text-muted">
                   {item.attribution ? `By ${item.attribution} · ` : ""}{item.context} · operator: {item.sourceOperatorLabel}
                   {item.licenseName && item.licenseUrl ? <> · <a className="underline" href={item.licenseUrl} target="_blank" rel="noreferrer">{item.licenseName}</a></> : null}

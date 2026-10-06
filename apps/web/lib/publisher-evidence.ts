@@ -121,10 +121,23 @@ export function matchesOriginalTitlePhrase(title: string, rawPhrase: string) {
   return new RegExp(`(?:^|[^\\p{L}\\p{N}])${escaped}(?:$|[^\\p{L}\\p{N}])`, "u").test(normalizedTitle);
 }
 
+/** Parse researcher-supplied phrase variants without translation or semantic expansion. */
+export function parseOriginalTitlePhrases(rawPhrases: string): string[] {
+  return [...new Set(rawPhrases
+    .split(/[\n;]+/)
+    .map(phrase => phrase.trim().normalize("NFC").replace(/\s+/g, " "))
+    .filter(Boolean))];
+}
+
+export function matchingOriginalTitlePhrases(title: string, rawPhrases: string): string[] {
+  return parseOriginalTitlePhrases(rawPhrases)
+    .filter(phrase => matchesOriginalTitlePhrase(title, phrase));
+}
+
 /** Recent items are only surfaced when the visitor has supplied a concrete query. */
 export function matchingPublisherEvidence<T extends { title: string }>(items: T[], phrase: string): T[] {
-  if (!phrase.trim()) return [];
-  return items.filter(item => matchesOriginalTitlePhrase(item.title, phrase));
+  if (!parseOriginalTitlePhrases(phrase).length) return [];
+  return items.filter(item => matchingOriginalTitlePhrases(item.title, phrase).length > 0);
 }
 
 function safeHttpsUrl(value: string): URL | null {

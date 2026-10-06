@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { matchesOriginalTitlePhrase, matchingPublisherEvidence, toPublisherEvidence } from "./publisher-evidence";
+import { matchesOriginalTitlePhrase, matchingOriginalTitlePhrases, matchingPublisherEvidence, parseOriginalTitlePhrases, toPublisherEvidence } from "./publisher-evidence";
 
 const now = Date.parse("2026-10-01T12:00:00Z");
 const recent = "2026-10-01T10:00:00Z";
@@ -20,6 +20,20 @@ describe("reviewed publisher evidence", () => {
     const items = [{ title: "Interest rates rise" }, { title: "A climate report" }];
     expect(matchingPublisherEvidence(items, "")).toEqual([]);
     expect(matchingPublisherEvidence(items, "interest rates")).toEqual([items[0]]);
+  });
+
+  it("keeps researcher-entered language variants separate and reports exact title matches", () => {
+    const items = [
+      { title: "Inflation rises in the latest report" },
+      { title: "La inflación sube" },
+      { title: "인플레이션 전망" },
+      { title: "Interest rates change" },
+    ];
+    const phrases = "inflation\ninflación; 인플레이션\ninflation";
+    expect(parseOriginalTitlePhrases(phrases)).toEqual(["inflation", "inflación", "인플레이션"]);
+    expect(matchingPublisherEvidence(items, phrases)).toEqual(items.slice(0, 3));
+    expect(matchingOriginalTitlePhrases(items[1].title, phrases)).toEqual(["inflación"]);
+    expect(matchingOriginalTitlePhrases(items[2].title, phrases)).toEqual(["인플레이션"]);
   });
 
   it("accepts localized Global Voices titles with attribution and CC BY metadata only", () => {

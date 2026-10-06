@@ -10,11 +10,35 @@ import WikimediaTalkSearch from "./wikimedia-talk-search";
 import ResearchBrief from "./research-brief";
 import ResearchSweep from "./research-sweep";
 import LicensedPublisherEvidence from "./licensed-publisher-evidence";
+import { LOCAL_RESEARCH_DRAFT_KEY, parseLocalEvidenceDraft, serializeLocalEvidenceDraft } from "../../lib/local-research-draft";
 
 export default function ExploreWorkspace({ authAvailable, saveEnabled, publisherEvidence }: { authAvailable: boolean; saveEnabled: boolean; publisherEvidence: ResearchEvidence[] }) {
   const [evidence, setEvidence] = useState<ResearchEvidence[]>([]);
+  const [localDraftReady, setLocalDraftReady] = useState(false);
   const [initialTopic, setInitialTopic] = useState("");
   const selectedIds = useMemo(() => new Set(evidence.map(({ id }) => id)), [evidence]);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(LOCAL_RESEARCH_DRAFT_KEY);
+      if (saved) {
+        const restored = parseLocalEvidenceDraft(saved);
+        if (restored) setEvidence(restored);
+      }
+    } catch {
+      // Storage can be disabled by browser privacy settings; the in-page brief still works.
+    }
+    setLocalDraftReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!localDraftReady) return;
+    try {
+      window.localStorage.setItem(LOCAL_RESEARCH_DRAFT_KEY, serializeLocalEvidenceDraft(evidence));
+    } catch {
+      // Storage quota/private-mode errors do not prevent the in-page brief from working.
+    }
+  }, [evidence, localDraftReady]);
 
   useEffect(() => {
     const topic = topicFromFragment(window.location.hash);

@@ -31,6 +31,17 @@ describe("research lead readiness", () => {
     expect(result.checks.find((check) => check.label === "At least two reviewed source operators")?.passed).toBe(false);
   });
 
+  it("does not count display-label variations as separate operators", () => {
+    const sameOperatorDifferentLabels = evidence.map((item, index) => ({
+      ...item,
+      sourceOperatorKey: "same-publisher",
+      sourceOperatorLabel: `Edition ${index + 1}`,
+    }));
+    const result = assessResearchLeadReadiness({ ...complete, evidence: sameOperatorDifferentLabels });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label === "At least two reviewed source operators")?.passed).toBe(false);
+  });
+
   it("requires explicit relevance assessments for every recent citation", () => {
     const unreviewed = evidence.map((item) => ({ ...item, researcherAssessment: undefined }));
     const result = assessResearchLeadReadiness({ ...complete, evidence: unreviewed });
