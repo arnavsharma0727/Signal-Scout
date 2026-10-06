@@ -56,6 +56,8 @@ export default function ResearchSweep({
     if (trendsLoading) return;
     setTrendsLoading(true);
     setTrendsError("");
+    setTrends([]);
+    setTrendsLoaded(false);
     try {
       setTrends(await fetchBlueskyTrends());
       setTrendsLoaded(true);
@@ -138,7 +140,7 @@ export default function ResearchSweep({
             ))}
           </ul>
         )}
-        <p className="mt-2 text-[11px] leading-4 text-muted">Live metadata request to Bluesky’s public API; results stay in this browser and are not saved. Ranked trends can reflect provider design and network demographics.</p>
+        <p className="mt-2 text-[11px] leading-4 text-muted">Live metadata request to Bluesky’s experimental public API; results stay in this browser and are not saved. Ranked trends can reflect provider design and network demographics, and the endpoint may change or become unavailable.</p>
       </div>
       <form onSubmit={submit} className="mt-5 grid gap-4">
         <label className="block text-sm font-medium">

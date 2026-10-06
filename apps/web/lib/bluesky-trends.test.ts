@@ -19,8 +19,12 @@ describe("fetchBlueskyTrends", () => {
 
     expect(fetcher).toHaveBeenCalledWith(
       new URL("https://public.api.bsky.app/xrpc/app.bsky.unspecced.getTrends?limit=25"),
-      { headers: { accept: "application/json" } },
+      expect.objectContaining({
+        headers: { accept: "application/json" },
+        signal: expect.any(AbortSignal),
+      }),
     );
+    expect((fetcher.mock.calls[0][1]?.signal as AbortSignal).aborted).toBe(false);
     expect(result).toEqual([
       {
         topic: "Current policy discussion",
@@ -43,5 +47,14 @@ describe("fetchBlueskyTrends", () => {
       .rejects.toThrow("rate-limiting");
     await expect(fetchBlueskyTrends(async () => new Response(null, { status: 503 })))
       .rejects.toThrow("temporarily unavailable");
+  });
+
+  it("turns stalled requests and network errors into actionable messages", async () => {
+    const timeout = new Error("timeout");
+    timeout.name = "TimeoutError";
+    await expect(fetchBlueskyTrends(async () => { throw timeout; }))
+      .rejects.toThrow("took too long");
+    await expect(fetchBlueskyTrends(async () => { throw new TypeError("Failed to fetch"); }))
+      .rejects.toThrow("Check your connection");
   });
 });

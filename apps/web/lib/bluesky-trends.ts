@@ -12,13 +12,25 @@ type TrendsResponse = {
 
 const ENDPOINT = "https://public.api.bsky.app/xrpc/app.bsky.unspecced.getTrends";
 const MAX_TRENDS = 25;
+const REQUEST_TIMEOUT_MS = 10_000;
 
 /** Fetch Bluesky's current provider-ranked trend labels for discovery only. */
 export async function fetchBlueskyTrends(fetcher: typeof fetch = fetch): Promise<BlueskyTrend[]> {
   const endpoint = new URL(ENDPOINT);
   endpoint.searchParams.set("limit", String(MAX_TRENDS));
 
-  const response = await fetcher(endpoint, { headers: { accept: "application/json" } });
+  let response: Response;
+  try {
+    response = await fetcher(endpoint, {
+      headers: { accept: "application/json" },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+  } catch (cause) {
+    if (cause instanceof Error && (cause.name === "TimeoutError" || cause.name === "AbortError")) {
+      throw new Error("Bluesky trends took too long to respond. Try again later.");
+    }
+    throw new Error("Bluesky trends could not be reached. Check your connection and try again.");
+  }
   if (response.status === 429) throw new Error("Bluesky is rate-limiting trend requests. Try again later.");
   if (!response.ok) throw new Error("Bluesky trends are temporarily unavailable.");
 
