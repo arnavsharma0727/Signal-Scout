@@ -210,6 +210,14 @@ export function groupRepeatedPostText(evidence: ResearchEvidence[]): ResearchEvi
     .sort((a, b) => byFirstEvidenceIndex.get(a[0])! - byFirstEvidenceIndex.get(b[0])!);
 }
 
+/** A cluster of identical transient social text may contribute only one citation. */
+export function hasSelectedRepeatedTextMember(
+  group: ResearchEvidence[],
+  selectedIds: ReadonlySet<string>,
+): boolean {
+  return group.length > 1 && group.some(({ id }) => selectedIds.has(id));
+}
+
 /** Counts exact normalized preview matches without returning or persisting post text. */
 export function summarizeRepeatedPostText(evidence: ResearchEvidence[]): RepeatedPostTextCoverage {
   const counts = new Map<string, number>();

@@ -12,7 +12,7 @@ import {
   ResearchSweepSourceResult,
 } from "../../lib/research-sweep";
 import { fetchBlueskyTrends, type BlueskyTrend } from "../../lib/bluesky-trends";
-import { groupRepeatedPostText, summarizeConversationBylines, summarizeRepeatedPostText, type ResearchEvidence } from "../../lib/research-brief";
+import { groupRepeatedPostText, hasSelectedRepeatedTextMember, summarizeConversationBylines, summarizeRepeatedPostText, type ResearchEvidence } from "../../lib/research-brief";
 
 export default function ResearchSweep({
   initialTopic,
@@ -390,6 +390,7 @@ export default function ResearchSweep({
                     <li key={group[0].id} className="py-3">
                       <details>
                         <summary className="cursor-pointer text-sm font-medium">Same normalized post text · {group.length} posts · inspect each original</summary>
+                        <p className="mt-2 text-xs leading-5 text-muted">Posts with the same normalized text count as one conversation item in the brief. Select at most one original link from this group; inspect the source before citing it.</p>
                         <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6" lang={group[0].language === "not provided" ? undefined : group[0].language}>{group[0].transientPreview}</p>
                         <ul className="mt-2 divide-y divide-line border-t border-line">
                           {group.map((item) => (
@@ -398,8 +399,8 @@ export default function ResearchSweep({
                               <p className="mt-1 text-xs text-muted">
                                 {item.attribution ?? item.source} · {item.language} · {item.timeLabel}: {new Date(item.timeValue).toLocaleString()}
                               </p>
-                              <button className="mt-2 text-xs underline text-muted" type="button" disabled={selectedIds.has(item.id)} onClick={() => onAdd(item)}>
-                                {selectedIds.has(item.id) ? "Added to brief" : "Add citation to brief"}
+                              <button className="mt-2 text-xs underline text-muted" type="button" disabled={selectedIds.has(item.id) || hasSelectedRepeatedTextMember(group, selectedIds)} onClick={() => onAdd(item)}>
+                                {selectedIds.has(item.id) ? "Added to brief" : hasSelectedRepeatedTextMember(group, selectedIds) ? "Repeated text already represented" : "Add citation to brief"}
                               </button>
                             </li>
                           ))}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canonicalEvidenceSourceUrl, citationWithoutTransientContent, createResearchBriefMarkdown, groupRepeatedPostText, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, summarizeRepeatedPostText, topicFromFragment } from "./research-brief";
+import { canonicalEvidenceSourceUrl, citationWithoutTransientContent, createResearchBriefMarkdown, groupRepeatedPostText, hasSelectedRepeatedTextMember, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, summarizeRepeatedPostText, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -52,6 +52,16 @@ describe("createResearchBriefMarkdown", () => {
     const groups = groupRepeatedPostText([first, middle, repeated]);
     expect(groups.map((group) => group.map(({ id }) => id))).toEqual([["post-a", "post-c"], ["post-b"]]);
     expect(groups.flat().map(({ url }) => url)).toHaveLength(3);
+  });
+
+  it("allows only one citation from an exact repeated-text group", () => {
+    const repeated = groupRepeatedPostText([
+      { ...selected, id: "copy-a", evidenceClass: "social discussion", transientPreview: "The same copied post" },
+      { ...selected, id: "copy-b", evidenceClass: "social discussion", transientPreview: " the same copied post " },
+    ])[0];
+    expect(hasSelectedRepeatedTextMember(repeated, new Set())).toBe(false);
+    expect(hasSelectedRepeatedTextMember(repeated, new Set(["copy-b"]))).toBe(true);
+    expect(hasSelectedRepeatedTextMember([repeated[0]], new Set(["copy-a"]))).toBe(false);
   });
 
   it("does not group URL-only previews after URL normalization", () => {
