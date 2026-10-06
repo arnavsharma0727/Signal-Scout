@@ -106,42 +106,47 @@ export default function ResearchSweep({
       <p className="mt-2 text-sm leading-6 text-muted">
         Start with current conversation topics or enter a phrase, then inspect public discussion and optional news evidence. Add specialist Q&amp;A, federated forums, or editorial discussion only when useful. Searches go directly from this browser to public sources, except GDELT, which uses a first-party no-store bridge. Enter equivalent phrases separately for each language; Signal Scout does not auto-translate. Source samples stay separate and are not audience measures.
       </p>
-      <div className="mt-4 border-y border-line py-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h3 className="text-sm font-semibold">Conversation topics now trending on Bluesky</h3>
-            <p className="mt-1 text-xs leading-5 text-muted">Provider-ranked network topics for discovery only; not country-specific, representative, independently verified, or evidence of a market signal.</p>
+      <details className="mt-4 border-y border-line py-3">
+        <summary className="cursor-pointer text-sm font-medium">
+          Optional discovery: Bluesky provider-ranked trends
+        </summary>
+        <div className="mt-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 className="text-sm font-semibold">Conversation topics now trending on Bluesky</h3>
+              <p className="mt-1 text-xs leading-5 text-muted">Provider-ranked network topics for discovery only; not country-specific, representative, independently verified, or evidence of a market signal.</p>
+            </div>
+            <button className="btn" type="button" onClick={loadTrends} disabled={trendsLoading}>
+              {trendsLoading ? "Loading trends…" : trendsLoaded ? "Refresh trends" : "Load current topics"}
+            </button>
           </div>
-          <button className="btn" type="button" onClick={loadTrends} disabled={trendsLoading}>
-            {trendsLoading ? "Loading trends…" : trendsLoaded ? "Refresh trends" : "Load current topics"}
-          </button>
+          {trendsError && <p className="mt-3 text-sm" role="alert">{trendsError}</p>}
+          {trendsLoaded && trends.length === 0 && !trendsError && <p className="mt-3 text-xs text-muted">No topics were returned by Bluesky.</p>}
+          {trends.length > 0 && (
+            <ul className="mt-3 divide-y divide-line border-t border-line">
+              {trends.slice(0, 8).map((trend) => (
+                <li key={`${trend.topic}:${trend.startedAt ?? "unknown"}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium">{trend.topic}</div>
+                    <p className="mt-0.5 text-xs text-muted">
+                      {trend.category ?? "Uncategorized"}
+                      {trend.postCount !== null ? ` · ${trend.postCount.toLocaleString()} posts reported by Bluesky` : ""}
+                      {trend.startedAt ? ` · started ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(trend.startedAt))} UTC` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-3">
+                    {trend.feedUrl && <a className="text-xs underline" href={trend.feedUrl} target="_blank" rel="noreferrer">Trend feed</a>}
+                    <button className="btn" type="button" onClick={() => { setQuery(trend.topic); onSearchTopic(trend.topic); }}>
+                      Search this topic
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-2 text-[11px] leading-4 text-muted">Live metadata request to Bluesky’s experimental public API; results stay in this browser and are not saved. Ranked trends can reflect provider design and network demographics, and the endpoint may change or become unavailable.</p>
         </div>
-        {trendsError && <p className="mt-3 text-sm" role="alert">{trendsError}</p>}
-        {trendsLoaded && trends.length === 0 && !trendsError && <p className="mt-3 text-xs text-muted">No topics were returned by Bluesky.</p>}
-        {trends.length > 0 && (
-          <ul className="mt-3 divide-y divide-line border-t border-line">
-            {trends.slice(0, 8).map((trend) => (
-              <li key={`${trend.topic}:${trend.startedAt ?? "unknown"}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{trend.topic}</div>
-                  <p className="mt-0.5 text-xs text-muted">
-                    {trend.category ?? "Uncategorized"}
-                    {trend.postCount !== null ? ` · ${trend.postCount.toLocaleString()} posts reported by Bluesky` : ""}
-                    {trend.startedAt ? ` · started ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(trend.startedAt))} UTC` : ""}
-                  </p>
-                </div>
-                <div className="flex shrink-0 items-center gap-3">
-                  {trend.feedUrl && <a className="text-xs underline" href={trend.feedUrl} target="_blank" rel="noreferrer">Trend feed</a>}
-                  <button className="btn" type="button" onClick={() => { setQuery(trend.topic); onSearchTopic(trend.topic); }}>
-                    Search this topic
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mt-2 text-[11px] leading-4 text-muted">Live metadata request to Bluesky’s experimental public API; results stay in this browser and are not saved. Ranked trends can reflect provider design and network demographics, and the endpoint may change or become unavailable.</p>
-      </div>
+      </details>
       <form onSubmit={submit} className="mt-5 grid gap-4">
         <label className="block text-sm font-medium">
           Topic or phrase
