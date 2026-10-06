@@ -243,6 +243,9 @@ export default function ResearchBrief({
               Researcher-assigned: {coverage.researcherAssessments.map(({ assessment, count }) => `${assessment} ${count}`).join(" · ") || "none"} · {coverage.unassessedCount} unassessed
             </p>
             <p className="mt-1 text-xs leading-5 text-muted">
+              Discussion/Q&amp;A bylines: {coverage.conversationItemsWithByline}/{coverage.conversationItemCount} links carry a recognized display label · {coverage.distinctConversationBylineLabels} distinct labels · largest repeated label group {coverage.largestConversationBylineGroup}. Labels do not verify separate people.
+            </p>
+            <p className="mt-1 text-xs leading-5 text-muted">
               Reviewed operators: {coverage.knownOperatorLabels.join(" · ") || "none"} · {coverage.unresolvedOperatorItemCount} item(s) with unresolved operator identity. A recognized operator is an audit aid, not proof of independent coverage.
             </p>
           </>

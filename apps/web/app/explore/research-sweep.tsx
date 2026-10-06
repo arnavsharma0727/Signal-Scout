@@ -11,7 +11,7 @@ import {
   runResearchSweep,
   ResearchSweepSourceResult,
 } from "../../lib/research-sweep";
-import type { ResearchEvidence } from "../../lib/research-brief";
+import { summarizeConversationBylines, type ResearchEvidence } from "../../lib/research-brief";
 
 export default function ResearchSweep({
   initialTopic,
@@ -280,6 +280,15 @@ export default function ResearchSweep({
               {result.error ? (
                 <p className="mt-2 text-sm text-muted">{result.error}</p>
               ) : result.evidence.length ? (
+                <>
+                {(() => {
+                  const bylines = summarizeConversationBylines(result.evidence);
+                  return bylines.itemCount > 0 ? (
+                    <p className="mt-2 text-xs leading-5 text-muted">
+                      {bylines.attributedItemCount}/{bylines.itemCount} discussion/Q&amp;A links show a byline · {bylines.distinctBylineLabels} distinct labels · largest repeated label group {bylines.largestBylineGroup}. Labels do not verify separate people.
+                    </p>
+                  ) : null;
+                })()}
                 <ul className="mt-2 divide-y divide-line border-y border-line">
                   {result.evidence.map((item) => (
                     <li key={item.id} className="py-3">
@@ -304,6 +313,7 @@ export default function ResearchSweep({
                     </li>
                   ))}
                 </ul>
+                </>
               ) : (
                 <p className="mt-2 text-sm text-muted">No eligible results in this source’s selected query/window. This is not evidence that the topic is absent elsewhere.</p>
               )}

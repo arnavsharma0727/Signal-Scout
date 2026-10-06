@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { citationWithoutTransientContent, createResearchBriefMarkdown, ResearchEvidence, summarizeEvidenceCoverage, topicFromFragment } from "./research-brief";
+import { citationWithoutTransientContent, createResearchBriefMarkdown, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -18,6 +18,16 @@ const selected: ResearchEvidence = {
 };
 
 describe("createResearchBriefMarkdown", () => {
+  it("summarizes visible discussion bylines without merging labels across operators", () => {
+    const summary = summarizeConversationBylines([
+      { ...selected, id: "a", attribution: "Author: @same", sourceOperatorKey: "bluesky" },
+      { ...selected, id: "b", attribution: "Author: @same", sourceOperatorKey: "bluesky" },
+      { ...selected, id: "c", attribution: "Lemmy author: @same", sourceOperatorKey: "lemmy" },
+      { ...selected, id: "d", attribution: "Headline belongs to publisher; indexed by GDELT", evidenceClass: "news coverage" },
+    ]);
+    expect(summary).toEqual({ itemCount: 3, attributedItemCount: 3, distinctBylineLabels: 2, largestBylineGroup: 2 });
+  });
+
   it("strips transient post text when a live result is selected as a citation", () => {
     const selectedPost = {
       ...selected,

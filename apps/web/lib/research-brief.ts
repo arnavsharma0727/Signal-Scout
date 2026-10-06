@@ -85,6 +85,10 @@ export function assessResearchLeadReadiness(input: {
 
 export type EvidenceCoverage = {
   itemCount: number;
+  conversationItemCount: number;
+  conversationItemsWithByline: number;
+  distinctConversationBylineLabels: number;
+  largestConversationBylineGroup: number;
   sourceLabels: string[];
   languages: string[];
   researcherAssessments: { assessment: NonNullable<ResearchEvidence["researcherAssessment"]>; count: number }[];
@@ -96,8 +100,43 @@ export type EvidenceCoverage = {
   unresolvedOperatorItemCount: number;
 };
 
+export type ConversationBylineCoverage = {
+  itemCount: number;
+  attributedItemCount: number;
+  distinctBylineLabels: number;
+  largestBylineGroup: number;
+};
+
+/**
+ * Descriptive audit of displayed author/byline labels in one selected sample.
+ * It does not verify that a label is a person, or that two labels are distinct
+ * people. Unknown labels are left uncounted rather than guessed.
+ */
+export function summarizeConversationBylines(evidence: ResearchEvidence[]): ConversationBylineCoverage {
+  const conversation = evidence.filter(({ evidenceClass }) =>
+    evidenceClass === "expert Q&A" || evidenceClass === "social discussion" || evidenceClass === "community forum");
+  const counts = new Map<string, number>();
+  let attributedItemCount = 0;
+  for (const item of conversation) {
+    const match = item.attribution?.match(/^(?:Lemmy )?Author:\s*(.+)$/i);
+    const label = match?.[1].trim().replace(/\s+/g, " ");
+    if (!label) continue;
+    attributedItemCount += 1;
+    const operator = item.sourceOperatorKey ?? item.source;
+    const key = `${operator.normalize("NFKC").toLocaleLowerCase()}\u0000${label.normalize("NFKC").toLocaleLowerCase()}`;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return {
+    itemCount: conversation.length,
+    attributedItemCount,
+    distinctBylineLabels: counts.size,
+    largestBylineGroup: Math.max(0, ...counts.values()),
+  };
+}
+
 /** Descriptive inventory only: labels and items are not counts of independent owners. */
 export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): EvidenceCoverage {
+  const bylines = summarizeConversationBylines(evidence);
   const timestamps = evidence
     .map(({ timeValue }) => Date.parse(timeValue))
     .filter(Number.isFinite)
@@ -118,6 +157,10 @@ export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): Evidenc
   ];
   return {
     itemCount: evidence.length,
+    conversationItemCount: bylines.itemCount,
+    conversationItemsWithByline: bylines.attributedItemCount,
+    distinctConversationBylineLabels: bylines.distinctBylineLabels,
+    largestConversationBylineGroup: bylines.largestBylineGroup,
     sourceLabels: [...new Set(evidence.map(({ source }) => cleanText(source)).filter(Boolean))].sort(),
     languages: [...new Set(evidence.map(({ language }) => cleanText(language)).filter(Boolean))].sort(),
     researcherAssessments: assessments
@@ -182,6 +225,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     "## Selected-sample coverage audit",
     "",
     `- Selected items: ${coverage.itemCount}`,
+    `- Discussion/Q&A links: ${coverage.conversationItemCount}; ${coverage.conversationItemsWithByline} with recognized displayed author/byline labels; ${coverage.distinctConversationBylineLabels} distinct labels; largest label group: ${coverage.largestConversationBylineGroup}. Labels are not verified people or proof of independent participation.`,
     `- Source labels: ${coverage.sourceLabels.map(escapeMarkdownLabel).join(", ") || "None"}`,
     `- Reviewed source operators represented: ${coverage.knownOperatorLabels.map(escapeMarkdownLabel).join(", ") || "None"}; unresolved operator items: ${coverage.unresolvedOperatorItemCount}`,
     `- Languages: ${coverage.languages.map(escapeMarkdownLabel).join(", ") || "None"}`,
