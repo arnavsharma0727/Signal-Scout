@@ -21,7 +21,7 @@ const sections = [
   },
   {
     title: "Evidence and human review",
-    body: "The local research-brief checklist requires every recent citation to be marked as supporting, contradicting, context, or not relevant. Unassessed and unrelated items do not count toward its minimum of three recent relevant citations, two reviewed source operators, or discussion-plus-reporting mix. At least one supporting and one contradicting item, an alternative explanation, and a disconfirmation test are also required. Passing means only ready for human review: it does not establish that sources support the same claim, represent a population, or qualify an automatically published lead. Entries retain source links and available publication/fetch times for inspection. No translation or inferred stance is generated.",
+    body: "The browser-local lead-dossier checklist requires every recent citation to be marked as supporting, contradicting, context, or not relevant. Each relevant source needs a researcher attestation that its original, date, and context were checked, plus a source-specific paraphrase of at least 20 characters. It also requires at least three recent relevant citations, two reviewed source operators, discussion plus reporting or expert analysis, both supporting and contradicting evidence, an alternative explanation, and a disconfirmation test. Passing creates a human-authored dossier on the researcher's device; it does not publish a lead or independently establish that the sources support the same claim, represent a population, or prove causation. Entries retain source links, researcher assessments, notes, and available publication times in browser-local storage. No translation or inferred stance is generated.",
   },
 ];
 

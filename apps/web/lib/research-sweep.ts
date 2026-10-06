@@ -146,6 +146,9 @@ export async function runResearchSweep(
         timeValue: post.publishedAt,
         attribution: `Lemmy author: ${post.author}`,
         attributionUrl: post.authorUrl ?? post.url,
+        // Treat federated instance searches as one Lemmy source class; multiple instances can overlap.
+        sourceOperatorKey: "lemmy-federation",
+        sourceOperatorLabel: "Lemmy federated search",
         transientPreview: post.transientPreview,
       })),
       ));
@@ -169,6 +172,9 @@ export async function runResearchSweep(
           : "Public hashtag search; server timeline is not a geographic market proxy",
         attribution: `Author: ${post.authorHandle}`,
         attributionUrl: post.authorUrl,
+        // The selected server is the query operator; multiple Mastodon servers are one network class.
+        sourceOperatorKey: "mastodon-network",
+        sourceOperatorLabel: "Mastodon public instances",
         transientPreview: post.contentWarning ? undefined : mastodonHtmlToTransientText(post.contentHtml),
       })),
     ));

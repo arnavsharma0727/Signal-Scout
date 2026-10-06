@@ -30,6 +30,7 @@ export default function ResearchBrief({
   onRemove,
   onAssess,
   onNote,
+  onVerifyOriginal,
   onClear,
 }: {
   evidence: ResearchEvidence[];
@@ -40,6 +41,7 @@ export default function ResearchBrief({
   onRemove: (id: string) => void;
   onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | "not relevant" | undefined) => void;
   onNote: (id: string, note: string) => void;
+  onVerifyOriginal: (id: string, checked: boolean) => void;
   onClear: () => void;
 }) {
   const [topic, setTopic] = useState("");
@@ -117,9 +119,11 @@ export default function ResearchBrief({
   async function copyBrief() {
     try {
       await navigator.clipboard.writeText(markdown());
-      setNotice("Brief copied to clipboard. It has not been sent to Signal Scout.");
+      setNotice(readiness.readyForHumanReview
+        ? "Lead dossier copied to clipboard. It has not been published or sent to Signal Scout."
+        : "Research brief copied to clipboard. It has not been sent to Signal Scout.");
     } catch {
-      setNotice("Clipboard access was unavailable. Use Download Markdown instead.");
+      setNotice("Clipboard access was unavailable. Use the download action instead.");
     }
   }
 
@@ -129,10 +133,12 @@ export default function ResearchBrief({
     const anchor = document.createElement("a");
     anchor.href = url;
     const slug = topic.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48);
-    anchor.download = `signal-scout-brief${slug ? `-${slug}` : ""}.md`;
+    anchor.download = `signal-scout-${readiness.readyForHumanReview ? "lead-dossier" : "brief"}${slug ? `-${slug}` : ""}.md`;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
-    setNotice("Markdown downloaded to this device. It has not been sent to Signal Scout.");
+    setNotice(readiness.readyForHumanReview
+      ? "Human-reviewed lead dossier downloaded to this device. It has not been published or sent to Signal Scout."
+      : "Research brief downloaded to this device. It has not been sent to Signal Scout.");
   }
 
   function clearDraft() {
@@ -208,6 +214,17 @@ export default function ResearchBrief({
                       placeholder="What does this source actually contribute to the thesis? Keep it in your own words."
                     />
                   </label>
+                  {item.researcherAssessment !== "not relevant" && (
+                    <label className="mt-2 flex items-start gap-2 text-xs leading-5 text-muted">
+                      <input
+                        className="mt-1 shrink-0"
+                        type="checkbox"
+                        checked={item.researcherVerifiedOriginal === true}
+                        onChange={(event) => onVerifyOriginal(item.id, event.target.checked)}
+                      />
+                      <span>I opened and checked this original source, date, and context.</span>
+                    </label>
+                  )}
                 </div>
                 <div className="flex shrink-0 flex-col items-end gap-2">
                   <label className="text-xs text-muted">
@@ -273,8 +290,8 @@ export default function ResearchBrief({
 
       <div className="mt-5 border-t border-line pt-4" aria-live="polite">
         <div className="eyebrow">Evidence qualification</div>
-        <h3 className="mt-2 font-semibold">{readiness.readyForHumanReview ? "Checklist met — ready for human review" : "Not yet ready for lead review"}</h3>
-        <p className="mt-1 text-xs leading-5 text-muted">This local checklist does not confirm a lead or validate that selected sources support the same claim. Inspect and judge each original source. Nothing is published to the public signal queue.</p>
+        <h3 className="mt-2 font-semibold">{readiness.readyForHumanReview ? "Local review bar complete — lead dossier ready" : "Not yet ready for lead review"}</h3>
+        <p className="mt-1 text-xs leading-5 text-muted">The checklist records your own source assessments and original-source attestations. It cannot independently verify what a source says, prove representativeness or causation, or publish a lead. A completed dossier is generated only on this device.</p>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {readiness.checks.map((check) => (
             <li key={check.label} className="flex items-start gap-2 text-xs leading-5">
@@ -286,8 +303,8 @@ export default function ResearchBrief({
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <button className="btn btn-primary" type="button" onClick={downloadBrief} disabled={!hasDraftContent}>Download Markdown</button>
-        <button className="btn" type="button" onClick={copyBrief} disabled={!hasDraftContent}>Copy Markdown</button>
+        <button className="btn btn-primary" type="button" onClick={downloadBrief} disabled={!hasDraftContent}>{readiness.readyForHumanReview ? "Download lead dossier" : "Download research brief"}</button>
+        <button className="btn" type="button" onClick={copyBrief} disabled={!hasDraftContent}>{readiness.readyForHumanReview ? "Copy lead dossier" : "Copy research brief"}</button>
         <button className="btn" type="button" onClick={clearDraft} disabled={!hasDraftContent}>Clear page draft</button>
       </div>
       <form action={saveResearchBrief} className="mt-5 border-t border-line pt-4">

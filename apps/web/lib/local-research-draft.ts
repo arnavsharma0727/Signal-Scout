@@ -52,6 +52,7 @@ const evidenceSchema = z.object({
   licenseName: z.string().max(200).optional(),
   licenseUrl: httpsUrlSchema.optional(),
   researcherAssessment: z.enum(["supports", "contradicts", "context", "not relevant"]).optional(),
+  researcherVerifiedOriginal: z.boolean().optional(),
   sourceOperatorKey: z.string().max(200).optional(),
   sourceOperatorLabel: z.string().max(200).optional(),
 }).strip();

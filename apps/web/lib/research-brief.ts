@@ -12,6 +12,8 @@ export type ResearchEvidence = {
   context?: string;
   /** Researcher-authored paraphrase of what this source contributes. */
   researcherNote?: string;
+  /** Researcher attestation that the original citation was opened and checked. */
+  researcherVerifiedOriginal?: boolean;
   attribution?: string;
   attributionUrl?: string;
   licenseName?: string;
@@ -64,6 +66,7 @@ export function assessResearchLeadReadiness(input: {
     item.researcherAssessment !== undefined && item.researcherAssessment !== "not relevant");
   const documentedRelevantEvidence = relevantEvidence.filter((item) =>
     typeof item.researcherNote === "string" && item.researcherNote.trim().length >= 20);
+  const checkedRelevantEvidence = relevantEvidence.filter((item) => item.researcherVerifiedOriginal === true);
   const operatorLabels = new Map<string, Set<string>>();
   for (const item of relevantEvidence) {
     if (!item.sourceOperatorKey || !item.sourceOperatorLabel) continue;
@@ -79,6 +82,7 @@ export function assessResearchLeadReadiness(input: {
     { label: "Specific topic and working thesis", passed: Boolean(input.topic.trim() && input.workingThesis.trim()), detail: "Write the question being investigated and a tentative explanation." },
     { label: "Relevance reviewed for every recent citation", passed: relevanceReviewed, detail: `${recentEvidence.filter((item) => !item.researcherAssessment).length} recent citations remain unassessed; mark unrelated items “Not relevant.”` },
     { label: "At least three recent, relevant, dated citations", passed: relevantEvidence.length >= 3, detail: `${relevantEvidence.length} recent citations are marked relevant to the topic; “Not relevant” items are excluded.` },
+    { label: "Original sources checked", passed: relevantEvidence.length > 0 && checkedRelevantEvidence.length === relevantEvidence.length, detail: `${checkedRelevantEvidence.length}/${relevantEvidence.length} relevant citation(s) are attested as opened and checked against the original source.` },
     { label: "Source-specific evidence documented", passed: relevantEvidence.length > 0 && documentedRelevantEvidence.length === relevantEvidence.length, detail: `${documentedRelevantEvidence.length}/${relevantEvidence.length} relevant citation(s) have a source-specific paraphrase of at least 20 characters.` },
     { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? `${operators.length} reviewed operator(s): ${operatorDisplay.join(" · ")}` : "No reviewed source operator is represented yet." },
     { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
@@ -238,12 +242,14 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     asOf: Date.parse(draft.exportedAt),
   });
   const lines = [
-    "# Signal Scout research brief",
+    readiness.readyForHumanReview ? "# Signal Scout human-reviewed lead dossier" : "# Signal Scout research brief",
     "",
     `Exported: ${cleanText(draft.exportedAt)}`,
     `Topic: ${cleanText(draft.topic) || "Not specified"}`,
     "",
-    "> Exploratory working notes only. Sources are query-selected, incomplete, and not representative by default. This brief is not an investment recommendation or evidence of causality.",
+    readiness.readyForHumanReview
+      ? "> The researcher attested to checking each relevant original source and completed the local evidence checklist. This is a human-authored research lead dossier, not an independently verified finding, representative sample, causal conclusion, or investment recommendation. It has not been published to Signal Scout."
+      : "> Exploratory working notes only. Sources are query-selected, incomplete, and not representative by default. This brief is not an investment recommendation or evidence of causality.",
     "",
     "## Working thesis",
     "",
@@ -272,7 +278,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     "",
     "## Evidence qualification checklist",
     "",
-    `- Status: ${readiness.readyForHumanReview ? "Checklist met; ready for human review only" : "Not ready for lead review"}`,
+    `- Status: ${readiness.readyForHumanReview ? "Local checklist met; human-reviewed lead dossier prepared (not independently verified or published)" : "Not ready for lead review"}`,
     ...readiness.checks.map((check) => `- [${check.passed ? "x" : " "}] ${check.label}: ${check.detail}`),
     "- This checklist does not confirm a lead, source independence beyond reviewed operator labels, or investment implications. “Not relevant” citations do not count toward its evidence checks.",
     "",
@@ -289,7 +295,7 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
       item.licenseName && item.licenseUrl ? `[${escapeMarkdownLabel(item.licenseName)}](${safeMarkdownUrl(item.licenseUrl)})` : "",
     ].filter(Boolean).join("; ");
     lines.push(
-      `- [${escapeMarkdownLabel(item.title) || "Open source item"}](${safeMarkdownUrl(item.url)}) — ${cleanText(item.evidenceClass)}; ${escapeMarkdownLabel(item.source)}; ${escapeMarkdownLabel(item.language)}; ${escapeMarkdownLabel(item.timeLabel)}: ${escapeMarkdownLabel(item.timeValue)}${item.researcherAssessment ? `; researcher assessment: ${item.researcherAssessment}` : ""}${item.researcherNote?.trim() ? `; researcher observation: ${cleanText(item.researcherNote)}` : ""}${attribution ? `; ${attribution}` : ""}`,
+      `- [${escapeMarkdownLabel(item.title) || "Open source item"}](${safeMarkdownUrl(item.url)}) — ${cleanText(item.evidenceClass)}; ${escapeMarkdownLabel(item.source)}; ${escapeMarkdownLabel(item.language)}; ${escapeMarkdownLabel(item.timeLabel)}: ${escapeMarkdownLabel(item.timeValue)}${item.researcherVerifiedOriginal ? "; original checked by researcher" : "; original not attested as checked"}${item.researcherAssessment ? `; researcher assessment: ${item.researcherAssessment}` : ""}${item.researcherNote?.trim() ? `; researcher observation: ${cleanText(item.researcherNote)}` : ""}${attribution ? `; ${attribution}` : ""}`,
     );
   }
 

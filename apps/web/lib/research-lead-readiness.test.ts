@@ -3,9 +3,9 @@ import { assessResearchLeadReadiness, type ResearchEvidence } from "./research-b
 
 const now = Date.parse("2026-10-05T12:00:00Z");
 const evidence: ResearchEvidence[] = [
-  { id: "social", title: "Discussion source", url: "https://bsky.app/profile/a.example/post/1", source: "Bluesky", evidenceClass: "social discussion", language: "en", timeLabel: "Published", timeValue: new Date(now - 3600000).toISOString(), researcherAssessment: "supports", researcherNote: "The post describes a local increase in household electricity bills.", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky" },
-  { id: "news", title: "Reporting source", url: "https://globalvoices.org/story/1", source: "Global Voices", evidenceClass: "news coverage", language: "en", timeLabel: "Published", timeValue: new Date(now - 7200000).toISOString(), researcherAssessment: "contradicts", researcherNote: "The report attributes the price change to a separate utility tariff revision.", sourceOperatorKey: "global-voices", sourceOperatorLabel: "Global Voices" },
-  { id: "analysis", title: "Analysis source", url: "https://theconversation.com/story/1", source: "The Conversation", evidenceClass: "expert analysis", language: "en", timeLabel: "Published", timeValue: new Date(now - 10800000).toISOString(), researcherAssessment: "context", researcherNote: "The analysis distinguishes wholesale energy prices from local retail rates.", sourceOperatorKey: "the-conversation", sourceOperatorLabel: "The Conversation" },
+  { id: "social", title: "Discussion source", url: "https://bsky.app/profile/a.example/post/1", source: "Bluesky", evidenceClass: "social discussion", language: "en", timeLabel: "Published", timeValue: new Date(now - 3600000).toISOString(), researcherAssessment: "supports", researcherNote: "The post describes a local increase in household electricity bills.", researcherVerifiedOriginal: true, sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky" },
+  { id: "news", title: "Reporting source", url: "https://globalvoices.org/story/1", source: "Global Voices", evidenceClass: "news coverage", language: "en", timeLabel: "Published", timeValue: new Date(now - 7200000).toISOString(), researcherAssessment: "contradicts", researcherNote: "The report attributes the price change to a separate utility tariff revision.", researcherVerifiedOriginal: true, sourceOperatorKey: "global-voices", sourceOperatorLabel: "Global Voices" },
+  { id: "analysis", title: "Analysis source", url: "https://theconversation.com/story/1", source: "The Conversation", evidenceClass: "expert analysis", language: "en", timeLabel: "Published", timeValue: new Date(now - 10800000).toISOString(), researcherAssessment: "context", researcherNote: "The analysis distinguishes wholesale energy prices from local retail rates.", researcherVerifiedOriginal: true, sourceOperatorKey: "the-conversation", sourceOperatorLabel: "The Conversation" },
 ];
 
 describe("research lead readiness", () => {
@@ -54,6 +54,15 @@ describe("research lead readiness", () => {
     const result = assessResearchLeadReadiness({ ...complete, evidence: missingNote });
     expect(result.readyForHumanReview).toBe(false);
     expect(result.checks.find((check) => check.label === "Source-specific evidence documented")?.passed).toBe(false);
+  });
+
+  it("requires the researcher to attest that every relevant original source was checked", () => {
+    const unchecked = evidence.map((item) => item.id === "news"
+      ? { ...item, researcherVerifiedOriginal: false }
+      : item);
+    const result = assessResearchLeadReadiness({ ...complete, evidence: unchecked });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label === "Original sources checked")?.passed).toBe(false);
   });
 
   it("excludes unrelated conversation from the minimum sample and source-class checks", () => {

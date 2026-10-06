@@ -169,6 +169,8 @@ export default function LemmySearch({
                               timeValue: post.publishedAt,
                               attribution: `Lemmy author: ${post.author}`,
                               attributionUrl: post.authorUrl ?? post.url,
+                              sourceOperatorKey: "lemmy-federation",
+                              sourceOperatorLabel: "Lemmy federated search",
                               context: "Visitor-entered search; query and unselected results are not retained by Signal Scout",
                             })}
                           >

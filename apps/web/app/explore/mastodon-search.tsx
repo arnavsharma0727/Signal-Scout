@@ -253,6 +253,8 @@ export default function MastodonSearch({
                   context: "Selected from public server views; views may overlap and do not represent a country sample",
                   attribution: "Author-owned content; no blanket license implied",
                   attributionUrl: post.authorUrl,
+                  sourceOperatorKey: "mastodon-network",
+                  sourceOperatorLabel: "Mastodon public instances",
                 })}
               >
                 {selectedIds.has(`mastodon:${post.url}`) ? "Added to brief" : "Add link to brief"}

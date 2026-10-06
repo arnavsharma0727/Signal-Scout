@@ -100,6 +100,25 @@ describe("createResearchBriefMarkdown", () => {
     expect(markdown).not.toContain("automated sentiment");
   });
 
+  it("labels a fully attested human-reviewed export as an unpublished lead dossier", () => {
+    const completeEvidence: ResearchEvidence[] = [
+      { ...selected, id: "discussion", source: "Bluesky", evidenceClass: "social discussion", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky", researcherAssessment: "supports", researcherNote: "The post describes the observed cross-border change.", researcherVerifiedOriginal: true },
+      { ...selected, id: "report", source: "Global Voices", url: "https://globalvoices.org/story/1", evidenceClass: "news coverage", sourceOperatorKey: "global-voices", sourceOperatorLabel: "Global Voices", researcherAssessment: "contradicts", researcherNote: "The report presents evidence of a different cause.", researcherVerifiedOriginal: true },
+      { ...selected, id: "analysis", source: "The Conversation", url: "https://theconversation.com/story/1", evidenceClass: "expert analysis", sourceOperatorKey: "the-conversation", sourceOperatorLabel: "The Conversation", researcherAssessment: "context", researcherNote: "This explains the relevant market background.", researcherVerifiedOriginal: true },
+    ];
+    const markdown = createResearchBriefMarkdown({
+      topic: "Cross-border energy policy",
+      workingThesis: "A testable, tentative explanation.",
+      alternatives: "A local tariff revision could explain the same observation.",
+      disconfirmingEvidence: "A matched sample returning to its prior level would change this view.",
+      evidence: completeEvidence,
+      exportedAt: "2026-10-01T12:00:00Z",
+    });
+    expect(markdown).toContain("# Signal Scout human-reviewed lead dossier");
+    expect(markdown).toContain("not independently verified or published");
+    expect(markdown).toContain("original checked by researcher");
+  });
+
   it("includes the researcher's source-specific paraphrase in the exported evidence record", () => {
     const markdown = createResearchBriefMarkdown({
       topic: "Electricity prices",

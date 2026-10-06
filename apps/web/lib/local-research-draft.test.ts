@@ -7,6 +7,7 @@ const citation: ResearchEvidence = {
   source: "Bluesky", evidenceClass: "social discussion", language: "en",
   timeLabel: "Published", timeValue: "2026-10-05T12:00:00.000Z",
   researcherNote: "The post describes a claimed local cost increase.",
+  researcherVerifiedOriginal: true,
   sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky",
   transientPreview: "This text must never be persisted",
 };
@@ -16,6 +17,10 @@ describe("local browser research evidence draft", () => {
     const serialized = serializeLocalEvidenceDraft([citation]);
     expect(serialized).not.toContain("This text must never be persisted");
     expect(parseLocalEvidenceDraft(serialized)).toEqual([{ ...citation, transientPreview: undefined }].map(({ transientPreview: _removed, ...saved }) => saved));
+  });
+
+  it("persists the researcher's original-source review attestation locally", () => {
+    expect(parseLocalEvidenceDraft(serializeLocalEvidenceDraft([citation]))?.[0].researcherVerifiedOriginal).toBe(true);
   });
 
   it("rejects malformed, oversized, and non-HTTPS browser data", () => {

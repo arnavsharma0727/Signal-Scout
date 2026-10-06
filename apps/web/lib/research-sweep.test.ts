@@ -175,6 +175,14 @@ describe("runResearchSweep", () => {
       evidenceClass: "expert Q&A",
       licenseName: "CC BY-SA 4.0",
     });
+    expect(results[2].evidence[0]).toMatchObject({
+      sourceOperatorKey: "lemmy-federation",
+      sourceOperatorLabel: "Lemmy federated search",
+    });
+    expect(results[3].evidence[0]).toMatchObject({
+      sourceOperatorKey: "mastodon-network",
+      sourceOperatorLabel: "Mastodon public instances",
+    });
     expect(results[0].evidence[0]).toMatchObject({
       source: "Associated Press",
       sourceOperatorKey: "associated-press",
