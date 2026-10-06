@@ -201,10 +201,12 @@ export default async function Sources() {
       key: "bluesky",
       enabled: false,
       onDemand: true,
-      referenceUrl: "https://docs.bsky.app/docs/api/app-bsky-feed-get-feed",
-      referenceLabel: "Bluesky public API documentation",
+      referenceUrl: "https://github.com/bluesky-social/atproto/blob/main/lexicons/app/bsky/unspecced/getTrends.json",
+      referenceLabel: "Bluesky getTrends API lexicon",
+      secondaryReferenceUrl: "https://docs.bsky.app/docs/advanced-guides/api-directory",
+      secondaryReferenceLabel: "Bluesky API hosts and authentication",
       detail:
-        "Visitor-triggered query search through the unauthenticated api.bsky.app endpoint; no key or account is used. Up to 25 recent indexed results are shown transiently with a source link, author handle, date, and available language metadata. Researchers can run separate manually entered language phrases; each capped query remains a separate, non-comparable sample, and language metadata may be missing. Post text is discarded from the app's citation model; nothing is sent to Signal Scout or persisted. The search index is incomplete, posts remain their authors’ content, and results are not a representative sample. Scheduled ingestion and retention of Bluesky post content are disabled pending a reviewed rights, deletion, and retention basis.",
+        "Explore also offers visitor-triggered topic discovery via the unauthenticated public.api.bsky.app getTrends endpoint; it displays at most eight provider-ranked labels with Bluesky-reported metadata, without saving them. Choosing a label only fills the phrase-search form; the visitor must separately run the sweep and review resulting original sources. This ranking is not geographic, representative, independently verified, or evidence of attention or a market signal. The separate query search shows up to 25 recent indexed results transiently with a source link, author handle, date, and available language metadata. Researchers can run separate manually entered language phrases; each capped query remains a separate, non-comparable sample, and language metadata may be missing. Post text is discarded from the app's citation model; nothing is sent to Signal Scout or persisted. The search index is incomplete, posts remain their authors’ content, and results are not a representative sample. Scheduled ingestion and retention of Bluesky post content are disabled pending a reviewed rights, deletion, and retention basis.",
     },
     {
       name: "YouTube public comments (candidate)",

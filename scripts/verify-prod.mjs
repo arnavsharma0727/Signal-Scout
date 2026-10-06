@@ -63,6 +63,8 @@ try {
   const page = await response.text();
   if (response.ok && page.includes('Search one topic across selected sources') && page.includes('Run source sweep')) pass('international live source sweep is public', `HTTP ${response.status}; source choices and direct-search workflow rendered`);
   else fail('international live source sweep is public', `HTTP ${response.status}; source sweep UI missing`);
+  if (response.ok && page.includes('Load current topics') && page.includes('not country-specific, representative, independently verified')) pass('keyless Bluesky trend discovery is clearly bounded','transient provider-ranked labels only prefill a user-run search and are not presented as qualified evidence');
+  else fail('keyless Bluesky trend discovery is clearly bounded',`HTTP ${response.status}; discovery entry point or representativeness limitation missing`);
   if (response.ok && page.includes('Multiple conversation bylines; no single label over 60%') && page.includes('who an author is')) pass('local dossier checks conversation attribution concentration','the local review gate requires attributed conversation items and discloses that labels are not identity verification');
   else fail('local dossier checks conversation attribution concentration',`HTTP ${response.status}; byline concentration gate or identity limitation missing`);
 } catch (error) { fail('international live source sweep is public',error.message); }
