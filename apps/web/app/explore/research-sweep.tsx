@@ -26,7 +26,7 @@ export default function ResearchSweep({
 }) {
   const [query, setQuery] = useState("");
   const [gdelt, setGdelt] = useState(false);
-  const [stackExchangeSites, setStackExchangeSites] = useState<string[]>([DISCUSSION_COMMUNITIES[0].site]);
+  const [stackExchangeSites, setStackExchangeSites] = useState<string[]>([]);
   const [stackExchangeTerms, setStackExchangeTerms] = useState<Record<string, string>>({});
   const [lemmy, setLemmy] = useState(false);
   const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
@@ -83,7 +83,7 @@ export default function ResearchSweep({
       <div className="eyebrow">Live, browser-only source sweep</div>
       <h2 id="research-sweep-title" className="mt-2 text-xl font-semibold">Search one topic across selected sources</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Searches go directly from this browser to public sources, except GDELT, which uses a first-party no-store bridge because its API blocks browser cross-origin calls. Enter equivalent Bluesky or Stack Exchange phrases separately for each language; Signal Scout does not auto-translate. Each query remains its own sample—counts are not comparable audience measures and are never pooled or stored.
+        Start with a public conversation search and optional news-index check. Add specialist Q&amp;A, federated forums, or editorial discussion only when useful. Searches go directly from this browser to public sources, except GDELT, which uses a first-party no-store bridge. Enter equivalent phrases separately for each language; Signal Scout does not auto-translate. Source samples stay separate and are not audience measures.
       </p>
       <form onSubmit={submit} className="mt-5 grid gap-4">
         <label className="block text-sm font-medium">
@@ -120,6 +120,9 @@ export default function ResearchSweep({
             <input className="mt-1" type="checkbox" checked={gdelt} onChange={(event) => setGdelt(event.target.checked)} />
             <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · optional · can be slow or rate-limited · up to 25 results</span></span>
           </label>
+          <details className="md:col-span-2 rounded border border-line px-3 py-2">
+            <summary className="cursor-pointer text-sm font-medium">Add specialist sources · Q&amp;A, forums, and editorial pages</summary>
+            <div className="mt-4 grid gap-4 border-t border-line pt-4">
           <fieldset className="grid gap-2 border-y border-line py-3 text-sm leading-5">
             <legend className="font-medium">Stack Exchange · choose up to four communities</legend>
             <p className="text-xs text-muted">Title-only searches, last 30 days; only items marked CC BY-SA 4.0 are shown. Enter equivalent localized phrases yourself. This is expert Q&amp;A, not general forum conversation.</p>
@@ -242,6 +245,8 @@ export default function ResearchSweep({
               </select>
             </span>
           </label>
+            </div>
+          </details>
         </div>
         {lemmy && (
           <label className="flex items-start gap-2 text-xs leading-5 text-muted">
