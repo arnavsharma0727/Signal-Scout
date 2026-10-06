@@ -76,6 +76,23 @@ describe("public research lead submission gate", () => {
     });
   });
 
+  it("rejects duplicate source links even when they use different database IDs and bylines", () => {
+    const socialDocuments = documents.map((document, index) => index === 2 ? document : {
+      ...document,
+      source_type: "researcher-linked-source",
+      source_name: "Bluesky public post",
+      source_domain: "bsky.app",
+      source_url: "https://bsky.app/profile/reader-one/post/shared",
+      title_original: index === 0 ? "Public post by @reader-one" : "Public post by @reader-two",
+      raw_metadata_json: {
+        citationProvider: "bluesky",
+        attribution: index === 0 ? "Author: @reader-one" : "Author: @reader-two",
+        researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+      },
+    });
+    expect(preparePublicLeadSubmission({ ...input, documents: socialDocuments })).toBeNull();
+  });
+
   it("rejects repeated byline labels even when the source records are numerous", () => {
     const sameByline = documents.map((document, index) => index < 2
       ? { ...document, raw_metadata_json: { ...document.raw_metadata_json!, author: "same-reader" } }

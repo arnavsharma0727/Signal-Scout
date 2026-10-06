@@ -1,5 +1,5 @@
 import { toPublisherEvidence } from "./publisher-evidence";
-import type { ResearchEvidence } from "./research-brief";
+import { canonicalEvidenceSourceUrl, type ResearchEvidence } from "./research-brief";
 
 export type ReviewedLeadCitation = {
   documentId: string;
@@ -52,6 +52,7 @@ export function preparePublicLeadSubmission(input: {
 
   const documentsById = new Map(input.documents.map((document) => [document.id, document]));
   const seenIds = new Set<string>();
+  const seenSourceUrls = new Set<string>();
   const reviewed: Array<{
     document: LeadSourceDocument;
     evidence: ResearchEvidence;
@@ -66,9 +67,12 @@ export function preparePublicLeadSubmission(input: {
     if (!document || document.id !== citation.documentId) return null;
     const evidence = toPublisherEvidence(document, now);
     if (!evidence) return null;
+    const sourceUrl = canonicalEvidenceSourceUrl(evidence.url);
+    if (!sourceUrl || seenSourceUrls.has(sourceUrl)) return null;
     const publishedAt = Date.parse(document.published_at);
     if (!Number.isFinite(publishedAt) || publishedAt > now || now - publishedAt > 30 * 86400000) return null;
     seenIds.add(citation.documentId);
+    seenSourceUrls.add(sourceUrl);
     reviewed.push({ document, evidence, citation });
   }
 

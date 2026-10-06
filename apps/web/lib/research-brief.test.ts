@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { citationWithoutTransientContent, createResearchBriefMarkdown, groupRepeatedPostText, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, summarizeRepeatedPostText, topicFromFragment } from "./research-brief";
+import { canonicalEvidenceSourceUrl, citationWithoutTransientContent, createResearchBriefMarkdown, groupRepeatedPostText, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, summarizeRepeatedPostText, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -18,6 +18,13 @@ const selected: ResearchEvidence = {
 };
 
 describe("createResearchBriefMarkdown", () => {
+  it("canonicalizes tracking variants for duplicate-link checks without equating different sources", () => {
+    expect(canonicalEvidenceSourceUrl("https://example.org/story?utm_source=feed&b=2#section"))
+      .toBe("https://example.org/story?b=2");
+    expect(canonicalEvidenceSourceUrl("http://example.org/story")).toBeNull();
+    expect(canonicalEvidenceSourceUrl("https://example.org/other-story")).not.toBe(canonicalEvidenceSourceUrl("https://example.org/story"));
+  });
+
   it("summarizes visible discussion bylines without merging labels across operators", () => {
     const summary = summarizeConversationBylines([
       { ...selected, id: "a", attribution: "Author: @same", sourceOperatorKey: "bluesky" },
@@ -138,6 +145,24 @@ describe("createResearchBriefMarkdown", () => {
     expect(markdown).toContain("# Signal Scout human-reviewed lead dossier");
     expect(markdown).toContain("not independently verified or published");
     expect(markdown).toContain("original checked by researcher");
+  });
+
+  it("does not let duplicate source URLs satisfy citation or byline thresholds", () => {
+    const duplicateUrlEvidence: ResearchEvidence[] = [
+      { ...selected, id: "conversation-a", url: "https://bsky.app/profile/reader-one/post/1", evidenceClass: "social discussion", attribution: "Author: @reader-one", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky", researcherAssessment: "supports", researcherNote: "This post describes the observed cross-border change.", researcherVerifiedOriginal: true },
+      { ...selected, id: "conversation-duplicate", url: "https://bsky.app/profile/reader-one/post/1?utm_source=feed", evidenceClass: "social discussion", attribution: "Author: @reader-two", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky", researcherAssessment: "supports", researcherNote: "A second displayed byline repeats the same linked source page.", researcherVerifiedOriginal: true },
+      { ...selected, id: "report", url: "https://globalvoices.org/story/1", evidenceClass: "news coverage", sourceOperatorKey: "global-voices", sourceOperatorLabel: "Global Voices", researcherAssessment: "contradicts", researcherNote: "The report presents evidence of a different cause.", researcherVerifiedOriginal: true },
+    ];
+    const markdown = createResearchBriefMarkdown({
+      topic: "Cross-border energy policy", workingThesis: "A testable, tentative explanation.",
+      alternatives: "A local tariff revision could explain the same observation.",
+      disconfirmingEvidence: "A matched sample returning to its prior level would change this view.",
+      evidence: duplicateUrlEvidence, exportedAt: "2026-10-01T12:00:00Z",
+    });
+    expect(markdown).toContain("At least three unique recent, relevant citations: 2 unique source link(s)");
+    expect(markdown).toContain("Multiple conversation bylines; no single label over 60%: 1 distinct byline label(s)");
+    expect(markdown).toContain("1 duplicate link(s) are counted only once");
+    expect(markdown).toContain("# Signal Scout research brief");
   });
 
   it("includes the researcher's source-specific paraphrase in the exported evidence record", () => {

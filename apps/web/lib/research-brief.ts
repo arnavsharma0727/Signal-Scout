@@ -26,6 +26,23 @@ export type ResearchEvidence = {
   transientPreview?: string;
 };
 
+/** Canonical identity for detecting repeated selected links, never publisher ownership. */
+export function canonicalEvidenceSourceUrl(value: string): string | null {
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:" || url.username || url.password || url.port) return null;
+    url.hostname = url.hostname.toLocaleLowerCase();
+    url.hash = "";
+    for (const key of [...url.searchParams.keys()]) {
+      if (/^(?:utm_.+|fbclid|gclid|mc_cid|mc_eid|ref_src)$/i.test(key)) url.searchParams.delete(key);
+    }
+    url.searchParams.sort();
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 export function citationWithoutTransientContent(item: ResearchEvidence): ResearchEvidence {
   const citation = { ...item };
   delete citation.transientPreview;
@@ -64,15 +81,27 @@ export function assessResearchLeadReadiness(input: {
   const relevanceReviewed = recentEvidence.every((item) => item.researcherAssessment !== undefined);
   const relevantEvidence = recentEvidence.filter((item) =>
     item.researcherAssessment !== undefined && item.researcherAssessment !== "not relevant");
-  const documentedRelevantEvidence = relevantEvidence.filter((item) =>
+  const uniqueRelevantByUrl = new Map<string, ResearchEvidence>();
+  let invalidRelevantUrlCount = 0;
+  for (const item of relevantEvidence) {
+    const identity = canonicalEvidenceSourceUrl(item.url);
+    if (!identity) {
+      invalidRelevantUrlCount++;
+      continue;
+    }
+    if (!uniqueRelevantByUrl.has(identity)) uniqueRelevantByUrl.set(identity, item);
+  }
+  const uniqueRelevantEvidence = [...uniqueRelevantByUrl.values()];
+  const duplicateRelevantUrlCount = relevantEvidence.length - invalidRelevantUrlCount - uniqueRelevantEvidence.length;
+  const documentedRelevantEvidence = uniqueRelevantEvidence.filter((item) =>
     typeof item.researcherNote === "string" && item.researcherNote.trim().length >= 20);
-  const checkedRelevantEvidence = relevantEvidence.filter((item) => item.researcherVerifiedOriginal === true);
-  const bylines = summarizeConversationBylines(relevantEvidence);
+  const checkedRelevantEvidence = uniqueRelevantEvidence.filter((item) => item.researcherVerifiedOriginal === true);
+  const bylines = summarizeConversationBylines(uniqueRelevantEvidence);
   const largestBylineShare = bylines.attributedItemCount
     ? bylines.largestBylineGroup / bylines.attributedItemCount
     : 1;
   const operatorLabels = new Map<string, Set<string>>();
-  for (const item of relevantEvidence) {
+  for (const item of uniqueRelevantEvidence) {
     if (!item.sourceOperatorKey || !item.sourceOperatorLabel) continue;
     const labels = operatorLabels.get(item.sourceOperatorKey) ?? new Set<string>();
     labels.add(item.sourceOperatorLabel);
@@ -80,14 +109,15 @@ export function assessResearchLeadReadiness(input: {
   }
   const operators = [...operatorLabels.keys()].sort();
   const operatorDisplay = [...operatorLabels.values()].flatMap((labels) => [...labels]).sort();
-  const classes = new Set(relevantEvidence.map((item) => item.evidenceClass));
-  const assessments = new Set(relevantEvidence.map((item) => item.researcherAssessment));
+  const classes = new Set(uniqueRelevantEvidence.map((item) => item.evidenceClass));
+  const assessments = new Set(uniqueRelevantEvidence.map((item) => item.researcherAssessment));
   const checks = [
     { label: "Specific topic and working thesis", passed: input.topic.trim().length >= 3 && input.workingThesis.trim().length >= 20, detail: "Write a specific question (at least 3 characters) and a testable tentative explanation (at least 20 characters)." },
     { label: "Relevance reviewed for every recent citation", passed: relevanceReviewed, detail: `${recentEvidence.filter((item) => !item.researcherAssessment).length} recent citations remain unassessed; mark unrelated items “Not relevant.”` },
-    { label: "At least three recent, relevant, dated citations", passed: relevantEvidence.length >= 3, detail: `${relevantEvidence.length} recent citations are marked relevant to the topic; “Not relevant” items are excluded.` },
-    { label: "Original sources checked", passed: relevantEvidence.length > 0 && checkedRelevantEvidence.length === relevantEvidence.length, detail: `${checkedRelevantEvidence.length}/${relevantEvidence.length} relevant citation(s) are attested as opened and checked against the original source.` },
-    { label: "Source-specific evidence documented", passed: relevantEvidence.length > 0 && documentedRelevantEvidence.length === relevantEvidence.length, detail: `${documentedRelevantEvidence.length}/${relevantEvidence.length} relevant citation(s) have a source-specific paraphrase of at least 20 characters.` },
+    { label: "Relevant citations use valid HTTPS source links", passed: invalidRelevantUrlCount === 0, detail: `${invalidRelevantUrlCount} relevant citation(s) have an invalid or non-HTTPS source URL.` },
+    { label: "At least three unique recent, relevant citations", passed: uniqueRelevantEvidence.length >= 3, detail: `${uniqueRelevantEvidence.length} unique source link(s) are marked relevant; ${duplicateRelevantUrlCount} duplicate link(s) are counted only once and “Not relevant” items are excluded.` },
+    { label: "Original sources checked", passed: uniqueRelevantEvidence.length > 0 && checkedRelevantEvidence.length === uniqueRelevantEvidence.length, detail: `${checkedRelevantEvidence.length}/${uniqueRelevantEvidence.length} unique relevant source link(s) are attested as opened and checked against the original.` },
+    { label: "Source-specific evidence documented", passed: uniqueRelevantEvidence.length > 0 && documentedRelevantEvidence.length === uniqueRelevantEvidence.length, detail: `${documentedRelevantEvidence.length}/${uniqueRelevantEvidence.length} unique relevant source link(s) have a source-specific paraphrase of at least 20 characters.` },
     { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? `${operators.length} reviewed operator(s): ${operatorDisplay.join(" · ")}` : "No reviewed source operator is represented yet." },
     { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
     { label: "Multiple conversation bylines; no single label over 60%", passed: bylines.itemCount >= 2 && bylines.attributedItemCount === bylines.itemCount && bylines.distinctBylineLabels >= 2 && largestBylineShare <= 0.6, detail: `${bylines.distinctBylineLabels} distinct byline label(s) across ${bylines.attributedItemCount}/${bylines.itemCount} attributed conversation citation(s); largest label is ${Math.round(largestBylineShare * 100)}% of attributed items. Labels do not verify separate people.` },

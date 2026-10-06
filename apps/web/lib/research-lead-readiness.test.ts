@@ -98,7 +98,7 @@ describe("research lead readiness", () => {
         : item),
     });
     expect(result.readyForHumanReview).toBe(false);
-    expect(result.checks.find((check) => check.label === "At least three recent, relevant, dated citations")?.passed).toBe(false);
+    expect(result.checks.find((check) => check.label === "At least three unique recent, relevant citations")?.passed).toBe(false);
     expect(result.checks.find((check) => check.label === "Discussion plus reporting or expert analysis")?.passed).toBe(false);
     expect(result.reviewedOperators).not.toContain("Bluesky");
   });
@@ -111,6 +111,6 @@ describe("research lead readiness", () => {
     ];
     const result = assessResearchLeadReadiness({ ...complete, evidence: incomplete });
     expect(result.readyForHumanReview).toBe(false);
-    expect(result.checks.find((check) => check.label === "At least three recent, relevant, dated citations")?.passed).toBe(false);
+    expect(result.checks.find((check) => check.label === "At least three unique recent, relevant citations")?.passed).toBe(false);
   });
 });
