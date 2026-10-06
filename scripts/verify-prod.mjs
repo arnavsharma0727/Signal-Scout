@@ -70,6 +70,8 @@ try {
   const page = await response.text();
   if (response.ok && page.includes('Find a conversation. Follow its evidence.') && page.includes('Search one topic across selected sources') && !page.includes('Hacker News comment')) pass('public research desk withholds uncleared source material','focused topic-to-brief workflow renders without uncleared source content');
   else fail('public research desk withholds uncleared source material',`HTTP ${response.status}; focused workflow missing or uncleared source material may be rendered`);
+  if (response.ok && page.includes('Original sources checked') && page.includes('original-source attestations') && page.includes('Download research brief')) pass('local lead dossier requires source-review attestation','the brief exposes the original-source check and distinguishes incomplete research briefs from completed dossiers');
+  else fail('local lead dossier requires source-review attestation',`HTTP ${response.status}; original-source review gate or local brief state was not rendered`);
   const sourcesResponse=await fetch(`${base}/sources`,{redirect:'follow',signal:AbortSignal.timeout(15000)});
   const sourcesPage=await sourcesResponse.text();
   if(sourcesResponse.ok&&sourcesPage.includes('Wikimedia · article talk pages')&&sourcesPage.includes('comment text, edit summaries, usernames, and IPs are never requested or stored')&&sourcesPage.includes('CC BY-SA 4.0'))pass('Wikimedia attribution and limitations are public','source methodology states metadata minimization and links applicable license');
