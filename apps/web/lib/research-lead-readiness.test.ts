@@ -3,7 +3,8 @@ import { assessResearchLeadReadiness, type ResearchEvidence } from "./research-b
 
 const now = Date.parse("2026-10-05T12:00:00Z");
 const evidence: ResearchEvidence[] = [
-  { id: "social", title: "Discussion source", url: "https://bsky.app/profile/a.example/post/1", source: "Bluesky", evidenceClass: "social discussion", language: "en", timeLabel: "Published", timeValue: new Date(now - 3600000).toISOString(), researcherAssessment: "supports", researcherNote: "The post describes a local increase in household electricity bills.", researcherVerifiedOriginal: true, sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky" },
+  { id: "social", title: "Discussion source", url: "https://bsky.app/profile/a.example/post/1", source: "Bluesky", evidenceClass: "social discussion", language: "en", timeLabel: "Published", timeValue: new Date(now - 3600000).toISOString(), attribution: "Author: @reader-one", researcherAssessment: "supports", researcherNote: "The post describes a local increase in household electricity bills.", researcherVerifiedOriginal: true, sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky" },
+  { id: "social-2", title: "Another discussion source", url: "https://bsky.app/profile/b.example/post/2", source: "Bluesky", evidenceClass: "social discussion", language: "en", timeLabel: "Published", timeValue: new Date(now - 1800000).toISOString(), attribution: "Author: @reader-two", researcherAssessment: "supports", researcherNote: "This separate account describes the same local bill increase.", researcherVerifiedOriginal: true, sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky" },
   { id: "news", title: "Reporting source", url: "https://globalvoices.org/story/1", source: "Global Voices", evidenceClass: "news coverage", language: "en", timeLabel: "Published", timeValue: new Date(now - 7200000).toISOString(), researcherAssessment: "contradicts", researcherNote: "The report attributes the price change to a separate utility tariff revision.", researcherVerifiedOriginal: true, sourceOperatorKey: "global-voices", sourceOperatorLabel: "Global Voices" },
   { id: "analysis", title: "Analysis source", url: "https://theconversation.com/story/1", source: "The Conversation", evidenceClass: "expert analysis", language: "en", timeLabel: "Published", timeValue: new Date(now - 10800000).toISOString(), researcherAssessment: "context", researcherNote: "The analysis distinguishes wholesale energy prices from local retail rates.", researcherVerifiedOriginal: true, sourceOperatorKey: "the-conversation", sourceOperatorLabel: "The Conversation" },
 ];
@@ -63,6 +64,24 @@ describe("research lead readiness", () => {
     const result = assessResearchLeadReadiness({ ...complete, evidence: unchecked });
     expect(result.readyForHumanReview).toBe(false);
     expect(result.checks.find((check) => check.label === "Original sources checked")?.passed).toBe(false);
+  });
+
+  it("withholds a dossier when one conversation byline dominates the reviewed sample", () => {
+    const concentrated = evidence.map((item) => item.evidenceClass === "social discussion"
+      ? { ...item, attribution: "Author: @same-account" }
+      : item);
+    const result = assessResearchLeadReadiness({ ...complete, evidence: concentrated });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label.startsWith("Multiple conversation bylines"))?.passed).toBe(false);
+  });
+
+  it("requires identifiable bylines on all relevant discussion citations", () => {
+    const withoutAttribution = evidence.map((item) => item.id === "social-2"
+      ? { ...item, attribution: undefined }
+      : item);
+    const result = assessResearchLeadReadiness({ ...complete, evidence: withoutAttribution });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label.startsWith("Multiple conversation bylines"))?.passed).toBe(false);
   });
 
   it("excludes unrelated conversation from the minimum sample and source-class checks", () => {

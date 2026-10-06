@@ -67,6 +67,10 @@ export function assessResearchLeadReadiness(input: {
   const documentedRelevantEvidence = relevantEvidence.filter((item) =>
     typeof item.researcherNote === "string" && item.researcherNote.trim().length >= 20);
   const checkedRelevantEvidence = relevantEvidence.filter((item) => item.researcherVerifiedOriginal === true);
+  const bylines = summarizeConversationBylines(relevantEvidence);
+  const largestBylineShare = bylines.attributedItemCount
+    ? bylines.largestBylineGroup / bylines.attributedItemCount
+    : 1;
   const operatorLabels = new Map<string, Set<string>>();
   for (const item of relevantEvidence) {
     if (!item.sourceOperatorKey || !item.sourceOperatorLabel) continue;
@@ -86,6 +90,7 @@ export function assessResearchLeadReadiness(input: {
     { label: "Source-specific evidence documented", passed: relevantEvidence.length > 0 && documentedRelevantEvidence.length === relevantEvidence.length, detail: `${documentedRelevantEvidence.length}/${relevantEvidence.length} relevant citation(s) have a source-specific paraphrase of at least 20 characters.` },
     { label: "At least two reviewed source operators", passed: operators.length >= 2, detail: operators.length ? `${operators.length} reviewed operator(s): ${operatorDisplay.join(" · ")}` : "No reviewed source operator is represented yet." },
     { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
+    { label: "Multiple conversation bylines; no single label over 60%", passed: bylines.itemCount >= 2 && bylines.attributedItemCount === bylines.itemCount && bylines.distinctBylineLabels >= 2 && largestBylineShare <= 0.6, detail: `${bylines.distinctBylineLabels} distinct byline label(s) across ${bylines.attributedItemCount}/${bylines.itemCount} attributed conversation citation(s); largest label is ${Math.round(largestBylineShare * 100)}% of attributed items. Labels do not verify separate people.` },
     { label: "Supporting and contradicting evidence reviewed", passed: assessments.has("supports") && assessments.has("contradicts"), detail: "Mark at least one citation as supporting and another as contradicting the thesis." },
     { label: "Alternative explanation and disconfirmation test", passed: Boolean(input.alternatives.trim() && input.disconfirmingEvidence.trim()), detail: "Record another plausible explanation and what observation would change your mind." },
   ];
@@ -127,8 +132,9 @@ export function summarizeConversationBylines(evidence: ResearchEvidence[]): Conv
   const counts = new Map<string, number>();
   let attributedItemCount = 0;
   for (const item of conversation) {
-    const match = item.attribution?.match(/^(?:Lemmy )?Author:\s*(.+)$/i);
-    const label = match?.[1].trim().replace(/\s+/g, " ");
+    const explicitLabel = item.attribution?.match(/^(?:Lemmy )?Author:\s*(.+)$/i)?.[1];
+    const rawLabel = explicitLabel ?? (item.evidenceClass === "community forum" ? item.attribution : undefined);
+    const label = rawLabel?.trim().replace(/\s+/g, " ");
     if (!label) continue;
     attributedItemCount += 1;
     const operator = item.sourceOperatorKey ?? item.source;

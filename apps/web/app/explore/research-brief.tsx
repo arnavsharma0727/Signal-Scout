@@ -291,7 +291,7 @@ export default function ResearchBrief({
       <div className="mt-5 border-t border-line pt-4" aria-live="polite">
         <div className="eyebrow">Evidence qualification</div>
         <h3 className="mt-2 font-semibold">{readiness.readyForHumanReview ? "Local review bar complete — lead dossier ready" : "Not yet ready for lead review"}</h3>
-        <p className="mt-1 text-xs leading-5 text-muted">The checklist records your own source assessments and original-source attestations. It cannot independently verify what a source says, prove representativeness or causation, or publish a lead. A completed dossier is generated only on this device.</p>
+        <p className="mt-1 text-xs leading-5 text-muted">The checklist records your source assessments, original-source attestations, and concentration in the selected conversation sample. It cannot independently verify what a source says or who an author is, prove representativeness or causation, or publish a lead. A completed dossier is generated only on this device.</p>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {readiness.checks.map((check) => (
             <li key={check.label} className="flex items-start gap-2 text-xs leading-5">

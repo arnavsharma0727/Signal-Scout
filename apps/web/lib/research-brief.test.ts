@@ -102,7 +102,8 @@ describe("createResearchBriefMarkdown", () => {
 
   it("labels a fully attested human-reviewed export as an unpublished lead dossier", () => {
     const completeEvidence: ResearchEvidence[] = [
-      { ...selected, id: "discussion", source: "Bluesky", evidenceClass: "social discussion", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky", researcherAssessment: "supports", researcherNote: "The post describes the observed cross-border change.", researcherVerifiedOriginal: true },
+      { ...selected, id: "discussion", source: "Bluesky", evidenceClass: "social discussion", attribution: "Author: @reader-one", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky", researcherAssessment: "supports", researcherNote: "The post describes the observed cross-border change.", researcherVerifiedOriginal: true },
+      { ...selected, id: "discussion-2", source: "Bluesky", url: "https://bsky.app/profile/reader-two.example/post/2", evidenceClass: "social discussion", attribution: "Author: @reader-two", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky", researcherAssessment: "supports", researcherNote: "A second account describes a related cross-border change.", researcherVerifiedOriginal: true },
       { ...selected, id: "report", source: "Global Voices", url: "https://globalvoices.org/story/1", evidenceClass: "news coverage", sourceOperatorKey: "global-voices", sourceOperatorLabel: "Global Voices", researcherAssessment: "contradicts", researcherNote: "The report presents evidence of a different cause.", researcherVerifiedOriginal: true },
       { ...selected, id: "analysis", source: "The Conversation", url: "https://theconversation.com/story/1", evidenceClass: "expert analysis", sourceOperatorKey: "the-conversation", sourceOperatorLabel: "The Conversation", researcherAssessment: "context", researcherNote: "This explains the relevant market background.", researcherVerifiedOriginal: true },
     ];
