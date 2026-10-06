@@ -219,7 +219,7 @@ export default function ResearchBrief({
         {evidence.length ? (
           <ul className="mt-3 divide-y divide-line">
             {evidence.map((item) => (
-              <li key={item.id} className="flex items-start justify-between gap-3 py-3">
+              <li key={item.id} className="grid min-w-0 gap-3 py-4 md:grid-cols-[minmax(0,1fr)_15rem] md:items-start md:gap-6">
                 <div className="min-w-0">
                   <a className="font-medium underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
                   <p className="mt-1 text-xs leading-5 text-muted">
@@ -250,11 +250,11 @@ export default function ResearchBrief({
                     </label>
                   )}
                 </div>
-                <div className="flex shrink-0 flex-col items-end gap-2">
-                  <label className="text-xs text-muted">
+                <div className="flex min-w-0 flex-col items-start gap-2 md:items-end">
+                  <label className="w-full text-xs text-muted md:text-right">
                     Relevance / thesis assessment
                     <select
-                      className="ml-2 rounded border border-line bg-white px-2 py-1 text-xs text-ink"
+                      className="mt-1 block w-full rounded border border-line bg-white px-2 py-2 text-xs text-ink"
                       value={item.researcherAssessment ?? ""}
                       onChange={(event) => onAssess(
                         item.id,
@@ -270,7 +270,7 @@ export default function ResearchBrief({
                       <option value="not relevant">Not relevant — excluded from checks</option>
                     </select>
                   </label>
-                  <button className="text-xs underline text-muted" type="button" onClick={() => onRemove(item.id)}>Remove</button>
+                  <button className="text-xs underline text-muted md:self-end" type="button" onClick={() => onRemove(item.id)}>Remove</button>
                 </div>
               </li>
             ))}
