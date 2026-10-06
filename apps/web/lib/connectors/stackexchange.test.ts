@@ -48,8 +48,8 @@ describe("StackExchangeConnector", () => {
       end: new Date("2026-10-01T00:00:00Z"),
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(33);
-    expect(result.requestsUsed).toBe(33);
+    expect(fetchMock).toHaveBeenCalledTimes(34);
+    expect(result.requestsUsed).toBe(34);
     expect(result.metadata).toMatchObject({ lookbackDays: 30 });
     expect(result.metadata.rejectedTitleMismatch).toBe(1);
     for (const [url] of fetchMock.mock.calls) {
@@ -80,6 +80,42 @@ describe("StackExchangeConnector", () => {
         "politics", "law",
       ]),
     );
+  });
+
+  it("searches recent international current-affairs questions as well as market terms", async () => {
+    const fetchMock = vi.fn().mockImplementation((input: string | URL) => {
+      const params = new URL(String(input)).searchParams;
+      const items = params.get("site") === "politics" && params.get("title") === "election"
+        ? [{
+            title: "What implications can a Sachsen-Anhalt state election have for German federal politics?",
+            link: "https://politics.stackexchange.com/questions/123/election-implications",
+            creation_date: 1790734268,
+            content_license: "CC BY-SA 4.0",
+            owner: { display_name: "Contributor", link: "https://politics.stackexchange.com/users/1" },
+          }]
+        : [];
+      return Promise.resolve(new Response(JSON.stringify({ items }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }));
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await new StackExchangeConnector().fetchDocuments({
+      query: "ignored",
+      start: new Date("2026-09-27T00:00:00Z"),
+      end: new Date("2026-10-01T00:00:00Z"),
+    });
+
+    expect(result.documents).toHaveLength(1);
+    expect(result.documents[0]).toMatchObject({
+      sourceType: "stack-exchange",
+      sourceName: "Politics Stack Exchange",
+      marketCode: "INTL",
+      titleOriginal: "What implications can a Sachsen-Anhalt state election have for German federal politics?",
+      rawMetadata: { site: "politics", query: "election", contentLicense: "CC BY-SA 4.0" },
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(34);
   });
 
   it("preserves the language and site for licensed localized questions", async () => {

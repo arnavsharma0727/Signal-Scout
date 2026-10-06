@@ -19,7 +19,9 @@ const siteQueries: ReadonlyArray<{
   { site: "pt.stackoverflow", languageCode: "pt", terms: ["inteligência artificial", "GPU", "modelo de linguagem"] },
   { site: "ja.stackoverflow", languageCode: "ja", terms: ["生成AI", "LLM", "GPU"] },
   { site: "ru.stackoverflow", languageCode: "ru", terms: ["искусственный интеллект", "LLM", "GPU"] },
-  { site: "politics", languageCode: "en", terms: ["tariffs", "sanctions", "trade"] },
+  // Current-affairs terms are kept separate so API title matching remains
+  // exact and each imported question keeps the query that surfaced it.
+  { site: "politics", languageCode: "en", terms: ["tariffs", "sanctions", "trade", "election"] },
   { site: "law", languageCode: "en", terms: ["tariffs", "sanctions", "trade"] },
 ];
 const siteLabels: Record<string, string> = {
