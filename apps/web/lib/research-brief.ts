@@ -155,20 +155,40 @@ export type RepeatedPostTextCoverage = {
   largestRepeatedGroup: number;
 };
 
+/** Group exact normalized social-post previews for compact display; never merges citations. */
+export function groupRepeatedPostText(evidence: ResearchEvidence[]): ResearchEvidence[][] {
+  const groups = new Map<string, ResearchEvidence[]>();
+  const ungrouped: ResearchEvidence[][] = [];
+  for (const item of evidence) {
+    if (item.evidenceClass !== "social discussion" || !item.transientPreview?.trim()) {
+      ungrouped.push([item]);
+      continue;
+    }
+    const key = normalizePostPreview(item.transientPreview);
+    if (!key) {
+      ungrouped.push([item]);
+      continue;
+    }
+    const group = groups.get(key) ?? [];
+    group.push(item);
+    groups.set(key, group);
+  }
+
+  const byFirstEvidenceIndex = new Map<ResearchEvidence, number>();
+  evidence.forEach((item, index) => byFirstEvidenceIndex.set(item, index));
+  return [...ungrouped, ...[...groups.values()].map((group) => group)]
+    .sort((a, b) => byFirstEvidenceIndex.get(a[0])! - byFirstEvidenceIndex.get(b[0])!);
+}
+
 /** Counts exact normalized preview matches without returning or persisting post text. */
 export function summarizeRepeatedPostText(evidence: ResearchEvidence[]): RepeatedPostTextCoverage {
   const counts = new Map<string, number>();
   let previewItemCount = 0;
   for (const item of evidence) {
     if (item.evidenceClass !== "social discussion" || !item.transientPreview?.trim()) continue;
-    const key = item.transientPreview
-      .normalize("NFKC")
-      .toLocaleLowerCase()
-      .replace(/\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/\S*)?/g, " ")
-      .replace(/&/g, " and ")
-      .replace(/\s+/g, " ")
-      .trim();
     previewItemCount += 1;
+    const key = normalizePostPreview(item.transientPreview);
+    if (!key) continue;
     counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   const repeated = [...counts.values()].filter((count) => count > 1);
@@ -177,6 +197,16 @@ export function summarizeRepeatedPostText(evidence: ResearchEvidence[]): Repeate
     repeatedItemCount: repeated.reduce((total, count) => total + count, 0),
     largestRepeatedGroup: Math.max(0, ...repeated),
   };
+}
+
+function normalizePostPreview(preview: string): string {
+  return preview
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/\S*)?/g, " ")
+    .replace(/&/g, " and ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** Descriptive inventory only: labels and items are not counts of independent owners. */

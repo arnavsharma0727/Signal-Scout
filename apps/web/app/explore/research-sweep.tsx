@@ -12,7 +12,7 @@ import {
   ResearchSweepSourceResult,
 } from "../../lib/research-sweep";
 import { fetchBlueskyTrends, type BlueskyTrend } from "../../lib/bluesky-trends";
-import { summarizeConversationBylines, summarizeRepeatedPostText, type ResearchEvidence } from "../../lib/research-brief";
+import { groupRepeatedPostText, summarizeConversationBylines, summarizeRepeatedPostText, type ResearchEvidence } from "../../lib/research-brief";
 
 export default function ResearchSweep({
   initialTopic,
@@ -360,26 +360,46 @@ export default function ResearchSweep({
                   </>;
                 })()}
                 <ul className="mt-2 divide-y divide-line border-y border-line">
-                  {result.evidence.map((item) => (
-                    <li key={item.id} className="py-3">
-                      <a className="font-medium underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
-                      {item.transientPreview && (
-                        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6" lang={item.language === "not provided" ? undefined : item.language}>
-                          {item.transientPreview}
+                  {groupRepeatedPostText(result.evidence).map((group) => group.length === 1 ? (
+                    <li key={group[0].id} className="py-3">
+                      <a className="font-medium underline underline-offset-2" href={group[0].url} target="_blank" rel="noreferrer">{group[0].title}</a>
+                      {group[0].transientPreview && (
+                        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6" lang={group[0].language === "not provided" ? undefined : group[0].language}>
+                          {group[0].transientPreview}
                         </p>
                       )}
                       <p className="mt-1 text-xs text-muted">
-                        {item.source} · {item.evidenceClass} · {item.language} · {item.timeLabel}: {new Date(item.timeValue).toLocaleString()}
-                        {item.context ? ` · ${item.context}` : ""}
+                        {group[0].source} · {group[0].evidenceClass} · {group[0].language} · {group[0].timeLabel}: {new Date(group[0].timeValue).toLocaleString()}
+                        {group[0].context ? ` · ${group[0].context}` : ""}
                       </p>
                       <button
                         className="mt-2 text-xs underline text-muted"
                         type="button"
-                        disabled={selectedIds.has(item.id)}
-                        onClick={() => onAdd(item)}
+                        disabled={selectedIds.has(group[0].id)}
+                        onClick={() => onAdd(group[0])}
                       >
-                        {selectedIds.has(item.id) ? "Added to brief" : "Add citation to brief"}
+                        {selectedIds.has(group[0].id) ? "Added to brief" : "Add citation to brief"}
                       </button>
+                    </li>
+                  ) : (
+                    <li key={group[0].id} className="py-3">
+                      <details>
+                        <summary className="cursor-pointer text-sm font-medium">Same normalized post text · {group.length} posts · inspect each original</summary>
+                        <p className="mt-2 whitespace-pre-wrap break-words text-sm leading-6" lang={group[0].language === "not provided" ? undefined : group[0].language}>{group[0].transientPreview}</p>
+                        <ul className="mt-2 divide-y divide-line border-t border-line">
+                          {group.map((item) => (
+                            <li key={item.id} className="py-3">
+                              <a className="font-medium underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
+                              <p className="mt-1 text-xs text-muted">
+                                {item.attribution ?? item.source} · {item.language} · {item.timeLabel}: {new Date(item.timeValue).toLocaleString()}
+                              </p>
+                              <button className="mt-2 text-xs underline text-muted" type="button" disabled={selectedIds.has(item.id)} onClick={() => onAdd(item)}>
+                                {selectedIds.has(item.id) ? "Added to brief" : "Add citation to brief"}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      </details>
                     </li>
                   ))}
                 </ul>

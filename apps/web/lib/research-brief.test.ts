@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { citationWithoutTransientContent, createResearchBriefMarkdown, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, summarizeRepeatedPostText, topicFromFragment } from "./research-brief";
+import { citationWithoutTransientContent, createResearchBriefMarkdown, groupRepeatedPostText, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, summarizeRepeatedPostText, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -36,6 +36,26 @@ describe("createResearchBriefMarkdown", () => {
       { ...selected, id: "news", evidenceClass: "news coverage", transientPreview: "AI prices & power" },
     ]);
     expect(summary).toEqual({ previewItemCount: 3, repeatedItemCount: 2, largestRepeatedGroup: 2 });
+  });
+
+  it("groups exact repeated previews for display without merging their citations", () => {
+    const first = { ...selected, id: "post-a", evidenceClass: "social discussion" as const, transientPreview: "Same current post" };
+    const middle = { ...selected, id: "post-b", evidenceClass: "social discussion" as const, transientPreview: "A different post" };
+    const repeated = { ...selected, id: "post-c", evidenceClass: "social discussion" as const, transientPreview: " same current post " };
+    const groups = groupRepeatedPostText([first, middle, repeated]);
+    expect(groups.map((group) => group.map(({ id }) => id))).toEqual([["post-a", "post-c"], ["post-b"]]);
+    expect(groups.flat().map(({ url }) => url)).toHaveLength(3);
+  });
+
+  it("does not group URL-only previews after URL normalization", () => {
+    const posts = ["https://example.org/one", "www.example.net/two"].map((transientPreview, index) => ({
+      ...selected,
+      id: `url-only-${index}`,
+      evidenceClass: "social discussion" as const,
+      transientPreview,
+    }));
+    expect(groupRepeatedPostText(posts)).toHaveLength(2);
+    expect(summarizeRepeatedPostText(posts)).toEqual({ previewItemCount: 2, repeatedItemCount: 0, largestRepeatedGroup: 0 });
   });
 
   it("strips transient post text when a live result is selected as a citation", () => {
