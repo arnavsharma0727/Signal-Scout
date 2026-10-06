@@ -134,6 +134,35 @@ export function summarizeConversationBylines(evidence: ResearchEvidence[]): Conv
   };
 }
 
+export type RepeatedPostTextCoverage = {
+  previewItemCount: number;
+  repeatedItemCount: number;
+  largestRepeatedGroup: number;
+};
+
+/** Counts exact normalized preview matches without returning or persisting post text. */
+export function summarizeRepeatedPostText(evidence: ResearchEvidence[]): RepeatedPostTextCoverage {
+  const counts = new Map<string, number>();
+  let previewItemCount = 0;
+  for (const item of evidence) {
+    if (item.evidenceClass !== "social discussion" || !item.transientPreview?.trim()) continue;
+    const key = item.transientPreview
+      .normalize("NFKC")
+      .toLocaleLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/\s+/g, " ")
+      .trim();
+    previewItemCount += 1;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const repeated = [...counts.values()].filter((count) => count > 1);
+  return {
+    previewItemCount,
+    repeatedItemCount: repeated.reduce((total, count) => total + count, 0),
+    largestRepeatedGroup: Math.max(0, ...repeated),
+  };
+}
+
 /** Descriptive inventory only: labels and items are not counts of independent owners. */
 export function summarizeEvidenceCoverage(evidence: ResearchEvidence[]): EvidenceCoverage {
   const bylines = summarizeConversationBylines(evidence);

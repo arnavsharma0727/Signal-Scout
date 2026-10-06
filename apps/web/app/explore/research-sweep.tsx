@@ -11,7 +11,7 @@ import {
   runResearchSweep,
   ResearchSweepSourceResult,
 } from "../../lib/research-sweep";
-import { summarizeConversationBylines, type ResearchEvidence } from "../../lib/research-brief";
+import { summarizeConversationBylines, summarizeRepeatedPostText, type ResearchEvidence } from "../../lib/research-brief";
 
 export default function ResearchSweep({
   initialTopic,
@@ -283,11 +283,19 @@ export default function ResearchSweep({
                 <>
                 {(() => {
                   const bylines = summarizeConversationBylines(result.evidence);
-                  return bylines.itemCount > 0 ? (
-                    <p className="mt-2 text-xs leading-5 text-muted">
-                      {bylines.attributedItemCount}/{bylines.itemCount} discussion/Q&amp;A links show a byline · {bylines.distinctBylineLabels} distinct labels · largest repeated label group {bylines.largestBylineGroup}. Labels do not verify separate people.
-                    </p>
-                  ) : null;
+                  const repeatedText = summarizeRepeatedPostText(result.evidence);
+                  return <>
+                    {bylines.itemCount > 0 && (
+                      <p className="mt-2 text-xs leading-5 text-muted">
+                        {bylines.attributedItemCount}/{bylines.itemCount} discussion/Q&amp;A links show a byline · {bylines.distinctBylineLabels} distinct labels · largest repeated label group {bylines.largestBylineGroup}. Labels do not verify separate people.
+                      </p>
+                    )}
+                    {repeatedText.previewItemCount > 0 && (
+                      <p className="mt-1 text-xs leading-5 text-muted">
+                        Identical normalized post text: {repeatedText.repeatedItemCount}/{repeatedText.previewItemCount} previews in repeat groups · largest group {repeatedText.largestRepeatedGroup}. Text is compared in-browser and not retained in the brief.
+                      </p>
+                    )}
+                  </>;
                 })()}
                 <ul className="mt-2 divide-y divide-line border-y border-line">
                   {result.evidence.map((item) => (

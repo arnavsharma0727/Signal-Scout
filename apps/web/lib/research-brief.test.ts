@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { citationWithoutTransientContent, createResearchBriefMarkdown, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, topicFromFragment } from "./research-brief";
+import { citationWithoutTransientContent, createResearchBriefMarkdown, ResearchEvidence, summarizeConversationBylines, summarizeEvidenceCoverage, summarizeRepeatedPostText, topicFromFragment } from "./research-brief";
 
 const selected: ResearchEvidence = {
   id: "se-1",
@@ -26,6 +26,16 @@ describe("createResearchBriefMarkdown", () => {
       { ...selected, id: "d", attribution: "Headline belongs to publisher; indexed by GDELT", evidenceClass: "news coverage" },
     ]);
     expect(summary).toEqual({ itemCount: 3, attributedItemCount: 3, distinctBylineLabels: 2, largestBylineGroup: 2 });
+  });
+
+  it("surfaces normalized duplicate transient text without retaining post content", () => {
+    const summary = summarizeRepeatedPostText([
+      { ...selected, id: "post-a", evidenceClass: "social discussion", transientPreview: "AI prices & power" },
+      { ...selected, id: "post-b", evidenceClass: "social discussion", transientPreview: " AI prices ＆ power " },
+      { ...selected, id: "post-c", evidenceClass: "social discussion", transientPreview: "A separate comment" },
+      { ...selected, id: "news", evidenceClass: "news coverage", transientPreview: "AI prices & power" },
+    ]);
+    expect(summary).toEqual({ previewItemCount: 3, repeatedItemCount: 2, largestRepeatedGroup: 2 });
   });
 
   it("strips transient post text when a live result is selected as a citation", () => {
