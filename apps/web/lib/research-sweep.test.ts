@@ -23,6 +23,48 @@ describe("runResearchSweep", () => {
     });
   });
 
+  it("keeps manually supplied Bluesky language variants separate and query-labelled", async () => {
+    const requested: string[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      const term = url.searchParams.get("q")!;
+      requested.push(term);
+      const isKorean = term.includes("데이터센터");
+      return new Response(JSON.stringify({ posts: [{
+        uri: `at://did:plc:${isKorean ? "ko" : "en"}/app.bsky.feed.post/one`,
+        record: { text: isKorean ? "전력망 연결 논의" : "Grid connection discussion", createdAt: new Date(NOW - 60_000).toISOString(), langs: [isKorean ? "ko" : "en"] },
+        author: { handle: isKorean ? "reader-ko.example" : "reader-en.example" },
+      }] }));
+    });
+    const results = await runResearchSweep("AI data center power", {
+      gdelt: false,
+      lemmy: false,
+      lemmyTermsAccepted: false,
+      bluesky: true,
+      blueskyQueries: ["AI data center power", "AI 데이터센터 전력"],
+    }, fetcher, NOW);
+
+    expect(requested).toEqual(["AI data center power", "AI 데이터센터 전력"]);
+    expect(results.map(({ key, label, evidence }) => [key, label, evidence[0]?.language])).toEqual([
+      ["bluesky:0", "Bluesky · search 1", "en"],
+      ["bluesky:1", "Bluesky · search 2", "ko"],
+    ]);
+    expect(results[1].evidence[0].context).toContain("not translated or pooled");
+    expect(results[0].evidence[0].sourceOperatorKey).toBe(results[1].evidence[0].sourceOperatorKey);
+  });
+
+  it("rejects repeated Bluesky phrases before making duplicate requests", async () => {
+    const fetcher = vi.fn();
+    await expect(runResearchSweep("topic", {
+      gdelt: false,
+      lemmy: false,
+      lemmyTermsAccepted: false,
+      bluesky: true,
+      blueskyQueries: ["topic", " TOPIC "],
+    }, fetcher, NOW)).rejects.toThrow("different phrase");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it("withholds Mastodon bodies when the author attached a content warning", async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify([{
       id: "15",

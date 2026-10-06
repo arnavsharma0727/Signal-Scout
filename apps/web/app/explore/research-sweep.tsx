@@ -34,6 +34,7 @@ export default function ResearchSweep({
   const [mastodonEnabled, setMastodonEnabled] = useState(false);
   const [mastodonTermsAccepted, setMastodonTermsAccepted] = useState(false);
   const [bluesky, setBluesky] = useState(true);
+  const [blueskyVariant, setBlueskyVariant] = useState("");
   const [mastodonHashtag, setMastodonHashtag] = useState("");
   const [mastodonInstance, setMastodonInstance] = useState<MastodonInstance>("mastodon.social");
   const [wikimediaLanguage, setWikimediaLanguage] = useState("");
@@ -66,6 +67,7 @@ export default function ResearchSweep({
         mastodon: mastodonEnabled ? { hashtag: mastodonHashtag, instance: mastodonInstance } : undefined,
         mastodonTermsAccepted,
         bluesky,
+        blueskyQueries: bluesky ? [query, ...(blueskyVariant.trim() ? [blueskyVariant.trim()] : [])] : [],
         wikimediaLanguage,
       }));
     } catch (cause) {
@@ -81,7 +83,7 @@ export default function ResearchSweep({
       <div className="eyebrow">Live, browser-only source sweep</div>
       <h2 id="research-sweep-title" className="mt-2 text-xl font-semibold">Search one topic across selected sources</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Searches go directly from this browser to public sources, except GDELT, which uses a first-party no-store bridge because its API blocks browser cross-origin calls. For Stack Exchange, enter an equivalent phrase separately for each language; Signal Scout does not auto-translate. Result sets keep their own window, query, count, and limitations—counts are not comparable audience measures and are never pooled or stored. Select citations one by one for your brief.
+        Searches go directly from this browser to public sources, except GDELT, which uses a first-party no-store bridge because its API blocks browser cross-origin calls. Enter equivalent Bluesky or Stack Exchange phrases separately for each language; Signal Scout does not auto-translate. Each query remains its own sample—counts are not comparable audience measures and are never pooled or stored.
       </p>
       <form onSubmit={submit} className="mt-5 grid gap-4">
         <label className="block text-sm font-medium">
@@ -99,8 +101,21 @@ export default function ResearchSweep({
         <div className="grid gap-3 border-y border-line py-4 md:grid-cols-2">
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={bluesky} onChange={(event) => setBluesky(event.target.checked)} />
-            <span><strong>Bluesky public search</strong><span className="block text-xs text-muted">No account or API key · up to 25 newest indexed posts in 7 days · post text is not retained</span></span>
+            <span><strong>Bluesky public search</strong><span className="block text-xs text-muted">No account or API key · up to 25 newest indexed posts per phrase in 7 days · post text is not retained</span></span>
           </label>
+          {bluesky && (
+            <label className="ml-6 block text-xs text-muted">
+              Equivalent phrase in another language (optional; enter it yourself)
+              <input
+                className="mt-1 block w-full rounded border border-line bg-white px-2 py-1.5 text-xs text-ink"
+                value={blueskyVariant}
+                onChange={(event) => setBlueskyVariant(event.target.value)}
+                minLength={2}
+                maxLength={100}
+                placeholder="e.g. AI 데이터센터 전력"
+              />
+            </label>
+          )}
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={gdelt} onChange={(event) => setGdelt(event.target.checked)} />
             <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · optional · can be slow or rate-limited · up to 25 results</span></span>

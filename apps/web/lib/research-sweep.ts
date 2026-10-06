@@ -16,6 +16,8 @@ export type ResearchSweepSelection = {
   mastodon?: { hashtag: string; instance: string };
   mastodonTermsAccepted?: boolean;
   bluesky?: boolean;
+  /** Visitor-supplied language variants stay separate; no translation or pooling. */
+  blueskyQueries?: readonly string[];
   wikimediaLanguage?: string;
 };
 
@@ -41,6 +43,9 @@ export async function runResearchSweep(
   const stackExchangeQueries = selection.stackExchangeQueries ?? (selection.stackExchangeSite
     ? [{ site: selection.stackExchangeSite, query }]
     : []);
+  const blueskyQueries = selection.bluesky
+    ? selection.blueskyQueries ?? [query]
+    : [];
   if (query.length < 2 || query.length > 100) {
     throw new Error("Enter a search phrase between 2 and 100 characters.");
   }
@@ -55,6 +60,13 @@ export async function runResearchSweep(
     !DISCUSSION_COMMUNITIES.some((community) => community.site === site) ||
     term.trim().length < 3 || term.trim().length > 80,
   )) throw new Error("Each Stack Exchange community needs a listed site and its own 3–80 character search phrase.");
+  if (blueskyQueries.length > 3) throw new Error("Choose no more than three separate Bluesky language phrases.");
+  if (blueskyQueries.some((term) => term.trim().length < 2 || term.trim().length > 100)) {
+    throw new Error("Each Bluesky phrase must contain 2–100 characters.");
+  }
+  if (new Set(blueskyQueries.map((term) => term.trim().normalize("NFKC").toLocaleLowerCase())).size !== blueskyQueries.length) {
+    throw new Error("Use a different phrase for each Bluesky language search.");
+  }
   if (selection.lemmy && !selection.lemmyTermsAccepted) {
     throw new Error("Review and affirm the Lemmy instance terms and age condition before including it.");
   }
@@ -64,7 +76,7 @@ export async function runResearchSweep(
   ))) {
     throw new Error("Choose one or more listed public Lemmy instances.");
   }
-  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !selection.bluesky && !selection.wikimediaLanguage) {
+  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !blueskyQueries.length && !selection.wikimediaLanguage) {
     throw new Error("Select at least one source.");
   }
   if (selection.wikimediaLanguage && !WIKIMEDIA_TALK_WIKIS.some(({ language }) => language === selection.wikimediaLanguage)) {
@@ -159,13 +171,14 @@ export async function runResearchSweep(
       })),
     ));
   }
-  if (selection.bluesky) {
-    tasks.push(capture("bluesky", "Bluesky public search", "Up to 25 newest indexed posts within 7 days", async () =>
-      (await searchBlueskyPosts(query, fetcher, now)).map((post) => ({
+  for (const [index, termInput] of blueskyQueries.entries()) {
+    const term = termInput.trim();
+    tasks.push(capture(`bluesky:${index}`, `Bluesky · search ${index + 1}`, `Up to 25 newest indexed posts within 7 days · query: ${term}`, async () =>
+      (await searchBlueskyPosts(term, fetcher, now)).map((post) => ({
         id: `bluesky:${post.uri}`,
         title: post.title,
         url: post.url,
-        source: "Bluesky public AppView",
+        source: `Bluesky public AppView · search ${index + 1}`,
         evidenceClass: "social discussion" as const,
         language: post.language,
         timeLabel: "Published",
@@ -173,7 +186,7 @@ export async function runResearchSweep(
         sourceOperatorKey: "bluesky",
         sourceOperatorLabel: "Bluesky",
         transientPreview: post.transientPreview,
-        context: `Public search query: “${query}”; indexed subset, not a complete or representative feed`,
+        context: `Visitor-entered phrase: “${term}”; language variant is not translated or pooled with other searches; indexed subset, not a complete or representative feed`,
         attribution: `Author: @${post.authorHandle}`,
       })),
     ));

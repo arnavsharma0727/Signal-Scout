@@ -203,7 +203,7 @@ export default async function Sources() {
       referenceUrl: "https://docs.bsky.app/docs/api/app-bsky-feed-get-feed",
       referenceLabel: "Bluesky public API documentation",
       detail:
-        "Visitor-triggered query search through the unauthenticated api.bsky.app endpoint; no key or account is used. Up to 25 recent indexed results are shown transiently with a source link, author handle, date, and language. Post text is discarded from the app's citation model; nothing is sent to Signal Scout or persisted. The search index is incomplete, posts remain their authors’ content, and results are not a representative sample. Scheduled ingestion and retention of Bluesky post content are disabled pending a reviewed rights, deletion, and retention basis.",
+        "Visitor-triggered query search through the unauthenticated api.bsky.app endpoint; no key or account is used. Up to 25 recent indexed results are shown transiently with a source link, author handle, date, and available language metadata. Researchers can run separate manually entered language phrases; each capped query remains a separate, non-comparable sample, and language metadata may be missing. Post text is discarded from the app's citation model; nothing is sent to Signal Scout or persisted. The search index is incomplete, posts remain their authors’ content, and results are not a representative sample. Scheduled ingestion and retention of Bluesky post content are disabled pending a reviewed rights, deletion, and retention basis.",
     },
     {
       name: "YouTube public comments (candidate)",
