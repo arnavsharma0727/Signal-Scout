@@ -4,6 +4,7 @@ import { hasUnclearedHackerNewsEvidence } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
 import { passesIndependentEvidenceGate, sourceOperatorsByLead, verifiedLeadEvidenceDocumentIds } from "../../lib/research-lead-qualification";
+import { summarizeConversationCoverage, type ConversationCoverageRow } from "../../lib/research-conversation-coverage";
 import SiteHeader from "../../components/site-header";
 
 export const dynamic = "force-dynamic";
@@ -30,8 +31,23 @@ export default async function Candidates() {
   const db = serverSupabase();
   let leads: Lead[] = [];
   let unavailable = !db;
+  let coverageUnavailable = !db;
+  let coverageRows: ConversationCoverageRow[] = [];
+  let coverageCapped = false;
 
   if (db) {
+    const coverageSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentConversationRows, error: coverageError, count: coverageCount } = await db
+      .from("source_documents")
+      .select("source_type,source_domain,raw_metadata_json", { count: "exact" })
+      .in("source_type", ["licensed-forum", "stack-exchange"])
+      .gte("published_at", coverageSince)
+      .order("published_at", { ascending: false })
+      .limit(1000);
+    coverageUnavailable = Boolean(coverageError);
+    coverageRows = (recentConversationRows ?? []) as ConversationCoverageRow[];
+    coverageCapped = (coverageCount ?? coverageRows.length) > coverageRows.length;
+
     const { data, error } = await db
       .from("research_leads")
       .select("id,company_id,market_code,event_category,topic,status,first_detected_at,research_priority_score,independent_source_count,research_observation,research_starting_question,alternative_explanations_json,verified_evidence_json,companies(ticker,company_name_en)")
@@ -73,6 +89,7 @@ export default async function Candidates() {
         passesIndependentEvidenceGate(lead, operatorsByLead.get(lead.id)));
     }
   }
+  const conversationCoverage = summarizeConversationCoverage(coverageRows);
 
   return (
     <div className="min-h-screen">
@@ -104,6 +121,35 @@ export default async function Candidates() {
             <>
               <h2 className="text-xl font-semibold">{leads.length} lead{leads.length === 1 ? "" : "s"} ready for review</h2>
               <p className="mt-2 text-sm leading-6 text-muted">Research prompts, not recommendations. Every item links to its reviewed evidence and limitations.</p>
+            </>
+          )}
+        </section>
+
+        <section className="mt-7 border-b border-line pb-6" aria-labelledby="recent-discussion-coverage">
+          <div className="eyebrow">Live source audit · last 24 hours</div>
+          <h2 id="recent-discussion-coverage" className="mt-2 text-lg font-semibold">Licensed forum and Q&amp;A coverage</h2>
+          {coverageUnavailable ? (
+            <p className="mt-2 text-sm leading-6 text-muted">Recent discussion coverage could not be read. No source count is inferred.</p>
+          ) : conversationCoverage.itemCount === 0 ? (
+            <p className="mt-2 text-sm leading-6 text-muted">No scheduled licensed forum or Q&amp;A topic/question records fall in this 24-hour window. This does not mean no public conversation exists; use the live source sweep to search selected public sources.</p>
+          ) : (
+            <>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                {coverageCapped ? "At least " : ""}{conversationCoverage.itemCount.toLocaleString()} recent topic/question records from {conversationCoverage.operators.length} reviewed operator{conversationCoverage.operators.length === 1 ? "" : "s"}.
+                {coverageCapped ? " The readout is capped at 1,000 records." : ""}
+              </p>
+              <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+                {conversationCoverage.operators.map((operator) => (
+                  <li key={operator.key} className="flex items-baseline justify-between gap-4 border-y border-line py-2 text-sm">
+                    <span>{operator.label}</span><span className="mono text-xs text-muted">{operator.itemCount.toLocaleString()} records</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs leading-5 text-muted">
+                {conversationCoverage.attributedItemCount.toLocaleString()} records have a displayed byline label across {conversationCoverage.distinctBylineLabels.toLocaleString()} labels; the largest repeated label group is {Math.round(conversationCoverage.largestBylineShare * 100)}% of attributed records.
+                {conversationCoverage.unresolvedOperatorCount ? ` ${conversationCoverage.unresolvedOperatorCount} record(s) have unresolved operators and are not counted above.` : ""}
+                {" "}These are capped provider records, not a measure of population attention, geographic reach, or market-wide conversation. Wikipedia revision metadata is excluded.
+              </p>
             </>
           )}
         </section>

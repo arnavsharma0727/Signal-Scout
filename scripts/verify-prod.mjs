@@ -70,6 +70,13 @@ try {
 } catch (error) { fail('international live source sweep is public',error.message); }
 
 try {
+  const response = await fetch(`${base}/candidates`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
+  const page = await response.text();
+  if (response.ok && page.includes('Licensed forum and Q&amp;A coverage') && page.includes('Wikipedia revision metadata is excluded')) pass('lead queue explains live conversation coverage','scheduled, reviewed forum/Q&A operators are separated from Wikimedia metadata and sample counts are qualified');
+  else fail('lead queue explains live conversation coverage',`HTTP ${response.status}; source coverage or metadata caveat missing`);
+} catch (error) { fail('lead queue explains live conversation coverage',error.message); }
+
+try {
   const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
   if (response.ok && page.includes('Find a conversation. Follow its evidence.') && page.includes('Search one topic across selected sources') && page.includes('Evidence-qualified leads') && page.includes('View lead queue') && !page.includes('Hacker News comment')) pass('public research desk withholds uncleared source material','focused topic-to-brief workflow links directly to the evidence-qualified lead queue without uncleared source content');
