@@ -101,7 +101,9 @@ export default function GdeltSearch({
                   {article.title}
                 </a>
                 <p className="mt-2 text-xs text-muted">
-                  {article.domain} · {article.language} · source country: {article.sourceCountry} ·{" "}
+                  {article.domain} · {article.language} · source country: {article.sourceCountry}
+                  {article.sourceOperatorLabel ? <> · reviewed publisher: {article.sourceOperatorLabel} (<a className="underline" href={article.sourceOperatorReferenceUrl} target="_blank" rel="noreferrer">publisher information</a>)</> : " · publisher operator not reviewed"}
+                  {" · "}
                   <time dateTime={article.seenAt}>{new Date(article.seenAt).toLocaleString()}</time>
                 </p>
                 {(() => {
@@ -123,6 +125,8 @@ export default function GdeltSearch({
                         context: `Publisher country: ${article.sourceCountry} (outlet metadata, not audience geography)`,
                         attribution: "Headline belongs to publisher; indexed by GDELT",
                         attributionUrl: "https://www.gdeltproject.org/",
+                        sourceOperatorKey: article.sourceOperatorKey,
+                        sourceOperatorLabel: article.sourceOperatorLabel,
                       })}
                     >
                       {selectedIds.has(id) ? "Added to brief" : "Add to brief"}
@@ -133,7 +137,7 @@ export default function GdeltSearch({
             ))}
           </ul>
           <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
-            {new Set(articles.map((article) => article.domain)).size} distinct publisher domains in this capped sample; domains are not necessarily independent owners. Indexed/discovered by GDELT; article links and headlines belong to their publishers.{" "}
+            {new Set(articles.map((article) => article.domain)).size} distinct publisher domains in this capped sample; only explicitly listed publishers receive a reviewed operator label, and this does not establish that two outlets independently reported the same claim. Indexed/discovered by GDELT; article links and headlines belong to their publishers.{" "}
             <a className="underline text-ink" href="https://www.gdeltproject.org/" target="_blank" rel="noreferrer">GDELT Project</a>
           </p>
         </div>

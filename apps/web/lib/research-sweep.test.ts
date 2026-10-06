@@ -97,9 +97,9 @@ describe("runResearchSweep", () => {
       if (url.hostname === "api.gdeltproject.org") {
         return new Response(JSON.stringify({ articles: [{
           title: "Global report",
-          url: "https://publisher.example/story",
+          url: "https://www.apnews.com/article/example",
           seendate: "20260930110000",
-          domain: "publisher.example",
+          domain: "attacker.example",
           language: "English",
           sourcecountry: "United States",
         }] }));
@@ -174,6 +174,11 @@ describe("runResearchSweep", () => {
     expect(results[1].evidence[0]).toMatchObject({
       evidenceClass: "expert Q&A",
       licenseName: "CC BY-SA 4.0",
+    });
+    expect(results[0].evidence[0]).toMatchObject({
+      source: "Associated Press",
+      sourceOperatorKey: "associated-press",
+      sourceOperatorLabel: "Associated Press",
     });
     expect(results[2].evidence[0].evidenceClass).toBe("social discussion");
     expect(results[2].evidence[0].transientPreview).toBe("This post body is transiently previewed, never saved");

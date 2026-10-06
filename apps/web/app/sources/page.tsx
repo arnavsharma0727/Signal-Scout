@@ -67,6 +67,7 @@ type SourceConfig = {
   referenceLabel?: string;
   secondaryReferenceUrl?: string;
   secondaryReferenceLabel?: string;
+  additionalReferences?: { url: string; label: string }[];
   onDemand?: boolean;
 };
 
@@ -76,11 +77,19 @@ export default async function Sources() {
   const sources: SourceConfig[] = [
     {
       name: "GDELT · global news index",
-      key: "gdelt-public-search",
+      key: "gdelt",
       enabled: true,
       onDemand: true,
+      referenceUrl: "https://www.gdeltproject.org/",
+      referenceLabel: "GDELT Project",
+      secondaryReferenceUrl: "https://www.ap.org/about/",
+      secondaryReferenceLabel: "Associated Press · about and structure",
+      additionalReferences: [
+        { url: "https://www.theguardian.com/about", label: "The Guardian · ownership" },
+        { url: "https://www.thomsonreuters.com/en/products-services/news-media", label: "Reuters · news and media" },
+      ],
       detail:
-        "Optional visitor-triggered search of the last seven days in GDELT's multilingual index, capped at 25 results, through a first-party no-store bridge. Searches are not persisted; GDELT may be slow or rate-limited. Publisher country describes the outlet, not its audience. Headlines remain publisher material; this is news discovery, not forum discussion or independent-source corroboration.",
+        "Optional visitor-triggered search of the last seven days in GDELT's multilingual index, capped at 25 results, through a first-party no-store bridge. Searches are not persisted; GDELT may be slow or rate-limited and no automatic retry is sent. The app assigns reviewed source-operator labels only to original HTTPS article URLs on apnews.com, theguardian.com, or reuters.com; GDELT's own domain/title fields do not establish publisher identity. These labels identify an outlet group only—they do not prove independent reporting on a particular claim. Other publishers remain unresolved. Publisher country describes the outlet, not its audience. Headlines remain publisher material; this is news discovery, not forum discussion or independent-source corroboration.",
     },
     {
       name: "RSS / Atom",
@@ -186,15 +195,6 @@ export default async function Sources() {
       enabled: true,
       detail:
         "Daily keyless RSS from twelve active Global Voices editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. Each edition is identified from its allowlisted publisher host/title; RSS language metadata is inconsistent, so the reviewed edition supplies the language label. Global Voices-created content defaults to CC BY 3.0 unless an item says otherwise; conflicting item-level rights are rejected. Signal Scout keeps the unmodified edition headline, byline, date, first-party link, and limited categories with attribution; descriptions, story bodies, and media are discarded. Items are limited to a rolling seven-day publication window. Editions share one publisher and may include translated versions; they are never counted as independent outlets or proxies for audience geography. This is editorial reporting, not raw forum discussion or a representative survey.",
-    },
-    {
-      name: "GDELT news",
-      key: "gdelt",
-      enabled: false,
-      onDemand: true,
-      referenceUrl: "https://www.gdeltproject.org/",
-      referenceLabel: "GDELT Project",
-      detail: "Optional, visitor-triggered search through a first-party no-store request bridge. Up to 25 indexed headlines from the last seven days; no scheduled ingestion or query/result persistence. A recent live check received HTTP 429 and timed out; results may be unavailable or delayed. Headlines remain publisher material; outlet country describes the publisher, not the audience. This is news discovery, not public discussion or an independent-source count.",
     },
     {
       name: "Bluesky · transient public search",
@@ -328,6 +328,11 @@ export default async function Sources() {
                     {source.secondaryReferenceLabel ?? "Additional source policy"}
                   </a>
                 )}
+                {source.additionalReferences?.map((reference) => (
+                  <a key={reference.url} className="ml-4 mt-2 inline-block text-xs underline text-muted" href={reference.url} target="_blank" rel="noreferrer">
+                    {reference.label}
+                  </a>
+                ))}
                 {source.onDemand ? (
                   <p className="mt-4 border-t border-line pt-3 text-xs text-muted">
                     Visitor-triggered only. No database records or automated run-health history.

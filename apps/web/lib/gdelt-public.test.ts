@@ -7,6 +7,7 @@ describe("searchGdeltNews", () => {
   it("makes one bounded seven-day request and returns only recent HTTPS-linked articles", async () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ articles: [
       { title: "Recent policy update", url: "https://publisher.example/story", seendate: "20260930120000", domain: "publisher.example", language: "English", sourcecountry: "United States" },
+      { title: "AP report", url: "https://www.apnews.com/article/example", seendate: "20260930120000", domain: "attacker.example", language: "English", sourcecountry: "United States" },
       { title: "Unsafe", url: "javascript:alert(1)", seendate: "20260930120000" },
       { title: "Too old", url: "https://publisher.example/old", seendate: "20260101120000" },
     ] }), { status: 200 }));
@@ -15,7 +16,10 @@ describe("searchGdeltNews", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(url.searchParams.get("maxrecords")).toBe("25");
     expect(url.searchParams.get("timespan")).toBe("7d");
-    expect(results).toMatchObject([{ title: "Recent policy update", domain: "publisher.example", language: "English" }]);
+    expect(results).toMatchObject([
+      { title: "Recent policy update", domain: "publisher.example", language: "English" },
+      { title: "AP report", domain: "apnews.com", sourceOperatorKey: "associated-press", sourceOperatorLabel: "Associated Press" },
+    ]);
   });
 
   it("adds only supported publisher-country and source-language filters", async () => {

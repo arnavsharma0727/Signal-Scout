@@ -54,6 +54,8 @@ try {
   const page = await response.text();
   if (response.ok && page.includes('Hacker News comments') && page.includes('keeps this source disabled until its collection and display rights are explicitly cleared') && page.includes('Official public API documentation') && page.includes('Y Combinator Terms and Privacy Policy') && page.includes('public API access is not a reuse license')) pass('uncleared Hacker News source is visibly disabled','source remains behind an explicit rights gate and links both primary references');
   else fail('uncleared Hacker News source is visibly disabled',`HTTP ${response.status}; rights gate copy missing`);
+  if (response.ok && page.includes('apnews.com') && page.includes('theguardian.com') && page.includes('reuters.com') && page.includes('GDELT\'s own domain/title fields do not establish publisher identity')) pass('GDELT publisher provenance is disclosed','only three reviewed publisher hosts are mapped; unknowns remain unresolved');
+  else fail('GDELT publisher provenance is disclosed',`HTTP ${response.status}; reviewed publisher allowlist or limitation copy missing`);
 } catch (error) { fail('uncleared Hacker News source is visibly disabled',error.message); }
 
 try {

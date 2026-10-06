@@ -1,3 +1,5 @@
+import { reviewedNewsOperatorForUrl } from "./news-source-operators";
+
 export type GdeltPublicArticle = {
   title: string;
   url: string;
@@ -5,6 +7,9 @@ export type GdeltPublicArticle = {
   domain: string;
   language: string;
   sourceCountry: string;
+  sourceOperatorKey?: string;
+  sourceOperatorLabel?: string;
+  sourceOperatorReferenceUrl?: string;
 };
 
 type GdeltResponse = {
@@ -85,7 +90,7 @@ export async function searchGdeltNews(
       body: JSON.stringify({ query, outletCountry, outletLanguage }),
     });
   if (response.status === 429) {
-    throw new Error("GDELT is rate-limiting requests. Wait at least five seconds before trying again.");
+    throw new Error("GDELT is currently rate-limiting public searches. No retry was sent; try again later or use the recent publisher feeds.");
   }
   if (!response.ok) throw new Error("The global news index is temporarily unavailable.");
 
@@ -105,15 +110,23 @@ function normalizeGdeltArticles(values: unknown[], now: number): GdeltPublicArti
     const url = safeHttpsUrl(rawUrl);
     const published = Date.parse(seenAt);
     if (!title || !url || !Number.isFinite(published) || published > now || published < now - MAX_AGE_MS) return [];
+    const hostname = new URL(url).hostname.toLocaleLowerCase().replace(/^www\./, "");
+    const operator = reviewedNewsOperatorForUrl(url);
     return [{
       title,
       url,
       seenAt,
-      domain: typeof row.domain === "string" ? row.domain : new URL(url).hostname,
+      // Trust the article URL's hostname, not the search index's domain field.
+      domain: hostname,
       language: typeof row.language === "string" ? row.language : "not reported",
       sourceCountry: typeof row.sourceCountry === "string"
         ? row.sourceCountry
         : typeof row.sourcecountry === "string" ? row.sourcecountry : "not reported",
+      ...(operator ? {
+        sourceOperatorKey: operator.key,
+        sourceOperatorLabel: operator.label,
+        sourceOperatorReferenceUrl: operator.referenceUrl,
+      } : {}),
     }];
   });
 }

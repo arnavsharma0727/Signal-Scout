@@ -96,7 +96,7 @@ export async function runResearchSweep(
         id: `gdelt:${article.url}`,
         title: article.title,
         url: article.url,
-        source: article.domain,
+        source: article.sourceOperatorLabel ?? article.domain,
         evidenceClass: "news coverage" as const,
         language: article.language,
         timeLabel: "Indexed/seen",
@@ -104,6 +104,8 @@ export async function runResearchSweep(
         context: `Publisher country: ${article.sourceCountry} (outlet metadata, not audience geography)`,
         attribution: "Headline belongs to publisher; indexed by GDELT",
         attributionUrl: "https://www.gdeltproject.org/",
+        sourceOperatorKey: article.sourceOperatorKey,
+        sourceOperatorLabel: article.sourceOperatorLabel,
       })),
     ));
   }
