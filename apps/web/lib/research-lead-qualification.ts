@@ -42,6 +42,18 @@ export function knownSourceOperator(source: EvidenceSource): string | null {
   const domain = (source.source_domain ?? "").toLocaleLowerCase().replace(/^www\./, "");
   const metadata = asRecord(source.raw_metadata_json);
 
+  if (source.source_type === "researcher-linked-source" &&
+      metadata.researcherLinkedOnly === true && metadata.postBodyDiscarded === true &&
+      metadata.transientPreviewDiscarded === true) {
+    if (metadata.citationProvider === "bluesky" && domain === "bsky.app") return "bluesky";
+    if (metadata.citationProvider === "mastodon" &&
+        ["mastodon.social", "mastodon.online", "mstdn.jp", "mastodon.world"].includes(domain))
+      return "mastodon-network";
+    if (metadata.citationProvider === "lemmy" &&
+        ["lemmy.world", "discuss.tchncs.de", "feddit.org", "feddit.uk"].includes(domain))
+      return "lemmy-federation";
+    return null;
+  }
   if (source.source_type === "stack-exchange") return "stack-exchange";
   if (source.source_type === "licensed-forum" && domain === "forum.typst.app" && metadata.publisher === "Typst Forum")
     return "typst-forum";

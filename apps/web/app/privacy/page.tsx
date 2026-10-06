@@ -134,6 +134,20 @@ export default function Privacy() {
             to the local clipboard or device.
           </p>
           <p>
+            Publishing a lead is a separate, explicit public action. For
+            selected Bluesky, Mastodon, or Lemmy citations, Signal Scout stores
+            and displays the public permalink, provider/host, displayed public
+            byline, date, language, a generated citation label, and your own source-specific
+            paraphrase. The post body and transient preview are discarded and
+            are not stored or republished. These citation records are public
+            in the public source registry as well as through the shared lead
+            and remain under the source-record retention policy; withdrawing a lead hides it from the active
+            queue but does not itself erase its source records. Other visitors
+            can see the thesis, alternatives, disconfirmation test, links,
+            attribution labels, and your review notes. Do not publish sensitive
+            or private information.
+          </p>
+          <p>
             The app is hosted by Vercel and uses Supabase for server-side data
             storage. These providers process requests and stored data to operate
             the service under their own terms and privacy policies. Server

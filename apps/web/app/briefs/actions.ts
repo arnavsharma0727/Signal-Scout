@@ -1,11 +1,13 @@
 'use server';
 
+import { randomUUID } from 'node:crypto';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { authConfigured, authServerClient } from '../../lib/supabase-auth-server';
 import { preparePrivateEvidenceLinks } from '../../lib/private-research-brief';
 import { serverSupabase } from '../../lib/server-supabase';
 import { preparePublicLeadSubmission, type LeadSourceDocument, type ReviewedLeadCitation } from '../../lib/research-lead-submission';
+import { prepareResearcherLinkedSource, type ResearcherLinkedCitationInput } from '../../lib/researcher-linked-source';
 
 async function requireBriefUser(next: '/briefs' | '/explore' | '/candidates' = '/briefs') {
   if (!authConfigured()) redirect('/login?error=disabled');
@@ -80,25 +82,80 @@ export async function publishEvidenceQualifiedLead(formData: FormData) {
   const alternatives = note(formData, 'alternatives', 2000);
   const disconfirmingEvidence = note(formData, 'disconfirming_evidence', 2000);
   const rawCitations = formData.get('reviewed_evidence');
+  const rawExternalCitations = formData.get('reviewed_external_evidence');
   if (!topic || workingThesis === null || alternatives === null || disconfirmingEvidence === null ||
-      typeof rawCitations !== 'string' || rawCitations.length > 100_000) {
+      typeof rawCitations !== 'string' || rawCitations.length > 100_000 ||
+      typeof rawExternalCitations !== 'string' || rawExternalCitations.length > 100_000) {
     redirect('/explore?lead=invalid#research-brief');
   }
 
   let parsed: unknown;
-  try { parsed = JSON.parse(rawCitations); } catch { redirect('/explore?lead=invalid#research-brief'); }
-  const citations = parseReviewedCitations(parsed);
-  if (!citations) redirect('/explore?lead=invalid#research-brief');
-
-  const { data: documents, error: documentError } = await db.from('source_documents')
-    .select('id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json')
-    .in('id', citations.map(({ documentId }) => documentId));
-  if (documentError || !documents || documents.length !== citations.length) {
-    redirect('/explore?lead=ineligible#research-brief');
+  let parsedExternal: unknown;
+  try {
+    parsed = JSON.parse(rawCitations);
+    parsedExternal = JSON.parse(rawExternalCitations);
+  } catch { redirect('/explore?lead=invalid#research-brief'); }
+  const publisherCitations = parseReviewedCitations(parsed);
+  const externalCitations = parseReviewedExternalCitations(parsedExternal);
+  if (!publisherCitations || !externalCitations ||
+      publisherCitations.length + externalCitations.length < 3 ||
+      publisherCitations.length + externalCitations.length > 40 ||
+      new Set(externalCitations.map(({ url }) => url)).size !== externalCitations.length) {
+    redirect('/explore?lead=invalid#research-brief');
   }
+
+  let publisherDocuments: LeadSourceDocument[] = [];
+  if (publisherCitations.length) {
+    const { data, error } = await db.from('source_documents')
+      .select('id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json')
+      .in('id', publisherCitations.map(({ documentId }) => documentId));
+    if (error || !data || data.length !== publisherCitations.length) redirect('/explore?lead=ineligible#research-brief');
+    publisherDocuments = data as LeadSourceDocument[];
+  }
+
+  const now = Date.now();
+  const existingExternalDocuments: LeadSourceDocument[] = [];
+  const newExternalDocuments: LeadSourceDocument[] = [];
+  if (externalCitations.length) {
+    const { data: existingRows, error: externalLookupError } = await db.from('source_documents')
+      .select('id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json')
+      .eq('source_type', 'researcher-linked-source')
+      .in('source_url', externalCitations.map(({ url }) => url));
+    if (externalLookupError) redirect('/explore?lead=unavailable#research-brief');
+    const existingByUrl = new Map((existingRows ?? []).map((row) => [row.source_url, row as LeadSourceDocument]));
+    for (const citation of externalCitations) {
+      const previous = existingByUrl.get(citation.url);
+      const document = prepareResearcherLinkedSource(citation, previous?.id ?? randomUUID(), now);
+      if (!document) redirect('/explore?lead=ineligible#research-brief');
+      if (previous) {
+        if (previous.source_type !== document.source_type || previous.source_domain !== document.source_domain ||
+            previous.title_original !== document.title_original || previous.published_at !== document.published_at ||
+            previous.raw_metadata_json?.attribution !== document.raw_metadata_json?.attribution ||
+            !prepareResearcherLinkedSource(citation, previous.id, now)) {
+          redirect('/explore?lead=ineligible#research-brief');
+        }
+        existingExternalDocuments.push(previous);
+      } else {
+        newExternalDocuments.push(document);
+      }
+    }
+  }
+  const externalDocumentByUrl = new Map([
+    ...existingExternalDocuments.map((document) => [document.source_url, document] as const),
+    ...newExternalDocuments.map((document) => [document.source_url, document] as const),
+  ]);
+  const externalReviewedCitations: ReviewedLeadCitation[] = externalCitations.map((citation) => ({
+    documentId: externalDocumentByUrl.get(citation.url)!.id,
+    assessment: citation.assessment,
+    sourceObservation: citation.sourceObservation,
+    researcherVerifiedOriginal: true,
+  }));
+  const citations = [...publisherCitations, ...externalReviewedCitations];
+  const documents = [...publisherDocuments, ...existingExternalDocuments, ...newExternalDocuments];
   const submission = preparePublicLeadSubmission({
     topic, workingThesis, alternatives, disconfirmingEvidence, citations,
-    documents: documents as LeadSourceDocument[],
+    documents,
+    asOf: now,
   });
   if (!submission) redirect('/explore?lead=ineligible#research-brief');
 
@@ -125,6 +182,14 @@ export async function publishEvidenceQualifiedLead(formData: FormData) {
     .select('id').single();
   if (insertError || !draft) redirect('/explore?lead=unavailable#research-brief');
 
+  if (newExternalDocuments.length) {
+    const { error: externalInsertError } = await db.from('source_documents').insert(newExternalDocuments);
+    if (externalInsertError) {
+      await db.from('research_leads').delete().eq('id', draft.id).eq('status', 'draft');
+      redirect('/explore?lead=unavailable#research-brief');
+    }
+  }
+
   const { error: linksError } = await db.from('research_lead_documents').insert(
     submission.evidence.map(({ documentId, relationshipType }) => ({
       research_lead_id: draft.id,
@@ -134,6 +199,7 @@ export async function publishEvidenceQualifiedLead(formData: FormData) {
   );
   if (linksError) {
     await db.from('research_leads').delete().eq('id', draft.id).eq('status', 'draft');
+    if (newExternalDocuments.length) await db.from('source_documents').delete().in('id', newExternalDocuments.map(({ id }) => id));
     redirect('/explore?lead=unavailable#research-brief');
   }
 
@@ -141,6 +207,7 @@ export async function publishEvidenceQualifiedLead(formData: FormData) {
     .update({ status: 'active' }).eq('id', draft.id).eq('created_by', user.id).eq('status', 'draft');
   if (publishError) {
     await db.from('research_leads').delete().eq('id', draft.id).eq('status', 'draft');
+    if (newExternalDocuments.length) await db.from('source_documents').delete().in('id', newExternalDocuments.map(({ id }) => id));
     redirect('/explore?lead=unavailable#research-brief');
   }
   revalidatePath('/candidates');
@@ -164,7 +231,7 @@ export async function withdrawResearchLead(formData: FormData) {
 }
 
 function parseReviewedCitations(value: unknown): ReviewedLeadCitation[] | null {
-  if (!Array.isArray(value) || value.length < 3 || value.length > 40) return null;
+  if (!Array.isArray(value) || value.length > 40) return null;
   const citations: ReviewedLeadCitation[] = [];
   for (const item of value) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
@@ -175,6 +242,31 @@ function parseReviewedCitations(value: unknown): ReviewedLeadCitation[] | null {
     citations.push({
       documentId: row.documentId,
       assessment: row.assessment as ReviewedLeadCitation['assessment'],
+      sourceObservation: row.sourceObservation,
+      researcherVerifiedOriginal: true,
+    });
+  }
+  return citations;
+}
+
+function parseReviewedExternalCitations(value: unknown): ResearcherLinkedCitationInput[] | null {
+  if (!Array.isArray(value) || value.length > 40) return null;
+  const citations: ResearcherLinkedCitationInput[] = [];
+  for (const item of value) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+    const row = item as Record<string, unknown>;
+    if (typeof row.id !== 'string' || typeof row.title !== 'string' || typeof row.url !== 'string' ||
+        typeof row.timeValue !== 'string' || typeof row.language !== 'string' || typeof row.attribution !== 'string' ||
+        !['supports', 'contradicts', 'context'].includes(String(row.assessment)) ||
+        typeof row.sourceObservation !== 'string' || row.researcherVerifiedOriginal !== true) return null;
+    citations.push({
+      id: row.id,
+      title: row.title,
+      url: row.url,
+      timeValue: row.timeValue,
+      language: row.language,
+      attribution: row.attribution,
+      assessment: row.assessment as ResearcherLinkedCitationInput['assessment'],
       sourceObservation: row.sourceObservation,
       researcherVerifiedOriginal: true,
     });

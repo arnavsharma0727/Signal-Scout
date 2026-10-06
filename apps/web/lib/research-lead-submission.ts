@@ -10,6 +10,7 @@ export type ReviewedLeadCitation = {
 
 export type LeadSourceDocument = {
   id: string;
+  market_code?: string | null;
   source_type: string;
   source_name: string;
   source_domain: string;
@@ -75,7 +76,8 @@ export function preparePublicLeadSubmission(input: {
   const operators = new Set(reviewed.map(({ evidence }) => evidence.sourceOperatorKey).filter(Boolean));
   const classes = new Set(reviewed.map(({ evidence }) => evidence.evidenceClass));
   const conversation = reviewed.filter(({ evidence }) =>
-    evidence.evidenceClass === "expert Q&A" || evidence.evidenceClass === "community forum");
+    evidence.evidenceClass === "expert Q&A" || evidence.evidenceClass === "community forum" ||
+    evidence.evidenceClass === "social discussion");
   const bylines = new Map<string, number>();
   for (const { evidence } of conversation) {
     const label = displayedByline(evidence);
@@ -87,7 +89,7 @@ export function preparePublicLeadSubmission(input: {
     ? Math.max(...bylines.values()) / conversation.length
     : 1;
   if (!assessments.has("supports") || !assessments.has("contradicts") || operators.size < 2 ||
-      !(classes.has("expert Q&A") || classes.has("community forum")) ||
+      !(classes.has("expert Q&A") || classes.has("community forum") || classes.has("social discussion")) ||
       !(classes.has("news coverage") || classes.has("expert analysis")) ||
       conversation.length < 2 || bylines.size < 2 || largestBylineShare > 0.6) return null;
 
@@ -128,7 +130,7 @@ export function preparePublicLeadSubmission(input: {
 }
 
 function displayedByline(evidence: ResearchEvidence) {
-  const match = evidence.attribution?.match(/^Author:\s*(.+)$/i)?.[1] ??
+  const match = evidence.attribution?.match(/^(?:Lemmy )?Author:\s*(.+)$/i)?.[1] ??
     (evidence.evidenceClass === "community forum" ? evidence.attribution : undefined);
   return match?.trim().replace(/\s+/g, " ") || null;
 }

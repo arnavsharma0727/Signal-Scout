@@ -21,9 +21,12 @@ const OPERATOR_LABELS: Record<string, string> = {
   "typst-forum": "Typst Forum",
   "fedora-discussion": "Fedora Discussion",
   "stack-exchange": "Stack Exchange",
+  bluesky: "Bluesky",
+  "mastodon-network": "Mastodon public instances",
+  "lemmy-federation": "Lemmy federated search",
 };
 
-/** Convert only reviewed, recent, title-and-attribution-only publisher records to public brief evidence. */
+/** Convert only recent, allowlisted publisher records or researcher-published link-only citations to public evidence. */
 export function toPublisherEvidence(
   row: StoredPublisherRow,
   now = Date.now(),
@@ -31,8 +34,11 @@ export function toPublisherEvidence(
   const url = safeHttpsUrl(row.source_url);
   const host = url?.hostname.toLowerCase();
   const published = Date.parse(row.published_at);
+  const maxAge = row.source_type === "researcher-linked-source"
+    ? 7 * 24 * 60 * 60_000
+    : 72 * 60 * 60_000;
   if (!url || !host || !row.id || !row.title_original?.trim() ||
-      !Number.isFinite(published) || published > now + 5 * 60_000 || now - published > 72 * 60 * 60_000) return null;
+      !Number.isFinite(published) || published > now + 5 * 60_000 || now - published > maxAge) return null;
 
   const meta = row.raw_metadata_json;
   if (!meta || typeof meta !== "object" || Array.isArray(meta)) return null;
@@ -43,7 +49,28 @@ export function toPublisherEvidence(
   let sourceOperatorKey: string;
   let context: string;
 
-  if (row.source_type === "licensed-reporting" && row.source_domain === host &&
+  if (row.source_type === "researcher-linked-source" && row.source_domain === host &&
+      meta.researcherLinkedOnly === true && meta.postBodyDiscarded === true &&
+      meta.transientPreviewDiscarded === true &&
+      typeof meta.attribution === "string" && meta.attribution.trim()) {
+    attribution = meta.attribution.trim().slice(0, 250);
+    evidenceClass = "social discussion";
+    context = "Researcher-selected public permalink; no post text retained or republished";
+    if (meta.citationProvider === "bluesky" && host === "bsky.app" &&
+        /^\/profile\/[^/]+\/post\/[^/]+\/?$/.test(url.pathname)) {
+      sourceOperatorKey = "bluesky";
+    } else if (meta.citationProvider === "mastodon" &&
+        ["mastodon.social", "mastodon.online", "mstdn.jp", "mastodon.world"].includes(host) &&
+        /^\/(?:@[^/]+\/\d+|web\/statuses\/\d+)\/?$/.test(url.pathname)) {
+      sourceOperatorKey = "mastodon-network";
+    } else if (meta.citationProvider === "lemmy" &&
+        ["lemmy.world", "discuss.tchncs.de", "feddit.org", "feddit.uk"].includes(host) &&
+        /^\/post\/\d+\/?$/.test(url.pathname)) {
+      sourceOperatorKey = "lemmy-federation";
+    } else {
+      return null;
+    }
+  } else if (row.source_type === "licensed-reporting" && row.source_domain === host &&
       isGlobalVoicesHost(host) && meta.publisher === "Global Voices" &&
       meta.licenseUrl === GV_LICENSE && meta.titleUnmodified === true &&
       meta.articleBodyDiscarded === true && meta.mediaDiscarded === true &&

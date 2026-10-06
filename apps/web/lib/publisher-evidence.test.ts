@@ -128,4 +128,22 @@ describe("reviewed publisher evidence", () => {
     expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, query: "semiconductor earnings" } }, now)).toBeNull();
     expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, contentLicense: "CC BY-NC-SA 4.0" } }, now)).toBeNull();
   });
+
+  it("renders only link-only, recent, allowlisted researcher citations without social post text", () => {
+    const row = {
+      id: "external-1", source_type: "researcher-linked-source", source_name: "Bluesky public post",
+      source_domain: "bsky.app", language_code: "en", title_original: "Public post by @researcher.example",
+      source_url: "https://bsky.app/profile/researcher.example/post/abc123", published_at: recent,
+      raw_metadata_json: {
+        citationProvider: "bluesky", attribution: "Author: @researcher.example",
+        researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+      },
+    };
+    expect(toPublisherEvidence(row, now)).toMatchObject({
+      evidenceClass: "social discussion", sourceOperatorKey: "bluesky", sourceOperatorLabel: "Bluesky",
+      attribution: "Author: @researcher.example", context: expect.stringContaining("no post text"),
+    });
+    expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, postBodyDiscarded: false } }, now)).toBeNull();
+    expect(toPublisherEvidence({ ...row, source_url: "https://bsky.app.evil.example/profile/a/post/b" }, now)).toBeNull();
+  });
 });

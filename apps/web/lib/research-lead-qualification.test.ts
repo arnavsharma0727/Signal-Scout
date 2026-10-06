@@ -30,6 +30,16 @@ describe("research lead source-operator gate", () => {
     expect(knownSourceOperator({ source_type: "licensed-forum", source_domain: "evil.example", raw_metadata_json: { publisher: "Typst Forum" } })).toBeNull();
   });
 
+  it("counts link-only social operators only when the server-recorded citation metadata is intact", () => {
+    const metadata = {
+      researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+    };
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "bsky.app", raw_metadata_json: { ...metadata, citationProvider: "bluesky" } })).toBe("bluesky");
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "mastodon.social", raw_metadata_json: { ...metadata, citationProvider: "mastodon" } })).toBe("mastodon-network");
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "unknown.example", raw_metadata_json: { ...metadata, citationProvider: "mastodon" } })).toBeNull();
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "bsky.app", raw_metadata_json: { ...metadata, citationProvider: "bluesky", postBodyDiscarded: false } })).toBeNull();
+  });
+
   it("requires recorded evidence, alternatives, a database count, and two verified operators", () => {
     const lead = {
       independent_source_count: 2,

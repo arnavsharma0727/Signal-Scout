@@ -135,7 +135,8 @@ if (!url || !key) {
     const recent=await rest(`source_documents?select=id,source_type,source_domain,market_code,language_code,title_original,published_at,raw_metadata_json&published_at=gte.${encodeURIComponent(since)}`);
     if(recent.complete)pass('recent source audit is fully paginated',`${recent.data.length} rows read${recent.count===null?'':` of ${recent.count}`}`);
     else fail('recent source audit is fully paginated',`Read ${recent.data.length} rows but the bounded pagination limit prevented a completeness check`);
-    const eligible=(recent.data??[]).filter(row=>row.source_type!=='hacker-news' && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
+    const researcherLinkedCitations=(recent.data??[]).filter(row=>row.source_type==='researcher-linked-source');
+    const eligible=(recent.data??[]).filter(row=>!['hacker-news','researcher-linked-source'].includes(row.source_type) && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
     const types=new Set(eligible.map(row=>row.source_type).filter(Boolean));
     const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
     const discussionViews=eligible.filter(row=>['stack-exchange','wikimedia-talk','lemmy','mastodon','bluesky'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)) || isReviewedLicensedForum(row));
@@ -149,7 +150,7 @@ if (!url || !key) {
     const licensedAnalysis=eligible.filter(row=>row.source_type==='licensed-analysis');
     const officialContext=eligible.filter(row=>row.source_type==='official-policy');
     const typeCounts=Object.fromEntries([...types].sort().map(type=>[type,eligible.filter(row=>row.source_type===type).length]));
-    if(conversationRecords.length>=20)pass('>=20 actual conversation records / 24h',`${conversationRecords.length} forum/Q&A/social rows (minimum activity floor only, not a representative sample or a qualified lead); ${eligible.length} eligible rows total and ${wikiRows.length} Wikimedia metadata-only revisions excluded from conversation. By type ${JSON.stringify(typeCounts)}; ${domains.size} host labels across ${types.size} types are not proof of independent owners.`);
+    if(conversationRecords.length>=20)pass('>=20 actual conversation records / 24h',`${conversationRecords.length} forum/Q&A/social rows (minimum activity floor only, not a representative sample or a qualified lead); ${eligible.length} scheduled/source-feed rows total and ${wikiRows.length} Wikimedia metadata-only revisions excluded from conversation. ${researcherLinkedCitations.length} researcher-published link-only citations are excluded from collection coverage. By type ${JSON.stringify(typeCounts)}; ${domains.size} host labels across ${types.size} types are not proof of independent owners.`);
     else fail('>=20 actual conversation records / 24h',`${conversationRecords.length} forum/Q&A/social rows; requires 20 for the minimum activity floor. ${eligible.length} eligible rows total includes ${wikiRows.length} metadata-only Wikimedia revisions, which do not count as conversation.`);
     if(conversationRecords.length>0)pass('scheduled public discussion collection',`${conversationRecords.length} actual conversation/Q&A records, including ${licensedForums.length} reviewed licensed-forum records from ${forumPublishers.size} forum operators and ${communities.size} Stack Exchange communities. Wikimedia revision metadata is excluded from this count.`);
     else fail('scheduled public discussion collection','No eligible forum, Q&A, or social conversation records in the last 24 hours; Wikimedia revision metadata is not counted as conversation');

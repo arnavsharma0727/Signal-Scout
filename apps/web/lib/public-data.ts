@@ -22,6 +22,7 @@ export async function recentSourceDocuments(){
       .select('id,market_code,source_type,source_name,source_domain,language_code,title_original,excerpt_original,source_url,published_at,discovered_at,raw_metadata_json')
       .eq('market_code',market)
       .neq('source_type','hacker-news')
+      .neq('source_type','researcher-linked-source')
       .neq('source_type','wikimedia-talk')
       .neq('source_domain','news.google.com')
       .gte('published_at',since)

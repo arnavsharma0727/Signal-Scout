@@ -11,6 +11,7 @@ import {
 import { countExcludedPrivateEvidence, preparePrivateEvidenceLinks } from "../../lib/private-research-brief";
 import { publishEvidenceQualifiedLead, saveResearchBrief } from "../briefs/actions";
 import { LOCAL_RESEARCH_NOTES_KEY, parseLocalResearchNotes, serializeLocalResearchNotes } from "../../lib/local-research-draft";
+import { isPublishableResearcherLinkedCitation } from "../../lib/researcher-linked-source";
 
 const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
   "expert Q&A",
@@ -109,10 +110,24 @@ export default function ResearchBrief({
     return Number.isFinite(published) && published <= Date.now() && Date.now() - published <= 30 * 86400000 &&
       item.researcherAssessment && item.researcherAssessment !== "not relevant";
   }), [evidence]);
-  const hasPublishableStoredSources = publicationEvidence.length >= 3 && publicationEvidence.every(({ id }) =>
-    /^publisher:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id));
-  const publicEvidencePacket = JSON.stringify(publicationEvidence.map((item) => ({
+  const isStoredPublisherCitation = (id: string) =>
+    /^publisher:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+  const externalPublicationEvidence = publicationEvidence.filter(isPublishableResearcherLinkedCitation);
+  const hasPublishableSources = publicationEvidence.length >= 3 && publicationEvidence.every(({ id }) =>
+    isStoredPublisherCitation(id) || externalPublicationEvidence.some((item) => item.id === id));
+  const publicEvidencePacket = JSON.stringify(publicationEvidence.filter(({ id }) => isStoredPublisherCitation(id)).map((item) => ({
     documentId: item.id.slice("publisher:".length),
+    assessment: item.researcherAssessment,
+    sourceObservation: item.researcherNote,
+    researcherVerifiedOriginal: item.researcherVerifiedOriginal === true,
+  })));
+  const externalEvidencePacket = JSON.stringify(externalPublicationEvidence.map((item) => ({
+    id: item.id,
+    title: item.title,
+    url: item.url,
+    timeValue: item.timeValue,
+    language: item.language,
+    attribution: item.attribution,
     assessment: item.researcherAssessment,
     sourceObservation: item.researcherNote,
     researcherVerifiedOriginal: item.researcherVerifiedOriginal === true,
@@ -331,10 +346,10 @@ export default function ResearchBrief({
           <div className="eyebrow">Shared lead queue</div>
           <h3 className="mt-2 font-semibold">Publish this researcher-reviewed lead?</h3>
           <p className="mt-1 text-xs leading-5 text-muted">
-            Publishing shares your thesis, alternatives, disconfirmation test, source links, and source-specific notes with anyone using Signal Scout. It uses only current, rights-reviewed records stored in the product; visitor-triggered social results remain private to your local dossier. Your click is an explicit publication action. The result is a researcher-authored prompt, not an independently verified finding or investment recommendation.
+            Publishing shares your thesis, alternatives, disconfirmation test, source links, public byline labels, and source-specific notes with anyone using Signal Scout. Licensed records use their reviewed attribution; Bluesky, Mastodon, and Lemmy are stored only as links plus minimal citation metadata after your explicit publication action. Their post text and transient previews are discarded and are not republished. The result is a researcher-authored prompt, not an independently verified finding or investment recommendation.
           </p>
-          {!hasPublishableStoredSources ? (
-            <p className="mt-3 text-sm leading-6 text-muted">This checklist passes, but the selected citations are not all from the product’s stored, rights-reviewed source feed. Keep or export the local dossier; it cannot be published to the shared queue.</p>
+          {!hasPublishableSources ? (
+            <p className="mt-3 text-sm leading-6 text-muted">This checklist passes, but one or more citations is not an approved stored record or a supported public social permalink. Keep or export the local dossier; it cannot be published to the shared queue.</p>
           ) : !authAvailable ? (
             <p className="mt-3 text-sm leading-6 text-muted">Publishing is unavailable until the project owner enables account sign-in. Your local dossier remains usable and private.</p>
           ) : !saveEnabled ? (
@@ -346,9 +361,10 @@ export default function ResearchBrief({
               <input type="hidden" name="alternatives" value={alternatives} />
               <input type="hidden" name="disconfirming_evidence" value={disconfirmingEvidence} />
               <input type="hidden" name="reviewed_evidence" value={publicEvidencePacket} />
+              <input type="hidden" name="reviewed_external_evidence" value={externalEvidencePacket} />
               <label className="flex items-start gap-2 text-xs leading-5 text-muted">
                 <input className="mt-1 shrink-0" type="checkbox" name="publish_confirmation" value="yes" required />
-                <span>I understand this publishes my thesis, notes, and approved citations to the shared public lead queue.</span>
+                <span>I understand this publishes my thesis, notes, source links, and public attribution labels to the shared lead queue. Social post text is not included.</span>
               </label>
               <button className="btn btn-primary" type="submit">Publish to shared lead queue</button>
             </form>

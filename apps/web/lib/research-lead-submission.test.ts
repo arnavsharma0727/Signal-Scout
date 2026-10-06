@@ -53,6 +53,29 @@ describe("public research lead submission gate", () => {
     ]);
   });
 
+  it("accepts researcher-reviewed social permalinks as link-only conversation evidence", () => {
+    const socialDocuments = documents.map((document, index) => index === 2 ? document : {
+      ...document,
+      source_type: "researcher-linked-source",
+      source_name: index === 0 ? "Bluesky public post" : "Mastodon · mastodon.social",
+      source_domain: index === 0 ? "bsky.app" : "mastodon.social",
+      source_url: index === 0
+        ? "https://bsky.app/profile/reader.example/post/first"
+        : "https://mastodon.social/@reader-two/12345",
+      title_original: index === 0 ? "Public post by @reader-one" : "Public post by @reader-two",
+      raw_metadata_json: {
+        citationProvider: index === 0 ? "bluesky" : "mastodon",
+        attribution: index === 0 ? "Author: @reader-one" : "Author: @reader-two",
+        researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+      },
+    });
+    const result = preparePublicLeadSubmission({ ...input, documents: socialDocuments });
+    expect(result?.lead).toMatchObject({
+      status: "draft", independent_source_count: 3,
+      evidence_level: "researcher-reviewed-citations",
+    });
+  });
+
   it("rejects repeated byline labels even when the source records are numerous", () => {
     const sameByline = documents.map((document, index) => index < 2
       ? { ...document, raw_metadata_json: { ...document.raw_metadata_json!, author: "same-reader" } }
