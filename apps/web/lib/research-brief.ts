@@ -149,6 +149,7 @@ export function summarizeRepeatedPostText(evidence: ResearchEvidence[]): Repeate
     const key = item.transientPreview
       .normalize("NFKC")
       .toLocaleLowerCase()
+      .replace(/\b(?:https?:\/\/|www\.)\S+|\b[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/\S*)?/g, " ")
       .replace(/&/g, " and ")
       .replace(/\s+/g, " ")
       .trim();

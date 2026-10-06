@@ -30,8 +30,8 @@ describe("createResearchBriefMarkdown", () => {
 
   it("surfaces normalized duplicate transient text without retaining post content", () => {
     const summary = summarizeRepeatedPostText([
-      { ...selected, id: "post-a", evidenceClass: "social discussion", transientPreview: "AI prices & power" },
-      { ...selected, id: "post-b", evidenceClass: "social discussion", transientPreview: " AI prices ＆ power " },
+      { ...selected, id: "post-a", evidenceClass: "social discussion", transientPreview: "AI prices & power app.example/link-one" },
+      { ...selected, id: "post-b", evidenceClass: "social discussion", transientPreview: " AI prices ＆ power https://example.net/link-two " },
       { ...selected, id: "post-c", evidenceClass: "social discussion", transientPreview: "A separate comment" },
       { ...selected, id: "news", evidenceClass: "news coverage", transientPreview: "AI prices & power" },
     ]);

@@ -292,7 +292,7 @@ export default function ResearchSweep({
                     )}
                     {repeatedText.previewItemCount > 0 && (
                       <p className="mt-1 text-xs leading-5 text-muted">
-                        Identical normalized post text: {repeatedText.repeatedItemCount}/{repeatedText.previewItemCount} previews in repeat groups · largest group {repeatedText.largestRepeatedGroup}. Text is compared in-browser and not retained in the brief.
+                        Same normalized post text (URLs omitted): {repeatedText.repeatedItemCount}/{repeatedText.previewItemCount} previews in repeat groups · largest group {repeatedText.largestRepeatedGroup}. Compared in-browser only; post text is not retained in the brief.
                       </p>
                     )}
                   </>;
