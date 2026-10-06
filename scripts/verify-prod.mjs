@@ -52,7 +52,7 @@ try {
 try {
   const response = await fetch(`${base}/sources`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Disabled unless collection and display rights are explicitly cleared')) pass('uncleared Hacker News source is visibly disabled','rights approval gate is shown');
+  if (response.ok && page.includes('Hacker News comments') && page.includes('keeps this source disabled until its collection and display rights are explicitly cleared') && page.includes('Official public API documentation') && page.includes('Y Combinator Terms and Privacy Policy') && page.includes('public API access is not a reuse license')) pass('uncleared Hacker News source is visibly disabled','source remains behind an explicit rights gate and links both primary references');
   else fail('uncleared Hacker News source is visibly disabled',`HTTP ${response.status}; rights gate copy missing`);
 } catch (error) { fail('uncleared Hacker News source is visibly disabled',error.message); }
 
