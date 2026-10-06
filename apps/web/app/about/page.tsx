@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SiteHeader from "../../components/site-header";
 
 export default function About() {
   return (
@@ -60,14 +61,7 @@ function Page({
 }) {
   return (
     <div className="min-h-screen">
-      <header className="shell flex h-20 items-center justify-between border-b border-line">
-        <Link href="/" className="font-extrabold">
-          SIGNAL SCOUT
-        </Link>
-        <Link href="/" className="text-sm text-muted">
-          ← Signal Scout
-        </Link>
-      </header>
+      <SiteHeader action={<Link href="/">← Research desk</Link>} />
       <main className="shell py-16">
         <div className="eyebrow mb-4">{eyebrow}</div>
         <h1 className="mb-10 text-4xl font-extrabold tracking-tight">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import ExploreWorkspace from "./explore/explore-workspace";
 import { authConfigured, authServerClient, githubOAuthEnabled } from "../lib/supabase-auth-server";
 import { recentPublisherEvidence } from "../lib/public-data";
+import SiteHeader from "../components/site-header";
 
 export default async function ResearchDesk({ saveStatus = "" }: { saveStatus?: string }) {
   const auth = authConfigured() ? await authServerClient() : null;
@@ -13,17 +14,9 @@ export default async function ResearchDesk({ saveStatus = "" }: { saveStatus?: s
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-line">
-        <div className="mx-auto flex min-h-16 w-full max-w-5xl items-center justify-between px-6 max-[639px]:px-[18px]">
-          <Link href="/" className="flex items-center gap-3" aria-label="Signal Scout research desk">
-            <span className="flex h-8 w-8 items-center justify-center rounded border border-line text-xs font-bold" aria-hidden="true">SS</span>
-            <span className="font-bold tracking-tight">SIGNAL SCOUT</span>
-          </Link>
-          <Link href="/sources" className="text-sm text-muted underline underline-offset-4">Sources &amp; method</Link>
-        </div>
-      </header>
+      <SiteHeader action={<Link href="/sources" className="underline underline-offset-4">Sources &amp; method</Link>} />
 
-      <main className="mx-auto w-full max-w-5xl px-6 pb-20 pt-10 max-[639px]:px-[18px] md:pt-14">
+      <main className="shell pb-20 pt-10 md:pt-14">
         {saveStatus === "invalid" && <p role="alert" className="mx-auto mb-5 max-w-4xl border border-line p-3 text-sm">The brief could not be saved. Check that its fields meet the stated limits, then try again.</p>}
         {saveStatus === "limit" && <p role="alert" className="mx-auto mb-5 max-w-4xl border border-line p-3 text-sm">This account has reached the limit of 100 saved briefs.</p>}
         {saveStatus === "unavailable" && <p role="alert" className="mx-auto mb-5 max-w-4xl border border-line p-3 text-sm">Private saving is temporarily unavailable. Your in-page draft has not been saved.</p>}

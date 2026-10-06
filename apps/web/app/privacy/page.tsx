@@ -1,20 +1,15 @@
 import Link from "next/link";
+import SiteHeader from "../../components/site-header";
 
 export const metadata = { title: "Privacy | Signal Scout" };
 
 export default function Privacy() {
   return (
-    <main className="shell min-h-screen py-16">
-      <header className="flex items-center justify-between border-b border-line pb-6">
-        <Link href="/" className="font-extrabold">
-          SIGNAL SCOUT
-        </Link>
-        <Link href="/" className="text-sm text-muted">
-          ← Signal Scout
-        </Link>
-      </header>
+    <div className="min-h-screen">
+      <SiteHeader action={<Link href="/">← Research desk</Link>} />
+      <main className="shell py-16">
       <article className="max-w-3xl">
-        <div className="eyebrow mb-4 mt-12">Privacy</div>
+        <div className="eyebrow mb-4">Privacy</div>
         <h1 className="text-4xl font-extrabold">
           How this prototype handles data
         </h1>
@@ -144,6 +139,7 @@ export default function Privacy() {
           </p>
         </section>
       </article>
-    </main>
+      </main>
+    </div>
   );
 }

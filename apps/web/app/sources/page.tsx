@@ -1,4 +1,5 @@
 import Link from "next/link";
+import SiteHeader from "../../components/site-header";
 import { serverSupabase } from "../../lib/server-supabase";
 import { isHackerNewsIngestionEnabled } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
@@ -276,14 +277,7 @@ export default async function Sources() {
   );
   return (
     <div className="min-h-screen">
-      <header className="shell flex h-20 items-center justify-between border-b border-line">
-        <Link href="/" className="font-extrabold">
-          SIGNAL SCOUT
-        </Link>
-        <Link href="/" className="text-sm text-muted">
-          ← Signal Scout
-        </Link>
-      </header>
+      <SiteHeader action={<Link href="/">← Research desk</Link>} />
       <main className="shell py-16">
         <div className="eyebrow mb-4">Source configuration and health</div>
         <h1 className="mb-4 text-4xl font-extrabold">Sources</h1>

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import SiteHeader from '../../components/site-header';
 import { serverSupabase } from '../../lib/server-supabase';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +34,7 @@ export default async function CoveragePage() {
     rows = (data ?? []) as unknown as Metric[];
   }
   return <div className="min-h-screen">
-    <header className="shell flex h-20 items-center justify-between border-b border-line"><Link href="/" className="font-extrabold">SIGNAL SCOUT</Link><Link href="/" className="text-sm text-muted">← Briefing</Link></header>
+    <SiteHeader action={<Link href="/">← Research desk</Link>} />
     <main className="shell py-14">
       <div className="eyebrow mb-4">Evidence quality</div><h1 className="text-4xl font-extrabold tracking-tight">Coverage</h1>
       <p className="mt-4 max-w-3xl leading-7 text-muted">Daily counts of entity-linked records by market and source class. This describes only the sources configured in Signal Scout; it does not estimate investor-wide attention or establish a Korea/U.S. difference.</p>
