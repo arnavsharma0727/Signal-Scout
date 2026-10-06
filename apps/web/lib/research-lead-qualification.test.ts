@@ -40,6 +40,17 @@ describe("research lead source-operator gate", () => {
     expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "bsky.app", raw_metadata_json: { ...metadata, citationProvider: "bluesky", postBodyDiscarded: false } })).toBeNull();
   });
 
+  it("counts researcher-linked Stack Exchange only with reviewed-site and CC BY-SA metadata", () => {
+    const metadata = {
+      citationProvider: "stackexchange", researcherLinkedOnly: true, postBodyDiscarded: true,
+      transientPreviewDiscarded: true, contentLicense: "CC BY-SA 4.0",
+      licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", titleUnmodified: true, site: "politics",
+    };
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "politics.stackexchange.com", raw_metadata_json: metadata })).toBe("stack-exchange");
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "politics.stackexchange.com.evil.example", raw_metadata_json: metadata })).toBeNull();
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "politics.stackexchange.com", raw_metadata_json: { ...metadata, contentLicense: "CC BY-NC-SA 4.0" } })).toBeNull();
+  });
+
   it("requires recorded evidence, alternatives, a database count, and two verified operators", () => {
     const lead = {
       independent_source_count: 2,

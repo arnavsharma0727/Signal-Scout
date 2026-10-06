@@ -57,6 +57,20 @@ export default function Privacy() {
             able to access it.
           </p>
           <p>
+            If you explicitly publish a reviewed lead, selected Bluesky,
+            Mastodon, or Lemmy citations are stored in the shared evidence
+            registry as a permalink, public byline, date/language, and your
+            paraphrase; their post text is not stored. A Stack Exchange
+            citation is rechecked against the public API before publication.
+            If its current record is CC BY-SA 4.0, the shared registry stores
+            its unmodified question title, link, date/language, author name and
+            profile link, and license for attribution; question and answer
+            bodies are not stored. These shared source records are publicly
+            readable and are not deleted when a lead is withdrawn. Original
+            providers receive revalidation requests and may process them under
+            their own policies.
+          </p>
+          <p>
             Lead review can pass an observed topic to Explore in the URL
             fragment so the phrase fields are prefilled. Fragments are not part
             of the HTTP request, and Explore clears the fragment after reading

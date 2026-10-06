@@ -1,3 +1,5 @@
+import { isReviewedStackExchangeSiteHost } from "./researcher-linked-source";
+
 type EvidenceSource = {
   source_type: string | null;
   source_domain: string | null;
@@ -45,6 +47,11 @@ export function knownSourceOperator(source: EvidenceSource): string | null {
   if (source.source_type === "researcher-linked-source" &&
       metadata.researcherLinkedOnly === true && metadata.postBodyDiscarded === true &&
       metadata.transientPreviewDiscarded === true) {
+    if (metadata.citationProvider === "stackexchange" &&
+        metadata.contentLicense === "CC BY-SA 4.0" &&
+        metadata.licenseUrl === "https://creativecommons.org/licenses/by-sa/4.0/" &&
+        metadata.titleUnmodified === true && typeof metadata.site === "string" &&
+        isReviewedStackExchangeSiteHost(domain, metadata.site)) return "stack-exchange";
     if (metadata.citationProvider === "bluesky" && domain === "bsky.app") return "bluesky";
     if (metadata.citationProvider === "mastodon" &&
         ["mastodon.social", "mastodon.online", "mstdn.jp", "mastodon.world"].includes(domain))

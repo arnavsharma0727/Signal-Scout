@@ -1,4 +1,5 @@
 import type { ResearchEvidence } from "./research-brief";
+import { isReviewedStackExchangeSiteHost } from "./researcher-linked-source";
 
 type StoredPublisherRow = {
   id: string;
@@ -46,6 +47,7 @@ export function toPublisherEvidence(
   let attribution: string;
   let licenseName: string | undefined;
   let licenseUrl: string | undefined;
+  let attributionUrl: string | undefined;
   let sourceOperatorKey: string;
   let context: string;
 
@@ -54,19 +56,43 @@ export function toPublisherEvidence(
       meta.transientPreviewDiscarded === true &&
       typeof meta.attribution === "string" && meta.attribution.trim()) {
     attribution = meta.attribution.trim().slice(0, 250);
-    evidenceClass = "social discussion";
-    context = "Researcher-selected public permalink; no post text retained or republished";
-    if (meta.citationProvider === "bluesky" && host === "bsky.app" &&
+    if (meta.citationProvider === "stackexchange" &&
+        meta.contentLicense === "CC BY-SA 4.0" &&
+        meta.licenseUrl === CC_BY_SA_4 && meta.titleUnmodified === true &&
+        meta.postBodyDiscarded === true && typeof meta.site === "string" &&
+        isReviewedStackExchangeSiteHost(host, meta.site) &&
+        /^\/questions\/\d+\/[^/]+\/?$/.test(url.pathname) &&
+        typeof meta.attributionUrl === "string" && isStackExchangeAuthorUrl(meta.attributionUrl, host)) {
+      evidenceClass = "expert Q&A";
+      attribution = `Author: ${attribution.replace(/^Author:\s*/i, "")}`;
+      attributionUrl = meta.attributionUrl;
+      licenseName = "CC BY-SA 4.0";
+      licenseUrl = CC_BY_SA_4;
+      sourceOperatorKey = "stack-exchange";
+      context = "Provider-verified question title only; question body is not retained";
+    } else if (meta.citationProvider === "bluesky" && host === "bsky.app" &&
+        meta.researcherLinkedOnly === true && meta.postBodyDiscarded === true &&
+        meta.transientPreviewDiscarded === true &&
         /^\/profile\/[^/]+\/post\/[^/]+\/?$/.test(url.pathname)) {
+      evidenceClass = "social discussion";
       sourceOperatorKey = "bluesky";
+      context = "Researcher-selected public permalink; no post text retained or republished";
     } else if (meta.citationProvider === "mastodon" &&
+        meta.researcherLinkedOnly === true && meta.postBodyDiscarded === true &&
+        meta.transientPreviewDiscarded === true &&
         ["mastodon.social", "mastodon.online", "mstdn.jp", "mastodon.world"].includes(host) &&
         /^\/(?:@[^/]+\/\d+|web\/statuses\/\d+)\/?$/.test(url.pathname)) {
+      evidenceClass = "social discussion";
       sourceOperatorKey = "mastodon-network";
+      context = "Researcher-selected public permalink; no post text retained or republished";
     } else if (meta.citationProvider === "lemmy" &&
+        meta.researcherLinkedOnly === true && meta.postBodyDiscarded === true &&
+        meta.transientPreviewDiscarded === true &&
         ["lemmy.world", "discuss.tchncs.de", "feddit.org", "feddit.uk"].includes(host) &&
         /^\/post\/\d+\/?$/.test(url.pathname)) {
+      evidenceClass = "social discussion";
       sourceOperatorKey = "lemmy-federation";
+      context = "Researcher-selected public permalink; no post text retained or republished";
     } else {
       return null;
     }
@@ -138,9 +164,9 @@ export function toPublisherEvidence(
     timeValue: new Date(published).toISOString(),
     context,
     attribution,
-    attributionUrl: sourceOperatorKey === "global-voices"
+    attributionUrl: attributionUrl ?? (sourceOperatorKey === "global-voices"
       ? "https://globalvoices.org/about/global-voices-attribution-policy/"
-      : undefined,
+      : undefined),
     licenseName,
     licenseUrl,
     sourceOperatorKey,
@@ -152,6 +178,11 @@ function isStackExchangeHost(host: string) {
   return host === "stackexchange.com" || host.endsWith(".stackexchange.com") ||
     host === "stackoverflow.com" || host.endsWith(".stackoverflow.com") ||
     ["serverfault.com", "superuser.com", "askubuntu.com", "mathoverflow.net"].includes(host);
+}
+
+function isStackExchangeAuthorUrl(value: string, host: string) {
+  const url = safeHttpsUrl(value);
+  return Boolean(url && url.hostname === host && /^\/users\/\d+(?:\/[^/]+)?\/?$/.test(url.pathname));
 }
 
 function matchesTitleQuery(title: string, query: string) {

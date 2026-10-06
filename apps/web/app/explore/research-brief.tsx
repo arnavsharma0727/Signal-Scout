@@ -346,7 +346,7 @@ export default function ResearchBrief({
           <div className="eyebrow">Shared lead queue</div>
           <h3 className="mt-2 font-semibold">Publish this researcher-reviewed lead?</h3>
           <p className="mt-1 text-xs leading-5 text-muted">
-            Publishing shares your thesis, alternatives, disconfirmation test, source links, public byline labels, and source-specific notes with anyone using Signal Scout. Licensed records use their reviewed attribution; Bluesky, Mastodon, and Lemmy are stored only as links plus minimal citation metadata after your explicit publication action. Their post text and transient previews are discarded and are not republished. The result is a researcher-authored prompt, not an independently verified finding or investment recommendation.
+            Publishing shares your thesis, alternatives, disconfirmation test, source links, public byline labels, and source-specific notes with anyone using Signal Scout. Bluesky, Mastodon, and Lemmy are stored only as links plus minimal citation metadata; their post text and transient previews are discarded. A Stack Exchange question is rechecked at publication and is shared only when its current license is CC BY-SA 4.0, with its original title, author attribution/profile, and license; its body is not stored. These source records are public. The result is a researcher-authored prompt, not an independently verified finding or investment recommendation.
           </p>
           {!hasPublishableSources ? (
             <p className="mt-3 text-sm leading-6 text-muted">This checklist passes, but one or more citations is not an approved stored record or a supported public social permalink. Keep or export the local dossier; it cannot be published to the shared queue.</p>
@@ -364,7 +364,7 @@ export default function ResearchBrief({
               <input type="hidden" name="reviewed_external_evidence" value={externalEvidencePacket} />
               <label className="flex items-start gap-2 text-xs leading-5 text-muted">
                 <input className="mt-1 shrink-0" type="checkbox" name="publish_confirmation" value="yes" required />
-                <span>I understand this publishes my thesis, notes, source links, and public attribution labels to the shared lead queue. Social post text is not included.</span>
+                <span>I understand this publishes my thesis, notes, source links, and public attribution labels to the shared lead queue. Social post text is excluded; an eligible Stack Exchange question title and CC BY-SA attribution are public.</span>
               </label>
               <button className="btn btn-primary" type="submit">Publish to shared lead queue</button>
             </form>

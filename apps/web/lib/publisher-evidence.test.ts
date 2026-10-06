@@ -146,4 +146,27 @@ describe("reviewed publisher evidence", () => {
     expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, postBodyDiscarded: false } }, now)).toBeNull();
     expect(toPublisherEvidence({ ...row, source_url: "https://bsky.app.evil.example/profile/a/post/b" }, now)).toBeNull();
   });
+
+  it("renders a provider-verified Stack Exchange citation with CC BY-SA attribution", () => {
+    const row = {
+      id: "external-se-1", source_type: "researcher-linked-source", source_name: "Politics Stack Exchange",
+      source_domain: "politics.stackexchange.com", language_code: "en",
+      title_original: "How can election promises affect public spending?",
+      source_url: "https://politics.stackexchange.com/questions/12345/election-costs", published_at: recent,
+      raw_metadata_json: {
+        citationProvider: "stackexchange", attribution: "Author: Contributor",
+        attributionUrl: "https://politics.stackexchange.com/users/7/contributor", site: "politics",
+        contentLicense: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+        titleUnmodified: true, researcherLinkedOnly: true, postBodyDiscarded: true,
+        transientPreviewDiscarded: true,
+      },
+    };
+    expect(toPublisherEvidence(row, now)).toMatchObject({
+      evidenceClass: "expert Q&A", sourceOperatorKey: "stack-exchange",
+      attribution: "Author: Contributor", attributionUrl: row.raw_metadata_json.attributionUrl,
+      licenseName: "CC BY-SA 4.0", licenseUrl: row.raw_metadata_json.licenseUrl,
+    });
+    expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, contentLicense: "CC BY-SA 3.0" } }, now)).toBeNull();
+    expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, attributionUrl: "https://evil.example/users/7/contributor" } }, now)).toBeNull();
+  });
 });

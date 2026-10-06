@@ -21,6 +21,7 @@ type Evidence = {
   market_code: string | null;
   source_type: string | null;
   published_at: string | null;
+  raw_metadata_json: Record<string, unknown> | null;
 };
 type LinkRow = {
   document_id: string | null;
@@ -76,7 +77,7 @@ export default async function DivergenceDetail({
   const { data: linkedData, error: linkedError } = await db
     .from("research_lead_documents")
     .select(
-      "document_id,relationship_type,source_documents!inner(id,title_original,excerpt_original,source_url,source_name,source_domain,market_code,source_type,published_at)",
+      "document_id,relationship_type,source_documents!inner(id,title_original,excerpt_original,source_url,source_name,source_domain,market_code,source_type,published_at,raw_metadata_json)",
     )
     .eq("research_lead_id", id);
   if (linkedError) return <Unavailable />;
@@ -205,7 +206,9 @@ function EvidenceSection({ title, rows, timeZone }: { title: string; rows: LinkR
               >
                 <div className="flex flex-wrap gap-x-3 text-[10px] uppercase tracking-wider text-muted">
                   <span>{doc.market_code ?? "Market unknown"}</span>
-                  <span>{doc.source_type === "researcher-linked-source" ? "researcher-linked social source" : doc.source_type ?? "Source type unknown"}</span>
+                  <span>{doc.source_type === "researcher-linked-source"
+                    ? doc.raw_metadata_json?.citationProvider === "stackexchange" ? "licensed expert Q&A" : "researcher-linked social source"
+                    : doc.source_type ?? "Source type unknown"}</span>
                   <span>
                     {doc.source_domain ?? doc.source_name ?? "Source unknown"}
                   </span>
@@ -236,6 +239,16 @@ function EvidenceSection({ title, rows, timeZone }: { title: string; rows: LinkR
                   >
                     Published {formatTimestamp(doc.published_at, timeZone)}
                   </time>
+                )}
+                {doc.raw_metadata_json?.citationProvider === "stackexchange" &&
+                  doc.raw_metadata_json.contentLicense === "CC BY-SA 4.0" &&
+                  typeof doc.raw_metadata_json.attribution === "string" &&
+                  typeof doc.raw_metadata_json.attributionUrl === "string" && (
+                  <p className="mt-2 text-xs text-muted">
+                    {doc.raw_metadata_json.attribution.replace(/^Author:\s*/i, "")} ·{" "}
+                    <a className="underline underline-offset-2" href={doc.raw_metadata_json.attributionUrl} target="_blank" rel="noreferrer">author profile</a>
+                    {" · "}<a className="underline underline-offset-2" href="https://creativecommons.org/licenses/by-sa/4.0/" target="_blank" rel="noreferrer">CC BY-SA 4.0</a>
+                  </p>
                 )}
                 {row.sourceObservation && (
                   <p className="mt-2 text-sm leading-6 text-muted"><strong className="text-ink">Researcher observation:</strong> {row.sourceObservation}</p>

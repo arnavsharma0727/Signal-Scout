@@ -7,7 +7,7 @@ import { authConfigured, authServerClient } from '../../lib/supabase-auth-server
 import { preparePrivateEvidenceLinks } from '../../lib/private-research-brief';
 import { serverSupabase } from '../../lib/server-supabase';
 import { preparePublicLeadSubmission, type LeadSourceDocument, type ReviewedLeadCitation } from '../../lib/research-lead-submission';
-import { prepareResearcherLinkedSource, type ResearcherLinkedCitationInput } from '../../lib/researcher-linked-source';
+import { prepareResearcherLinkedSource, type ResearcherLinkedCitationInput, verifyStackExchangeCitations } from '../../lib/researcher-linked-source';
 
 async function requireBriefUser(next: '/briefs' | '/explore' | '/candidates' = '/briefs') {
   if (!authConfigured()) redirect('/login?error=disabled');
@@ -114,6 +114,8 @@ export async function publishEvidenceQualifiedLead(formData: FormData) {
   }
 
   const now = Date.now();
+  const verifiedStackExchange = await verifyStackExchangeCitations(externalCitations, fetch, now);
+  if (!verifiedStackExchange) redirect('/explore?lead=ineligible#research-brief');
   const existingExternalDocuments: LeadSourceDocument[] = [];
   const newExternalDocuments: LeadSourceDocument[] = [];
   if (externalCitations.length) {
@@ -125,13 +127,15 @@ export async function publishEvidenceQualifiedLead(formData: FormData) {
     const existingByUrl = new Map((existingRows ?? []).map((row) => [row.source_url, row as LeadSourceDocument]));
     for (const citation of externalCitations) {
       const previous = existingByUrl.get(citation.url);
-      const document = prepareResearcherLinkedSource(citation, previous?.id ?? randomUUID(), now);
+      const document = prepareResearcherLinkedSource(
+        citation, previous?.id ?? randomUUID(), now, verifiedStackExchange.get(citation.url),
+      );
       if (!document) redirect('/explore?lead=ineligible#research-brief');
       if (previous) {
         if (previous.source_type !== document.source_type || previous.source_domain !== document.source_domain ||
             previous.title_original !== document.title_original || previous.published_at !== document.published_at ||
             previous.raw_metadata_json?.attribution !== document.raw_metadata_json?.attribution ||
-            !prepareResearcherLinkedSource(citation, previous.id, now)) {
+            !prepareResearcherLinkedSource(citation, previous.id, now, verifiedStackExchange.get(citation.url))) {
           redirect('/explore?lead=ineligible#research-brief');
         }
         existingExternalDocuments.push(previous);

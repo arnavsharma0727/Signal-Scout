@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isPublishableResearcherLinkedCitation, prepareResearcherLinkedSource } from "./researcher-linked-source";
+import {
+  isPublishableResearcherLinkedCitation,
+  prepareResearcherLinkedSource,
+  verifyStackExchangeCitations,
+  type ResearcherLinkedCitationInput,
+} from "./researcher-linked-source";
 
 const now = Date.parse("2026-10-06T12:00:00Z");
 const id = "44444444-4444-4444-8444-444444444444";
@@ -13,6 +18,17 @@ const valid = {
   assessment: "supports" as const,
   sourceObservation: "The original public post describes a specific concern about the new policy.",
   researcherVerifiedOriginal: true as const,
+};
+const stackExchangeCitation: ResearcherLinkedCitationInput = {
+  id: "stackexchange:https://politics.stackexchange.com/questions/12345/election-costs",
+  title: "How can election promises affect public spending?",
+  url: "https://politics.stackexchange.com/questions/12345/election-costs",
+  timeValue: "2026-10-06T10:00:00.000Z",
+  language: "en",
+  attribution: "Author: Contributor",
+  assessment: "supports",
+  sourceObservation: "The question describes a specific claim about public spending and election promises.",
+  researcherVerifiedOriginal: true,
 };
 
 describe("researcher-linked social citation gate", () => {
@@ -61,6 +77,11 @@ describe("researcher-linked social citation gate", () => {
     const timeValue = new Date(Date.now() - 60 * 60_000).toISOString();
     expect(isPublishableResearcherLinkedCitation({ id: "mastodon:123", url: "https://mastodon.social/@reader/12345", timeValue })).toBe(true);
     expect(isPublishableResearcherLinkedCitation({ id: "mastodon:123", url: "https://other.social/@reader/12345", timeValue })).toBe(false);
+    expect(isPublishableResearcherLinkedCitation({
+      id: `stackexchange:${stackExchangeCitation.url}`,
+      url: stackExchangeCitation.url,
+      timeValue: stackExchangeCitation.timeValue,
+    })).toBe(true);
   });
 
   it("rejects noncanonical, stale, future, unreviewed, or unattributed citations", () => {
@@ -71,5 +92,55 @@ describe("researcher-linked social citation gate", () => {
     expect(prepareResearcherLinkedSource({ ...valid, researcherVerifiedOriginal: false as never }, id, now)).toBeNull();
     expect(prepareResearcherLinkedSource({ ...valid, attribution: "" }, id, now)).toBeNull();
     expect(prepareResearcherLinkedSource({ ...valid, sourceObservation: "short" }, id, now)).toBeNull();
+  });
+
+  it("verifies fresh Stack Exchange citations against the keyless API and retains no question body", async () => {
+    const fetcher = async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      expect(url.hostname).toBe("api.stackexchange.com");
+      expect(url.pathname).toBe("/2.3/questions/12345");
+      expect(url.searchParams.get("site")).toBe("politics");
+      return new Response(JSON.stringify({ items: [{
+        question_id: 12345,
+        title: "How can election promises affect public spending?",
+        link: stackExchangeCitation.url,
+        creation_date: Date.parse(stackExchangeCitation.timeValue) / 1000,
+        content_license: "CC BY-SA 4.0",
+        owner: { display_name: "Contributor", link: "https://politics.stackexchange.com/users/7/contributor" },
+        body: "This field must not be retained.",
+      }] }), { status: 200, headers: { "content-type": "application/json" } });
+    };
+    const verified = await verifyStackExchangeCitations([stackExchangeCitation], fetcher, now);
+    expect(verified?.get(stackExchangeCitation.url)).toMatchObject({
+      site: "politics", siteLabel: "Politics Stack Exchange", title: stackExchangeCitation.title,
+      author: "Contributor", url: stackExchangeCitation.url,
+    });
+    const row = prepareResearcherLinkedSource(stackExchangeCitation, id, now, verified?.get(stackExchangeCitation.url));
+    expect(row).toMatchObject({
+      source_type: "researcher-linked-source", source_name: "Politics Stack Exchange",
+      title_original: stackExchangeCitation.title,
+      raw_metadata_json: {
+        citationProvider: "stackexchange", contentLicense: "CC BY-SA 4.0",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", titleUnmodified: true,
+      },
+    });
+    expect(row?.raw_metadata_json).not.toHaveProperty("body");
+  });
+
+  it("rejects unlicensed, mismatched, stale, and provider-throttled Stack Exchange evidence", async () => {
+    const makeFetcher = (overrides: Record<string, unknown> = {}, status = 200) => async () => new Response(JSON.stringify({
+      items: [{
+        question_id: 12345, title: stackExchangeCitation.title, link: stackExchangeCitation.url,
+        creation_date: Date.parse(stackExchangeCitation.timeValue) / 1000, content_license: "CC BY-SA 4.0",
+        owner: { display_name: "Contributor", link: "https://politics.stackexchange.com/users/7/contributor" },
+        ...overrides,
+      }],
+    }), { status, headers: { "content-type": "application/json" } });
+    expect(await verifyStackExchangeCitations([stackExchangeCitation], makeFetcher({ content_license: "CC BY-SA 3.0" }), now)).toBeNull();
+    expect(await verifyStackExchangeCitations([stackExchangeCitation], makeFetcher({ title: "Different title" }), now)).toBeNull();
+    expect(await verifyStackExchangeCitations([stackExchangeCitation], makeFetcher({}), now + 8 * 86400000)).toBeNull();
+    expect(await verifyStackExchangeCitations([stackExchangeCitation], async () => new Response("{}", { status: 429 }), now)).toBeNull();
+    expect(await verifyStackExchangeCitations([stackExchangeCitation], makeFetcher({ owner: { display_name: "Contributor", link: "https://evil.example/users/7/contributor" } }), now)).toBeNull();
+    expect(await verifyStackExchangeCitations([stackExchangeCitation], makeFetcher({ title: "&#999999999999999999999;" }), now)).toBeNull();
   });
 });
