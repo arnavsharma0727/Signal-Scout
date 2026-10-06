@@ -21,7 +21,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
       {user ? <p className="mt-6 text-sm">Signed in as <span className="font-semibold">{user.email}</span>. <Link className="underline" href="/briefs">Open saved briefs</Link></p>
         : !enabled ? <div className="mt-6 border-t border-line pt-5 text-sm leading-6 text-muted"><p className="font-semibold text-ink">Private sign-in is unavailable.</p><p className="mt-2">GitHub OAuth is not enabled and verified for this deployment. The project owner must finish the Supabase provider setup; local Markdown exports still work without an account.</p></div>
         : <form action={requestGitHubSignIn} className="mt-6 space-y-4 border-t border-line pt-5">
-          <input type="hidden" name="next" value={params.next === '/briefs' ? '/briefs' : '/watchlists'} />
+          <input type="hidden" name="next" value={params.next && ['/briefs', '/explore', '/candidates'].includes(params.next) ? params.next : '/watchlists'} />
           <button className="btn btn-primary" type="submit">Continue with GitHub</button>
           <p className="text-xs leading-5 text-muted">Signing in may create an account. The account is used only to keep your private briefs separate from other users’ data.</p>
         </form>}

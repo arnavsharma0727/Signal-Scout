@@ -4,7 +4,7 @@ import { authConfigured, authServerClient, githubOAuthEnabled } from "../lib/sup
 import { recentPublisherEvidence } from "../lib/public-data";
 import SiteHeader from "../components/site-header";
 
-export default async function ResearchDesk({ saveStatus = "" }: { saveStatus?: string }) {
+export default async function ResearchDesk({ saveStatus = "", leadStatus = "" }: { saveStatus?: string; leadStatus?: string }) {
   const auth = authConfigured() ? await authServerClient() : null;
   const authAvailable = await githubOAuthEnabled();
   const { data: { user } } = auth
@@ -40,6 +40,7 @@ export default async function ResearchDesk({ saveStatus = "" }: { saveStatus?: s
             authAvailable={authAvailable}
             saveEnabled={Boolean(user)}
             publisherEvidence={publisherEvidence}
+            leadStatus={leadStatus}
           />
         </div>
 

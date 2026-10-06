@@ -9,7 +9,9 @@ export async function requestGitHubSignIn(formData: FormData) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!supabase || !appUrl) redirect('/login?error=disabled');
   const requestedNext = String(formData.get('next') ?? '');
-  const next = requestedNext === '/briefs' ? '/briefs' : '/watchlists';
+  const next = ['/briefs', '/explore', '/candidates'].includes(requestedNext)
+    ? requestedNext
+    : '/watchlists';
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'github',
     options: {

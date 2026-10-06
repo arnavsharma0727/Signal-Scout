@@ -83,7 +83,7 @@ export function assessResearchLeadReadiness(input: {
   const classes = new Set(relevantEvidence.map((item) => item.evidenceClass));
   const assessments = new Set(relevantEvidence.map((item) => item.researcherAssessment));
   const checks = [
-    { label: "Specific topic and working thesis", passed: Boolean(input.topic.trim() && input.workingThesis.trim()), detail: "Write the question being investigated and a tentative explanation." },
+    { label: "Specific topic and working thesis", passed: input.topic.trim().length >= 3 && input.workingThesis.trim().length >= 20, detail: "Write a specific question (at least 3 characters) and a testable tentative explanation (at least 20 characters)." },
     { label: "Relevance reviewed for every recent citation", passed: relevanceReviewed, detail: `${recentEvidence.filter((item) => !item.researcherAssessment).length} recent citations remain unassessed; mark unrelated items “Not relevant.”` },
     { label: "At least three recent, relevant, dated citations", passed: relevantEvidence.length >= 3, detail: `${relevantEvidence.length} recent citations are marked relevant to the topic; “Not relevant” items are excluded.` },
     { label: "Original sources checked", passed: relevantEvidence.length > 0 && checkedRelevantEvidence.length === relevantEvidence.length, detail: `${checkedRelevantEvidence.length}/${relevantEvidence.length} relevant citation(s) are attested as opened and checked against the original source.` },
@@ -92,7 +92,7 @@ export function assessResearchLeadReadiness(input: {
     { label: "Discussion plus reporting or expert analysis", passed: (classes.has("social discussion") || classes.has("community forum")) && (classes.has("news coverage") || classes.has("expert analysis")), detail: "Requires at least one community/social citation and one news or expert-analysis citation." },
     { label: "Multiple conversation bylines; no single label over 60%", passed: bylines.itemCount >= 2 && bylines.attributedItemCount === bylines.itemCount && bylines.distinctBylineLabels >= 2 && largestBylineShare <= 0.6, detail: `${bylines.distinctBylineLabels} distinct byline label(s) across ${bylines.attributedItemCount}/${bylines.itemCount} attributed conversation citation(s); largest label is ${Math.round(largestBylineShare * 100)}% of attributed items. Labels do not verify separate people.` },
     { label: "Supporting and contradicting evidence reviewed", passed: assessments.has("supports") && assessments.has("contradicts"), detail: "Mark at least one citation as supporting and another as contradicting the thesis." },
-    { label: "Alternative explanation and disconfirmation test", passed: Boolean(input.alternatives.trim() && input.disconfirmingEvidence.trim()), detail: "Record another plausible explanation and what observation would change your mind." },
+    { label: "Alternative explanation and disconfirmation test", passed: input.alternatives.trim().length >= 20 && input.disconfirmingEvidence.trim().length >= 20, detail: "Record another plausible explanation and a disconfirmation test (at least 20 characters each)." },
   ];
   return { readyForHumanReview: checks.every((check) => check.passed), checks, reviewedOperators: operatorDisplay };
 }

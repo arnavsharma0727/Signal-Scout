@@ -26,7 +26,8 @@ type Lead = {
   companies: { ticker: string; company_name_en: string } | null;
 };
 
-export default async function Candidates() {
+export default async function Candidates({ searchParams }: { searchParams: Promise<{ published?: string; withdrawn?: string }> }) {
+  const params = await searchParams;
   const timeZone = await getDisplayTimeZone();
   const db = serverSupabase();
   let leads: Lead[] = [];
@@ -102,6 +103,13 @@ export default async function Candidates() {
             A short queue of international research leads supported by linked source evidence. A topic is withheld unless its evidence, source operators, counter-evidence, and alternative explanations clear review.
           </p>
         </header>
+
+        {params.published && <p role="status" className="mt-6 border-y border-line py-3 text-sm leading-6">
+          {params.published === "duplicate" ? "An identical lead from this account is already in the public queue." : "Your researcher-reviewed lead was published to the shared queue."}
+        </p>}
+        {params.withdrawn && <p role={params.withdrawn === "1" ? "status" : "alert"} className="mt-6 border-y border-line py-3 text-sm leading-6">
+          {params.withdrawn === "1" ? "Your lead was withdrawn from the public queue." : "That lead could not be withdrawn. Only its authenticated author can change its publication status."}
+        </p>}
 
         <section className="mt-8 border-y border-line py-6" aria-live="polite">
           {unavailable ? (

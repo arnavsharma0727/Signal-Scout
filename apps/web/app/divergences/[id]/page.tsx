@@ -5,11 +5,14 @@ import { hasUnclearedHackerNewsEvidence } from "../../../lib/source-policy";
 import { getDisplayTimeZone } from "../../../lib/display-timezone";
 import { formatTimestamp } from "../../../lib/format-time";
 import { verifiedLeadEvidenceDocumentIds } from "../../../lib/research-lead-qualification";
+import { authConfigured, authServerClient } from "../../../lib/supabase-auth-server";
+import { withdrawResearchLead } from "../../briefs/actions";
 
 export const dynamic = "force-dynamic";
 
 type Evidence = {
   id: string;
+  created_by: string | null;
   title_original: string | null;
   excerpt_original: string | null;
   source_url: string | null;
@@ -27,6 +30,7 @@ type LinkRow = {
 };
 type Lead = {
   id: string;
+  created_by: string | null;
   company_id: string | null;
   market_code: string | null;
   event_category: string | null;
@@ -51,10 +55,12 @@ export default async function DivergenceDetail({
   const { id } = await params;
   const db = serverSupabase();
   if (!db) return <Unavailable />;
+  const auth = authConfigured() ? await authServerClient() : null;
+  const { data: { user } } = auth ? await auth.auth.getUser() : { data: { user: null } };
   const { data, error } = await db
     .from("research_leads")
     .select(
-      "id,company_id,market_code,event_category,topic,status,first_detected_at,research_observation,research_starting_question,potential_business_relevance,alternative_explanations_json,validation_steps_json,verified_evidence_json,companies(ticker,company_name_en)",
+      "id,created_by,company_id,market_code,event_category,topic,status,first_detected_at,research_observation,research_starting_question,potential_business_relevance,alternative_explanations_json,validation_steps_json,verified_evidence_json,companies(ticker,company_name_en)",
     )
     .eq("id", id)
     .eq("status", "active")
@@ -168,10 +174,13 @@ export default async function DivergenceDetail({
           <ListValue value={lead.validation_steps_json} />
         </section>
         <p className="mt-5 text-xs leading-5 text-muted">
-          Original source context is authoritative. Translation is not shown
-          unless a permitted, labeled translation exists. This is a research
-          prompt, not financial advice or a buy/sell recommendation.
+          A researcher selected these citations, assessed them, and attested to checking their originals. Signal Scout verifies the recorded source allowlist and linked evidence, not the interpretation or author identity. Original source context is authoritative. Translation is not shown unless a permitted, labeled translation exists. This is a research prompt, not financial advice or a buy/sell recommendation.
         </p>
+        {user?.id === lead.created_by && <form action={withdrawResearchLead} className="mt-6 border-t border-line pt-4">
+          <input type="hidden" name="id" value={lead.id} />
+          <button className="btn" type="submit">Withdraw this lead from the shared queue</button>
+          <p className="mt-2 text-xs leading-5 text-muted">The record and audit trail are retained; it will no longer appear as active.</p>
+        </form>}
       </main>
     </div>
   );

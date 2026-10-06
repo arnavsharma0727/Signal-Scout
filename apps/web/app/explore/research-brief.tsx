@@ -9,7 +9,7 @@ import {
   summarizeEvidenceCoverage,
 } from "../../lib/research-brief";
 import { countExcludedPrivateEvidence, preparePrivateEvidenceLinks } from "../../lib/private-research-brief";
-import { saveResearchBrief } from "../briefs/actions";
+import { publishEvidenceQualifiedLead, saveResearchBrief } from "../briefs/actions";
 import { LOCAL_RESEARCH_NOTES_KEY, parseLocalResearchNotes, serializeLocalResearchNotes } from "../../lib/local-research-draft";
 
 const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
@@ -27,6 +27,7 @@ export default function ResearchBrief({
   authAvailable,
   saveEnabled,
   localStorageAvailable,
+  leadStatus = "",
   onRemove,
   onAssess,
   onNote,
@@ -38,6 +39,7 @@ export default function ResearchBrief({
   authAvailable: boolean;
   saveEnabled: boolean;
   localStorageAvailable: boolean | null;
+  leadStatus?: string;
   onRemove: (id: string) => void;
   onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | "not relevant" | undefined) => void;
   onNote: (id: string, note: string) => void;
@@ -102,6 +104,19 @@ export default function ResearchBrief({
   const hasDraftContent = Boolean(
     evidence.length || topic.trim() || workingThesis.trim() || alternatives.trim() || disconfirmingEvidence.trim(),
   );
+  const publicationEvidence = useMemo(() => evidence.filter((item) => {
+    const published = Date.parse(item.timeValue);
+    return Number.isFinite(published) && published <= Date.now() && Date.now() - published <= 30 * 86400000 &&
+      item.researcherAssessment && item.researcherAssessment !== "not relevant";
+  }), [evidence]);
+  const hasPublishableStoredSources = publicationEvidence.length >= 3 && publicationEvidence.every(({ id }) =>
+    /^publisher:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id));
+  const publicEvidencePacket = JSON.stringify(publicationEvidence.map((item) => ({
+    documentId: item.id.slice("publisher:".length),
+    assessment: item.researcherAssessment,
+    sourceObservation: item.researcherNote,
+    researcherVerifiedOriginal: item.researcherVerifiedOriginal === true,
+  })));
   const localAutosaveStatus = localStorageAvailable === false || notesStorageAvailable === false
     ? "unavailable"
     : localStorageAvailable === true && notesStorageAvailable === true
@@ -158,10 +173,19 @@ export default function ResearchBrief({
 
   return (
     <section id="research-brief" className="panel mt-8 p-5 md:p-7" aria-labelledby="research-brief-title">
+      {leadStatus && <p role={leadStatus === "published" ? "status" : "alert"} className="mb-4 border-y border-line py-3 text-sm leading-6">
+        {leadStatus === "published" ? "Your researcher-reviewed lead is now public in the shared queue." :
+          leadStatus === "duplicate" ? "An identical lead from this account is already in the public queue." :
+            leadStatus === "ineligible" ? "Nothing was published. One or more citations is not a current, stored, rights-reviewed source record, or the server-side evidence checks did not pass." :
+              leadStatus === "limit" ? "This account has reached the limit of 10 active public leads." :
+                leadStatus === "disabled" ? "Public lead submission requires owner-configured sign-in; your local dossier is unchanged." :
+                  leadStatus === "unavailable" ? "The public lead could not be saved. No lead was activated; your local dossier is unchanged." :
+                    "The lead could not be published. Check the form and try again."}
+      </p>}
       <div className="eyebrow">Saved in this browser · not synced</div>
       <h2 id="research-brief-title" className="mt-2 text-xl font-semibold">Build a research brief</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Add source links deliberately, mark each recent item as supporting, contradicting, context, or not relevant, then write your hypothesis, alternatives, and disconfirmation test. Unassessed or unrelated items cannot count toward the qualification checks. These are your judgments, not automated sentiment or verified facts. Citations and notes are autosaved only in this browser; they are not sent to Signal Scout unless you explicitly choose account saving. Exporting or copying sends them only to your device or clipboard.
+        Add source links deliberately, mark each recent item as supporting, contradicting, context, or not relevant, then write your hypothesis, alternatives, and disconfirmation test. Unassessed or unrelated items cannot count toward the qualification checks. These are your judgments, not automated sentiment or verified facts. Citations and notes are autosaved only in this browser; they are sent to Signal Scout only if you explicitly save a private brief or publish a qualifying lead. Exporting or copying sends them only to your device or clipboard.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -291,7 +315,7 @@ export default function ResearchBrief({
       <div className="mt-5 border-t border-line pt-4" aria-live="polite">
         <div className="eyebrow">Evidence qualification</div>
         <h3 className="mt-2 font-semibold">{readiness.readyForHumanReview ? "Local review bar complete — lead dossier ready" : "Not yet ready for lead review"}</h3>
-        <p className="mt-1 text-xs leading-5 text-muted">The checklist records your source assessments, original-source attestations, and concentration in the selected conversation sample. It cannot independently verify what a source says or who an author is, prove representativeness or causation, or publish a lead. A completed dossier is generated only on this device.</p>
+        <p className="mt-1 text-xs leading-5 text-muted">The checklist records your source assessments, original-source attestations, and concentration in the selected conversation sample. It cannot independently verify what a source says or who an author is, prove representativeness or causation, or generate a lead automatically. A passing dossier can be deliberately submitted for server-side verification when sign-in and publication are configured.</p>
         <ul className="mt-3 grid gap-2 sm:grid-cols-2">
           {readiness.checks.map((check) => (
             <li key={check.label} className="flex items-start gap-2 text-xs leading-5">
@@ -301,6 +325,36 @@ export default function ResearchBrief({
           ))}
         </ul>
       </div>
+
+      {readiness.readyForHumanReview && (
+        <div className="mt-5 border-t border-line pt-4">
+          <div className="eyebrow">Shared lead queue</div>
+          <h3 className="mt-2 font-semibold">Publish this researcher-reviewed lead?</h3>
+          <p className="mt-1 text-xs leading-5 text-muted">
+            Publishing shares your thesis, alternatives, disconfirmation test, source links, and source-specific notes with anyone using Signal Scout. It uses only current, rights-reviewed records stored in the product; visitor-triggered social results remain private to your local dossier. Your click is an explicit publication action. The result is a researcher-authored prompt, not an independently verified finding or investment recommendation.
+          </p>
+          {!hasPublishableStoredSources ? (
+            <p className="mt-3 text-sm leading-6 text-muted">This checklist passes, but the selected citations are not all from the product’s stored, rights-reviewed source feed. Keep or export the local dossier; it cannot be published to the shared queue.</p>
+          ) : !authAvailable ? (
+            <p className="mt-3 text-sm leading-6 text-muted">Publishing is unavailable until the project owner enables account sign-in. Your local dossier remains usable and private.</p>
+          ) : !saveEnabled ? (
+            <a className="btn btn-primary mt-3" href="/login?next=%2Fexplore">Sign in to publish</a>
+          ) : (
+            <form action={publishEvidenceQualifiedLead} className="mt-3 max-w-2xl space-y-3">
+              <input type="hidden" name="topic" value={topic} />
+              <input type="hidden" name="working_thesis" value={workingThesis} />
+              <input type="hidden" name="alternatives" value={alternatives} />
+              <input type="hidden" name="disconfirming_evidence" value={disconfirmingEvidence} />
+              <input type="hidden" name="reviewed_evidence" value={publicEvidencePacket} />
+              <label className="flex items-start gap-2 text-xs leading-5 text-muted">
+                <input className="mt-1 shrink-0" type="checkbox" name="publish_confirmation" value="yes" required />
+                <span>I understand this publishes my thesis, notes, and approved citations to the shared public lead queue.</span>
+              </label>
+              <button className="btn btn-primary" type="submit">Publish to shared lead queue</button>
+            </form>
+          )}
+        </div>
+      )}
 
       <div className="mt-5 flex flex-wrap gap-2">
         <button className="btn btn-primary" type="button" onClick={downloadBrief} disabled={!hasDraftContent}>{readiness.readyForHumanReview ? "Download lead dossier" : "Download research brief"}</button>

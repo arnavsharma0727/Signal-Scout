@@ -54,15 +54,20 @@ export async function recentPublisherEvidence(){
   const db=serverSupabase();
   if(!db)return [];
   const since=new Date(Date.now()-72*60*60*1000).toISOString();
-  const {data,error}=await db.from('source_documents')
-    .select('id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json')
-    .eq('market_code','INTL')
-    .in('source_type',['licensed-analysis','licensed-reporting','licensed-forum'])
-    .gte('published_at',since)
-    .order('published_at',{ascending:false})
-    .limit(90);
-  if(error||!data)return [];
-  return data.flatMap(row=>{
+  const fields='id,source_type,source_name,source_domain,language_code,title_original,source_url,published_at,raw_metadata_json';
+  const [publishers,questions]=await Promise.all([
+    db.from('source_documents').select(fields)
+      .eq('market_code','INTL')
+      .in('source_type',['licensed-analysis','licensed-reporting','licensed-forum'])
+      .gte('published_at',since).order('published_at',{ascending:false}).limit(90),
+    db.from('source_documents').select(fields)
+      .eq('market_code','INTL').eq('source_type','stack-exchange')
+      .gte('published_at',since).order('published_at',{ascending:false}).limit(30),
+  ]);
+  if(publishers.error||questions.error||!publishers.data||!questions.data)return [];
+  return [...publishers.data,...questions.data]
+    .sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at))
+    .flatMap(row=>{
     const evidence=toPublisherEvidence(row);
     return evidence?[evidence]:[];
   });

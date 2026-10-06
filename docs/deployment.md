@@ -19,7 +19,7 @@ Migrations `0012_source_takedown.sql` and `0013_takedown_lead_cascade.sql` add a
 
 The database transaction deletes the source item, its attached analyses and entity links, and directly linked research leads; it invalidates affected derived rows and retains only an opaque identifier/reason/outcome audit plus SHA-256 content/URL fingerprints to prevent re-ingestion. The fingerprints are not reversible, but remain personal-data-adjacent identifiers and need counsel-approved retention. This is an on-demand deletion path, not an automatic source-specific expiration schedule. Test on non-production data before processing real takedown requests.
 
-### Private briefs and Supabase Auth
+### Private briefs, lead publishing, and Supabase Auth
 
 The Auth UI, cookie-session refresh, callback, private research briefs, watchlists, and CSV import/export are implemented, but Auth is **disabled by default**. The login UI uses GitHub OAuth through Supabase and requests only basic profile/email identity (no repository scopes). Create a GitHub OAuth app with Supabase's provider callback URL, then configure its client ID/secret in Supabase Auth → Sign In / Providers → GitHub. Never put the client secret in this repository or a browser variable. To enable after configuring the provider, provide these variables in `.env.local` / Vercel:
 
@@ -31,6 +31,8 @@ The Auth UI, cookie-session refresh, callback, private research briefs, watchlis
 In Supabase Auth URL Configuration, allow the exact app callback URL `https://signal-scout-xi-ruby.vercel.app/auth/callback` and local `http://localhost:3000/auth/callback` for development. Supabase's built-in shared email sender is limited to testing, so it is not used for public sign-in. Test with a non-owner GitHub account before turning on `SUPABASE_AUTH_ENABLED`. The callback uses PKCE and only accepts same-site relative return paths.
 
 Watchlist data is read/written through the authenticated server client and owner-scoped RLS. CSV imports accept active profile tickers only (maximum 200 rows / 100 KB); exports are private and non-cacheable. Lists cannot be made public; share links, notes, and alerts are not implemented.
+
+Migration `0015_research_lead_authorship.sql` adds an optional author reference without changing existing operator-created rows. Apply it before deploying authenticated lead publishing. The publication action verifies every cited source row server-side, creates a hidden draft, links every citation, and only then makes it active; the author can withdraw it later. It requires explicit researcher confirmation. This workflow is not automatic lead generation, and the current production source sample may not pass its gate. Do not seed synthetic records in production.
 
 Watchlist mutations use a Supabase Postgres per-user hourly quota (10 create, 10 delete, 200 membership changes, 6 CSV imports, 30 CSV exports). Migration `0011_watchlist_action_limits.sql` must be applied before deploying the corresponding server actions. These quotas do not rate-limit anonymous page reads.
 

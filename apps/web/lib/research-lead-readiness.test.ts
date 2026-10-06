@@ -66,6 +66,12 @@ describe("research lead readiness", () => {
     expect(result.checks.find((check) => check.label === "Original sources checked")?.passed).toBe(false);
   });
 
+  it("requires substantive alternative and disconfirmation text rather than nonempty placeholders", () => {
+    const result = assessResearchLeadReadiness({ ...complete, alternatives: "Other possibility", disconfirmingEvidence: "No change" });
+    expect(result.readyForHumanReview).toBe(false);
+    expect(result.checks.find((check) => check.label === "Alternative explanation and disconfirmation test")?.passed).toBe(false);
+  });
+
   it("withholds a dossier when one conversation byline dominates the reviewed sample", () => {
     const concentrated = evidence.map((item) => item.evidenceClass === "social discussion"
       ? { ...item, attribution: "Author: @same-account" }

@@ -12,7 +12,7 @@ import ResearchSweep from "./research-sweep";
 import LicensedPublisherEvidence from "./licensed-publisher-evidence";
 import { LOCAL_RESEARCH_DRAFT_KEY, parseLocalEvidenceDraft, serializeLocalEvidenceDraft } from "../../lib/local-research-draft";
 
-export default function ExploreWorkspace({ authAvailable, saveEnabled, publisherEvidence }: { authAvailable: boolean; saveEnabled: boolean; publisherEvidence: ResearchEvidence[] }) {
+export default function ExploreWorkspace({ authAvailable, saveEnabled, publisherEvidence, leadStatus = "" }: { authAvailable: boolean; saveEnabled: boolean; publisherEvidence: ResearchEvidence[]; leadStatus?: string }) {
   const [evidence, setEvidence] = useState<ResearchEvidence[]>([]);
   const [localDraftReady, setLocalDraftReady] = useState(false);
   const [localStorageAvailable, setLocalStorageAvailable] = useState<boolean | null>(null);
@@ -85,6 +85,7 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
         saveEnabled={saveEnabled}
         authAvailable={authAvailable}
         localStorageAvailable={localStorageAvailable}
+        leadStatus={leadStatus}
         initialTopic={initialTopic}
         evidence={evidence}
         onAssess={(id, assessment) => setEvidence((current) =>

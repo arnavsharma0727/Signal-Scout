@@ -20,6 +20,7 @@ const OPERATOR_LABELS: Record<string, string> = {
   "the-conversation": "The Conversation",
   "typst-forum": "Typst Forum",
   "fedora-discussion": "Fedora Discussion",
+  "stack-exchange": "Stack Exchange",
 };
 
 /** Convert only reviewed, recent, title-and-attribution-only publisher records to public brief evidence. */
@@ -84,6 +85,17 @@ export function toPublisherEvidence(
     licenseUrl = CC_BY_SA_4;
     sourceOperatorKey = "fedora-discussion";
     context = "Selected Fedora/Linux community; not a population or investor sample";
+  } else if (row.source_type === "stack-exchange" && isStackExchangeHost(host) &&
+      row.source_domain === host && meta.contentLicense === "CC BY-SA 4.0" &&
+      meta.licenseUrl === CC_BY_SA_4 && typeof meta.attributionName === "string" &&
+      meta.attributionName.trim() && typeof meta.query === "string" &&
+      matchesTitleQuery(row.title_original, meta.query)) {
+    evidenceClass = "expert Q&A";
+    attribution = `Author: ${meta.attributionName.trim().slice(0, 120)}`;
+    licenseName = "CC BY-SA 4.0";
+    licenseUrl = CC_BY_SA_4;
+    sourceOperatorKey = "stack-exchange";
+    context = "Licensed title-only Stack Exchange question; specialist Q&A, not general public opinion";
   } else {
     return null;
   }
@@ -107,6 +119,20 @@ export function toPublisherEvidence(
     sourceOperatorKey,
     sourceOperatorLabel: OPERATOR_LABELS[sourceOperatorKey],
   };
+}
+
+function isStackExchangeHost(host: string) {
+  return host === "stackexchange.com" || host.endsWith(".stackexchange.com") ||
+    host === "stackoverflow.com" || host.endsWith(".stackoverflow.com") ||
+    ["serverfault.com", "superuser.com", "askubuntu.com", "mathoverflow.net"].includes(host);
+}
+
+function matchesTitleQuery(title: string, query: string) {
+  const tokens = (value: string) => value.normalize("NFKC").toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
+  const expected = tokens(query);
+  if (!expected.length) return false;
+  const titleTokens = new Set(tokens(title));
+  return expected.every((token) => titleTokens.has(token));
 }
 
 /** Exact phrase filter for original headlines only; intentionally does not translate or infer related topics. */

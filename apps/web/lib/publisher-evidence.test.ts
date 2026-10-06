@@ -107,4 +107,25 @@ describe("reviewed publisher evidence", () => {
     expect(toPublisherEvidence({ ...row, source_url: "https://fedoraproject.org/t/linux-topic/1234" }, now)).toBeNull();
     expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, topicBodyAndRepliesDiscarded: false } }, now)).toBeNull();
   });
+
+  it("accepts only stored Stack Exchange titles with exact query, attribution, and CC BY-SA metadata", () => {
+    const row = {
+      id: "se-1", source_type: "stack-exchange", source_name: "Politics Stack Exchange",
+      source_domain: "politics.stackexchange.com", language_code: "en",
+      title_original: "How do electricity tariffs affect household prices?",
+      source_url: "https://politics.stackexchange.com/questions/12345/example",
+      published_at: recent,
+      raw_metadata_json: {
+        attributionName: "Reader One", contentLicense: "CC BY-SA 4.0",
+        licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", query: "electricity tariffs",
+      },
+    };
+    expect(toPublisherEvidence(row, now)).toMatchObject({
+      evidenceClass: "expert Q&A", sourceOperatorKey: "stack-exchange",
+      attribution: "Author: Reader One", licenseName: "CC BY-SA 4.0",
+    });
+    expect(toPublisherEvidence({ ...row, source_url: "https://politics.stackexchange.com.evil.example/questions/12345" }, now)).toBeNull();
+    expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, query: "semiconductor earnings" } }, now)).toBeNull();
+    expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, contentLicense: "CC BY-NC-SA 4.0" } }, now)).toBeNull();
+  });
 });

@@ -1,149 +1,69 @@
 import Link from "next/link";
 import SiteHeader from "../../components/site-header";
-import { METHODOLOGY } from "../../lib/methodology-config";
 
 const sections = [
   {
-    title: "What is live",
-    body: "Signal Scout is currently an international evidence-collection and review prototype. It displays eligible collected source items and descriptive exact-tag observations when available. It does not currently calculate validated topic trends, classify stance, rank evidence-qualified live leads, or produce investment conclusions. No Korean investor-discussion feed is configured.",
+    title: "Start with one question",
+    body: "Search a concrete topic across selected public discussion and reporting sources. Each connector has its own query, language, date window, and result cap. Results are separate samples—not a census, market-wide measure, or proxy for a country. Enter equivalent phrases yourself; Signal Scout does not translate or infer stance.",
   },
   {
-    title: "Collection and sampling limits",
-    body: "Feeds are selected and incomplete. Platform audiences, language, query terms, syndication, and publication times can bias what appears. A displayed count is a count of collected records, not a measure of what a market or population believes. News and public discussion are separate source classes and must not be pooled.",
+    title: "Check original evidence",
+    body: "Open each cited source and record whether it supports, contradicts, or contextualizes your thesis. Add a source-specific note and attest that you checked the original, date, and context. Displayed bylines are labels, not verified identities; separate operators or labels do not prove independent people or perspectives.",
   },
   {
-    title: "Daily descriptive metrics",
-    body: `A metric is labeled descriptive only after at least ${METHODOLOGY.dailyMetrics.minimumUniqueHashesForDescriptiveOnly} unique content hashes and ${METHODOLOGY.dailyMetrics.minimumIndependentDomainsForDescriptiveOnly} independent domains in the entity/market/source-class/day group. A trailing baseline remains null until ${METHODOLOGY.dailyMetrics.minimumPriorObservedDaysForBaseline} prior observed days exist, within a ${METHODOLOGY.dailyMetrics.baselineWindowDays}-day window. These are implementation thresholds, not validation of representativeness or statistical significance. Topic and stance values remain null until a validated classification process exists.`,
+    title: "Qualify a research prompt",
+    body: "A submission needs at least three current, eligible stored citations from two or more reviewed operators; conversation evidence plus reporting or expert analysis; at least two attributed conversation records without one byline label dominating the sample; supporting and contradicting evidence; a substantive alternative explanation; and a disconfirmation test. A passing checklist is a procedural floor, not proof that evidence is true, representative, independent, causal, or financially material.",
   },
   {
-    title: "Dormant comparative research parameters",
-    body: "The codebase contains helper functions and versioned parameters for a possible future comparative workflow. They are not currently run to publish comparisons or qualified leads. Minimum local evidence alone cannot establish a cross-source difference; matched windows and source classes, adequate evidence on each side, deduplication, uncertainty control, and human review would still be required.",
-  },
-  {
-    title: "Evidence and human review",
-    body: "The browser-local lead-dossier checklist requires every recent citation to be marked as supporting, contradicting, context, or not relevant. Each relevant source needs a researcher attestation that its original, date, and context were checked, plus a source-specific paraphrase of at least 20 characters. It also requires at least three recent relevant citations, two reviewed source operators, discussion plus reporting or expert analysis, both supporting and contradicting evidence, an alternative explanation, and a disconfirmation test. Passing creates a human-authored dossier on the researcher's device; it does not publish a lead or independently establish that the sources support the same claim, represent a population, or prove causation. Entries retain source links, researcher assessments, notes, and available publication times in browser-local storage. No translation or inferred stance is generated.",
+    title: "Publish only by choice",
+    body: "If sign-in and the production schema are configured, the researcher can review an explicit disclosure and publish. The server reloads the cited source records, checks the source allowlist, rights metadata, freshness, attribution, and links, then activates the lead only after every citation is attached. The author can withdraw it later. Browser-only social search results cannot be promoted into the shared queue; they remain local to the researcher.",
   },
 ];
 
 export default function Methodology() {
-  const weights = METHODOLOGY.divergence.priorityWeights;
-  const displayedWeights = Object.entries(weights)
-    .map(([name, value]) => `${name}: ${Math.round(value * 100)}%`)
-    .join(" · ");
-
-  return (
-    <Page title="Methodology" eyebrow="What the current release measures">
-      <div className="grid gap-5 md:grid-cols-2">
-        {sections.map(({ title, body }) => (
-          <section className="panel p-7" key={title}>
-            <h2 className="text-xl font-bold">{title}</h2>
-            <p className="mt-3 leading-7 text-muted">{body}</p>
-          </section>
-        ))}
-      </div>
-      <section className="panel mt-5 p-7">
-        <h2 className="text-xl font-bold">Discussion observations</h2>
-        <p className="mt-3 text-sm leading-6 text-muted">
-          The research queue lists exact Stack Exchange question tags found on
-          individually CC BY-SA 4.0-licensed questions published in the last
-          72 hours. Each tag's recent share of this sample is shown against a
-          median daily share across prior observed publication days in a
-          30-day archive; missing days are not zero-filled, and the baseline
-          stays unavailable until 14 observed days exist. API queries are
-          selected in advance and coverage is limited to the listed
-          communities and languages. This is a one-platform descriptive
-          comparison, not a validated trend, independent-publisher
-          corroboration, public-opinion measure, or investment lead. Tags and
-          titles remain untranslated; matching across languages is not
-          inferred.
-        </p>
-        <p className="mt-3 text-sm leading-6 text-muted">
-          A sample-level review flag is an exploratory prompt only. It requires
-          at least {METHODOLOGY.discussionReview.minimumRecentQuestions}{" "}
-          exact-tag questions among {METHODOLOGY.discussionReview.minimumRecentSampleSize}{" "}
-          recent questions, at least {METHODOLOGY.discussionReview.minimumCommunities}{" "}
-          Stack Exchange communities, 14 prior observed days, and a share
-          increase above the prior median of at least max(
-          {METHODOLOGY.discussionReview.madMultiple}×MAD,{" "}
-          {Math.round(METHODOLOGY.discussionReview.minimumShareIncrease * 100)}
-          percentage points). It is not a significance test, cross-platform
-          confirmation, or thesis lead.
-        </p>
-      </section>
-      <section className="panel mt-5 p-7">
-        <h2 className="text-xl font-bold">
-          Method parameters and exploratory review gate
-        </h2>
-        <p className="mt-3 text-sm leading-6 text-muted">
-          Shared code configuration version {METHODOLOGY.version}. Daily
-          descriptive gates:{" "}
-          {METHODOLOGY.dailyMetrics.minimumUniqueHashesForDescriptiveOnly}{" "}
-          unique hashes,{" "}
-          {METHODOLOGY.dailyMetrics.minimumIndependentDomainsForDescriptiveOnly}{" "}
-          independent domains, and{" "}
-          {METHODOLOGY.dailyMetrics.minimumPriorObservedDaysForBaseline} prior
-          observed days for a baseline.
-        </p>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          The discussion sample-level review gate uses the thresholds described
-          above. A flag does not create or promote an evidence-qualified lead.
-        </p>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          Dormant research-priority helper weights: {displayedWeights}. Its
-          local evidence thresholds are weighted total ≥{" "}
-          {METHODOLOGY.divergence.localMinimumWeightedTotal}, topic evidence ≥{" "}
-          {METHODOLOGY.divergence.localMinimumTopicEvidence}, at least{" "}
-          {METHODOLOGY.divergence.localMinimumIndependentSources} independent
-          local sources, and average entity confidence ≥{" "}
-          {METHODOLOGY.divergence.minimumAverageEntityConfidence}. These do not
-          establish comparative eligibility, and no live leads are scored with
-          them.
-        </p>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          The dormant matched-comparison helper requires the same entity, topic,
-          classifier version, exact UTC window, and source class on both
-          markets; at least {METHODOLOGY.divergence.minimumUniqueItemsPerMarket}{" "}
-          unique items and{" "}
-          {METHODOLOGY.divergence.minimumIndependentDomainsPerMarket}{" "}
-          independent domains per market; and expected 2×2 table cell counts of
-          at least {METHODOLOGY.divergence.minimumExpectedCellCount} before
-          using its approximate two-proportion test. Benjamini–Hochberg
-          correction uses q ≤ {METHODOLOGY.divergence.falseDiscoveryRateQ}.
-          Timestamp ordering is chronology only, not causality. These are
-          initial implementation guards—not validated operating thresholds—and
-          no live comparison is produced.
-        </p>
-      </section>
-      <p className="mt-8 text-sm text-muted">
-        Signal Scout is a descriptive evidence-collection prototype, not a
-        validated comparative research instrument or investment adviser. See{" "}
-        <Link className="underline underline-offset-4" href="/sources">
-          current source status
-        </Link>
-        .
-      </p>
-    </Page>
-  );
-}
-
-function Page({
-  title,
-  eyebrow,
-  children,
-}: {
-  title: string;
-  eyebrow: string;
-  children: React.ReactNode;
-}) {
   return (
     <div className="min-h-screen">
       <SiteHeader action={<Link href="/">← Research desk</Link>} />
-      <main className="shell py-16">
-        <div className="eyebrow mb-4">{eyebrow}</div>
-        <h1 className="mb-10 text-4xl font-extrabold tracking-tight">
-          {title}
-        </h1>
-        {children}
+      <main className="shell max-w-5xl py-10 md:py-14">
+        <header className="max-w-3xl">
+          <div className="eyebrow">How review works</div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+            From conversation to a traceable research prompt
+          </h1>
+          <p className="mt-4 text-base leading-7 text-muted">
+            Signal Scout helps a researcher find a discussion, inspect its sources,
+            and document a tentative thesis alongside counter-evidence. It does not
+            generate buy/sell calls or automatically declare a market signal.
+          </p>
+        </header>
+
+        <div className="mt-8 grid gap-4 md:grid-cols-2">
+          {sections.map(({ title, body }, index) => (
+            <section className="panel p-6 md:p-7" key={title}>
+              <div className="eyebrow">Step {index + 1}</div>
+              <h2 className="mt-2 text-lg font-semibold">{title}</h2>
+              <p className="mt-3 text-sm leading-6 text-muted">{body}</p>
+            </section>
+          ))}
+        </div>
+
+        <section className="mt-6 border-y border-line py-5">
+          <h2 className="text-lg font-semibold">A small, selected sample stays a small, selected sample</h2>
+          <p className="mt-2 max-w-4xl text-sm leading-6 text-muted">
+            Source coverage depends on public access, operator terms, language,
+            indexing, query choice, feed activity, and API limits. Counts describe
+            records Signal Scout actually received; they do not estimate public
+            opinion or investor attention. News, specialist Q&amp;A, and forums are
+            different evidence classes and should not be pooled as if they had the
+            same audience. No thesis should be treated as causal or actionable
+            without outside verification.
+          </p>
+        </section>
+
+        <p className="mt-6 text-sm text-muted">
+          See the <Link className="underline underline-offset-4" href="/sources">source register</Link> for
+          current connectors, licensing rules, and coverage limitations.
+        </p>
       </main>
     </div>
   );
