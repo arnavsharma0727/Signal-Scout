@@ -74,6 +74,13 @@ try {
   else fail('Wikimedia attribution and limitations are public','source-methodology page lacks the metadata-retention note or license attribution');
 } catch (error) { fail('public briefing withholds uncleared source material',error.message); }
 
+try {
+  const response = await fetch(`${base}/privacy`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
+  const page = await response.text();
+  if (response.ok && page.includes('local storage') && page.includes('Clear page draft') && page.includes('Anyone with access to the same browser profile')) pass('local brief storage is disclosed to users','privacy page explains local-only scope, clearing, and shared-browser access');
+  else fail('local brief storage is disclosed to users',`HTTP ${response.status}; browser-storage disclosure or clearing guidance missing`);
+} catch (error) { fail('local brief storage is disclosed to users',error.message); }
+
 const url = process.env.SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 async function rest(path, method='GET', prefer='count=exact') {

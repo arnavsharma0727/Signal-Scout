@@ -50,6 +50,7 @@ describe("runResearchSweep", () => {
       ["bluesky:1", "Bluesky · search 2", "ko"],
     ]);
     expect(results[1].evidence[0].context).toContain("not translated or pooled");
+    expect(results.flatMap(({ evidence }) => evidence).map(({ context }) => context ?? "").join(" ")).not.toContain("AI data center power");
     expect(results[0].evidence[0].sourceOperatorKey).toBe(results[1].evidence[0].sourceOperatorKey);
   });
 
@@ -176,11 +177,13 @@ describe("runResearchSweep", () => {
     });
     expect(results[2].evidence[0].evidenceClass).toBe("social discussion");
     expect(results[2].evidence[0].transientPreview).toBe("This post body is transiently previewed, never saved");
+    expect(results[2].evidence[0].context ?? "").not.toContain("markets");
     expect(results[3].evidence[0].transientPreview).toBe("Post & body can be inspected without HTML");
     expect(results[3].evidence[0]).toMatchObject({
       evidenceClass: "social discussion",
       context: expect.stringContaining("not a geographic market proxy"),
     });
+    expect(results[3].evidence[0].context).not.toContain("#markets");
     expect(results[4].evidence[0]).toMatchObject({
       evidenceClass: "editorial discussion",
       context: expect.stringContaining("not a general forum"),
@@ -247,9 +250,11 @@ describe("runResearchSweep", () => {
       "インフレ 金利",
     ]);
     expect(results.map(({ key, evidence }) => [key, evidence[0]?.language, evidence[0]?.context])).toEqual([
-      ["stack-exchange:es.stackoverflow", "Spanish", expect.stringContaining("inflación tipos de interés")],
-      ["stack-exchange:ja.stackoverflow", "Japanese", expect.stringContaining("インフレ 金利")],
+      ["stack-exchange:es.stackoverflow", "Spanish", expect.stringContaining("title-only query")],
+      ["stack-exchange:ja.stackoverflow", "Japanese", expect.stringContaining("title-only query")],
     ]);
+    expect(results.flatMap(({ evidence }) => evidence).map(({ context }) => context ?? "").join(" ")).not.toContain("inflación tipos de interés");
+    expect(results.flatMap(({ evidence }) => evidence).map(({ context }) => context ?? "").join(" ")).not.toContain("インフレ 金利");
   });
 
   it("caps Stack Exchange cross-community requests at four", async () => {

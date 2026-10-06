@@ -26,6 +26,7 @@ export default function ResearchBrief({
   initialTopic,
   authAvailable,
   saveEnabled,
+  localStorageAvailable,
   onRemove,
   onAssess,
   onClear,
@@ -34,6 +35,7 @@ export default function ResearchBrief({
   initialTopic: string;
   authAvailable: boolean;
   saveEnabled: boolean;
+  localStorageAvailable: boolean | null;
   onRemove: (id: string) => void;
   onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | "not relevant" | undefined) => void;
   onClear: () => void;
@@ -44,12 +46,14 @@ export default function ResearchBrief({
   const [disconfirmingEvidence, setDisconfirmingEvidence] = useState("");
   const [notice, setNotice] = useState("");
   const [localNotesReady, setLocalNotesReady] = useState(false);
+  const [notesStorageAvailable, setNotesStorageAvailable] = useState<boolean | null>(null);
   useEffect(() => {
     if (initialTopic) setTopic(initialTopic);
   }, [initialTopic]);
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(LOCAL_RESEARCH_NOTES_KEY);
+      setNotesStorageAvailable(true);
       const notes = saved ? parseLocalResearchNotes(saved) : null;
       if (notes) {
         setTopic(notes.topic);
@@ -59,6 +63,7 @@ export default function ResearchBrief({
       }
     } catch {
       // Browser storage may be disabled; keep the live form usable.
+      setNotesStorageAvailable(false);
     }
     setLocalNotesReady(true);
   }, []);
@@ -68,8 +73,10 @@ export default function ResearchBrief({
       window.localStorage.setItem(LOCAL_RESEARCH_NOTES_KEY, serializeLocalResearchNotes({
         topic, workingThesis, alternatives, disconfirmingEvidence,
       }));
+      setNotesStorageAvailable(true);
     } catch {
       // Browser storage quota/private-mode errors leave the current form intact.
+      setNotesStorageAvailable(false);
     }
   }, [topic, workingThesis, alternatives, disconfirmingEvidence, localNotesReady]);
   const counts = useMemo(() => EVIDENCE_CLASSES.map((evidenceClass) => ({
@@ -87,6 +94,14 @@ export default function ResearchBrief({
     assessment: item.researcherAssessment,
   }))), [evidence]);
   const excludedCount = useMemo(() => countExcludedPrivateEvidence(evidence), [evidence]);
+  const hasDraftContent = Boolean(
+    evidence.length || topic.trim() || workingThesis.trim() || alternatives.trim() || disconfirmingEvidence.trim(),
+  );
+  const localAutosaveStatus = localStorageAvailable === false || notesStorageAvailable === false
+    ? "unavailable"
+    : localStorageAvailable === true && notesStorageAvailable === true
+      ? "active"
+      : "checking";
   const markdown = () => createResearchBriefMarkdown({
     topic,
     workingThesis,
@@ -254,9 +269,9 @@ export default function ResearchBrief({
       </div>
 
       <div className="mt-5 flex flex-wrap gap-2">
-        <button className="btn btn-primary" type="button" onClick={downloadBrief} disabled={!evidence.length}>Download Markdown</button>
-        <button className="btn" type="button" onClick={copyBrief} disabled={!evidence.length}>Copy Markdown</button>
-        <button className="btn" type="button" onClick={clearDraft} disabled={!evidence.length && !topic && !workingThesis && !alternatives && !disconfirmingEvidence}>Clear page draft</button>
+        <button className="btn btn-primary" type="button" onClick={downloadBrief} disabled={!hasDraftContent}>Download Markdown</button>
+        <button className="btn" type="button" onClick={copyBrief} disabled={!hasDraftContent}>Copy Markdown</button>
+        <button className="btn" type="button" onClick={clearDraft} disabled={!hasDraftContent}>Clear page draft</button>
       </div>
       <form action={saveResearchBrief} className="mt-5 border-t border-line pt-4">
         <input type="hidden" name="topic" value={topic} />
@@ -276,7 +291,7 @@ export default function ResearchBrief({
         <p className="mt-2 text-xs leading-5 text-muted">
           {authAvailable
             ? <>Saving sends this topic and your notes to Signal Scout and Supabase, plus link-only citations from approved sources. {privateLinks.length} citation(s) will be kept; {excludedCount} other selected item(s) will be omitted. Titles, excerpts, contributor names, social posts, and search queries are not saved. You must be signed in; saved briefs are private and not public leads.</>
-            : <>Your browser draft is saved locally on this device. It is not backed up or synced, and can be lost if browser data is cleared. Account storage requires deployment authentication to be configured.</>}
+            : <>Your draft is not sent to Signal Scout. Browser-local autosave is {localAutosaveStatus === "unavailable" ? "unavailable; download your draft before leaving this page." : localAutosaveStatus === "active" ? "active on this device; it is not synced and can be lost if browser data is cleared." : "being checked."} Account storage requires deployment authentication to be configured.</>}
         </p>
       </form>
       {notice && <p role="status" className="mt-3 text-xs text-muted">{notice}</p>}

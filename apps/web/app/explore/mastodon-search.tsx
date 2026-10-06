@@ -250,7 +250,7 @@ export default function MastodonSearch({
                   language: post.language ?? "Not declared",
                   timeLabel: "Posted",
                   timeValue: post.createdAt,
-                  context: `Searches: ${searches.map(({ host, tag: searchedTag }) => `${host} #${searchedTag}`).join("; ")} · returned server views may overlap`,
+                  context: "Selected from public server views; views may overlap and do not represent a country sample",
                   attribution: "Author-owned content; no blanket license implied",
                   attributionUrl: post.authorUrl,
                 })}

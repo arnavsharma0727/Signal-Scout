@@ -120,7 +120,7 @@ export async function runResearchSweep(
         language: item.language,
         timeLabel: "Published",
         timeValue: item.createdAt,
-        context: `Stack Exchange title search in ${item.language}: “${term}”; title-only query, not topic prevalence`,
+        context: `Stack Exchange title search in ${item.language}; title-only query, not topic prevalence`,
         attribution: `Author: ${item.author}`,
         attributionUrl: item.authorUrl,
         licenseName: "CC BY-SA 4.0",
@@ -164,7 +164,7 @@ export async function runResearchSweep(
         timeValue: post.createdAt,
         context: post.contentWarning
           ? `Content warning: ${post.contentWarning.slice(0, 200)}; preview withheld, open the original post if appropriate`
-          : `Hashtag #${hashtag.replace(/^#+/, "")}; server timeline is not a geographic market proxy`,
+          : "Public hashtag search; server timeline is not a geographic market proxy",
         attribution: `Author: ${post.authorHandle}`,
         attributionUrl: post.authorUrl,
         transientPreview: post.contentWarning ? undefined : mastodonHtmlToTransientText(post.contentHtml),
@@ -186,7 +186,7 @@ export async function runResearchSweep(
         sourceOperatorKey: "bluesky",
         sourceOperatorLabel: "Bluesky",
         transientPreview: post.transientPreview,
-        context: `Visitor-entered phrase: “${term}”; language variant is not translated or pooled with other searches; indexed subset, not a complete or representative feed`,
+        context: "Visitor-entered language variants are kept as separate searches and are not translated or pooled; indexed subset, not a complete or representative feed",
         attribution: `Author: @${post.authorHandle}`,
       })),
     ));

@@ -14,7 +14,7 @@ export default function Privacy() {
           How this prototype handles data
         </h1>
         <p className="mt-3 text-sm text-muted">
-          Last updated: October 5, 2026
+          Last updated: October 6, 2026
         </p>
         <section className="mt-8 space-y-6 leading-7 text-muted">
           <p>
@@ -39,6 +39,22 @@ export default function Privacy() {
             associated technical data under its own policies. The browser
             temporarily displays only results marked CC BY-SA 4.0, with links
             and attribution.
+          </p>
+          <p>
+            The research brief autosaves your notes and deliberately selected
+            citation metadata in this browser&apos;s local storage. This can
+            include your topic, working thesis, alternative explanations,
+            disconfirmation test, source title and link, publication time,
+            source/language labels, attribution, license, and your assessment.
+            The app strips transient social-post previews before storing a
+            citation; a limited content-warning label may remain when needed
+            to explain why a preview was withheld. The app does not save an
+            unselected search result or maintain a search-history list. This
+            local draft is not sent to Signal Scout, synced to an account, or
+            backed up by the app. It remains in
+            the browser until you use “Clear page draft” or clear this site&apos;s
+            browser data. Anyone with access to the same browser profile may be
+            able to access it.
           </p>
           <p>
             Lead review can pass an observed topic to Explore in the URL
@@ -92,15 +108,19 @@ export default function Privacy() {
             the browser search results so a researcher can inspect the actual
             conversation. Selecting a citation strips the post text; only a
             public link, author handle, date, and language remain in the brief.
-            Search queries and results are not sent to Signal Scout's server
-            or persisted by the app. Search coverage is
-            incomplete and is not representative of public opinion.
+            Unselected search queries and results are not sent to Signal
+            Scout&apos;s server or persisted as history. If you select a citation,
+            its link and citation metadata are autosaved locally as described
+            above; the post text is not. Search coverage is incomplete and is
+            not representative of public opinion.
           </p>
           <p>
             The optional Mastodon trend-discovery action requests public tag
             suggestions directly from configured Mastodon instances. Search
-            suggestions and selected citations remain transient in the browser
-            unless the visitor explicitly saves a brief. On save, Signal Scout
+            suggestions and unselected results remain transient in the browser.
+            Selected citation metadata is autosaved only in this browser; it
+            is not synced unless the visitor explicitly saves a brief. On
+            account save, Signal Scout
             receives the visitor-written topic, thesis, alternatives, and
             disconfirmation notes, plus link-only citations from a narrow
             reviewed source allowlist. The server independently checks every

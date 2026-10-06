@@ -15,18 +15,21 @@ import { LOCAL_RESEARCH_DRAFT_KEY, parseLocalEvidenceDraft, serializeLocalEviden
 export default function ExploreWorkspace({ authAvailable, saveEnabled, publisherEvidence }: { authAvailable: boolean; saveEnabled: boolean; publisherEvidence: ResearchEvidence[] }) {
   const [evidence, setEvidence] = useState<ResearchEvidence[]>([]);
   const [localDraftReady, setLocalDraftReady] = useState(false);
+  const [localStorageAvailable, setLocalStorageAvailable] = useState<boolean | null>(null);
   const [initialTopic, setInitialTopic] = useState("");
   const selectedIds = useMemo(() => new Set(evidence.map(({ id }) => id)), [evidence]);
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(LOCAL_RESEARCH_DRAFT_KEY);
+      setLocalStorageAvailable(true);
       if (saved) {
         const restored = parseLocalEvidenceDraft(saved);
         if (restored) setEvidence(restored);
       }
     } catch {
       // Storage can be disabled by browser privacy settings; the in-page brief still works.
+      setLocalStorageAvailable(false);
     }
     setLocalDraftReady(true);
   }, []);
@@ -35,8 +38,10 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
     if (!localDraftReady) return;
     try {
       window.localStorage.setItem(LOCAL_RESEARCH_DRAFT_KEY, serializeLocalEvidenceDraft(evidence));
+      setLocalStorageAvailable(true);
     } catch {
       // Storage quota/private-mode errors do not prevent the in-page brief from working.
+      setLocalStorageAvailable(false);
     }
   }, [evidence, localDraftReady]);
 
@@ -79,6 +84,7 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
       <ResearchBrief
         saveEnabled={saveEnabled}
         authAvailable={authAvailable}
+        localStorageAvailable={localStorageAvailable}
         initialTopic={initialTopic}
         evidence={evidence}
         onAssess={(id, assessment) => setEvidence((current) =>
