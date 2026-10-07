@@ -19,6 +19,7 @@ const MASTODON_HOSTS = new Set(["mastodon.social", "mastodon.online", "mstdn.jp"
 const LEMMY_HOSTS = new Set(["lemmy.world", "discuss.tchncs.de", "feddit.org", "feddit.uk"]);
 const STACK_EXCHANGE_SITES: Record<string, { host: string; label: string }> = {
   economics: { host: "economics.stackexchange.com", label: "Economics Stack Exchange" },
+  quant: { host: "quant.stackexchange.com", label: "Quantitative Finance Stack Exchange" },
   money: { host: "money.stackexchange.com", label: "Personal Finance & Money Stack Exchange" },
   ai: { host: "ai.stackexchange.com", label: "Artificial Intelligence Stack Exchange" },
   datascience: { host: "datascience.stackexchange.com", label: "Data Science Stack Exchange" },

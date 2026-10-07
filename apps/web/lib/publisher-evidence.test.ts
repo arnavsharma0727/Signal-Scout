@@ -129,6 +129,30 @@ describe("reviewed publisher evidence", () => {
     expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, contentLicense: "CC BY-NC-SA 4.0" } }, now)).toBeNull();
   });
 
+  it("accepts the broad recent Stack Exchange feed only with its explicit title-only license metadata", () => {
+    const row = {
+      id: "se-feed-1", source_type: "stack-exchange", source_name: "Quantitative Finance Stack Exchange",
+      source_domain: "quant.stackexchange.com", language_code: "en",
+      title_original: "How can volatility be compared across markets?",
+      source_url: "https://quant.stackexchange.com/questions/12345/volatility",
+      published_at: recent,
+      raw_metadata_json: {
+        attributionName: "Reader One", attributionUrl: "https://quant.stackexchange.com/users/12/reader-one",
+        contentLicense: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/",
+        site: "quant", collectionMethod: "recent-licensed-question-feed",
+        titleUnmodified: true,
+        questionBodyRetained: false, answerBodyRetained: false,
+      },
+    };
+    expect(toPublisherEvidence(row, now)).toMatchObject({
+      evidenceClass: "expert Q&A", source: "Quantitative Finance Stack Exchange",
+      sourceOperatorKey: "stack-exchange", licenseName: "CC BY-SA 4.0",
+      context: expect.stringContaining("not a general public-opinion sample"),
+    });
+    expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, answerBodyRetained: true } }, now)).toBeNull();
+    expect(toPublisherEvidence({ ...row, source_url: "https://economics.stackexchange.com/questions/12345/volatility" }, now)).toBeNull();
+  });
+
   it("renders only link-only, recent, allowlisted researcher citations without social post text", () => {
     const row = {
       id: "external-1", source_type: "researcher-linked-source", source_name: "Bluesky public post",

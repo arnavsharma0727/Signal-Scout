@@ -1,6 +1,6 @@
 # Deployment
 
-Signal Scout is deployed as a Next.js app on Vercel and stores collected source evidence in Supabase Postgres. Vercel Cron calls the protected `/api/ingest` route daily. The deployed app currently collects a narrow source sample; it does not calculate cross-market topic differences.
+Signal Scout is deployed as a Next.js app on Vercel and stores collected source evidence in Supabase Postgres. Vercel Cron calls the protected `/api/ingest` route daily. The scheduled source set includes a bounded, keyless public Stack Exchange feed across 12 communities; optional sources remain subject to their own credentials, terms, and configured limits.
 
 ## Local development
 
@@ -11,7 +11,7 @@ npm install
 npm run dev
 ```
 
-Set local-only values in the root `.env.local`, which must remain ignored by Git. Required server-side settings are `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET`. Source connectors are controlled by server-side flags and feed configuration such as `RSS_ENABLED`, `RSS_FEEDS_KR_JSON`, `RSS_FEEDS_US_JSON`, and `STACK_EXCHANGE_ENABLED`. Stack Exchange requires no key; its connector searches 11 English- and other-language communities (including Politics and Law), only stores individual items explicitly labeled CC BY-SA 4.0, and displays attribution. It makes at most 34 bounded requests per daily ingestion run and stops on long API backoff. All communities remain one expert-Q&A operator. RSS must point directly to publisher feeds; Google News redirects are rejected and historical Google News rows are hidden from the public evidence view. Review each publisher's permission before configuring it. Do not use a service-role key or cron secret in any `NEXT_PUBLIC_` variable.
+Set local-only values in the root `.env.local`, which must remain ignored by Git. Required server-side settings are `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `CRON_SECRET`. Source connectors are controlled by server-side flags and feed configuration such as `RSS_ENABLED`, `RSS_FEEDS_KR_JSON`, `RSS_FEEDS_US_JSON`, and `STACK_EXCHANGE_ENABLED`. Stack Exchange requires no key; when enabled, its connector samples current questions across 12 English- and other-language communities (including Politics, Law, and Quantitative Finance), keeps only individually CC BY-SA 4.0 items with attribution, and discards question/answer bodies. It makes at most 12 requests per daily ingestion run and respects API backoff. All communities remain one expert-Q&A operator. RSS must point directly to publisher feeds; Google News redirects are rejected and historical Google News rows are hidden from the public evidence view. Review each publisher's permission before configuring it. Do not use a service-role key or cron secret in any `NEXT_PUBLIC_` variable.
 
 ### Source takedown
 

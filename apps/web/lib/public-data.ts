@@ -1,6 +1,6 @@
 import 'server-only';
 import {serverSupabase} from './server-supabase';
-import {isPublicEvidenceEligible, matchesStackExchangeTitleQuery} from './source-policy';
+import {isEligibleStackExchangeQuestion, isPublicEvidenceEligible} from './source-policy';
 import {buildDiscussionObservations} from './discussion-observations';
 import {WIKIMEDIA_TALK_WIKIS} from './wikimedia-talk';
 import {buildDiscussionReportingOverlaps} from './discussion-reporting-overlaps';
@@ -43,9 +43,9 @@ export async function recentSourceDocuments(){
   }));
   return [...markets.flat(), ...wikimedia.flat()].filter(row=>
     isPublicEvidenceEligible(row.source_type,row.source_domain) &&
-    (row.source_type !== 'stack-exchange' || matchesStackExchangeTitleQuery(
+    (row.source_type !== 'stack-exchange' || isEligibleStackExchangeQuestion(
       row.title_original,
-      row.raw_metadata_json?.query,
+      row.raw_metadata_json,
     ))
   ).sort((a,b)=>Date.parse(b.published_at)-Date.parse(a.published_at));
 }
@@ -63,7 +63,7 @@ export async function recentPublisherEvidence(){
       .gte('published_at',since).order('published_at',{ascending:false}).limit(90),
     db.from('source_documents').select(fields)
       .eq('market_code','INTL').eq('source_type','stack-exchange')
-      .gte('published_at',since).order('published_at',{ascending:false}).limit(30),
+      .gte('published_at',since).order('published_at',{ascending:false}).limit(300),
   ]);
   if(publishers.error||questions.error||!publishers.data||!questions.data)return [];
   return [...publishers.data,...questions.data]
@@ -94,7 +94,7 @@ export async function recentDiscussionObservations(){
     if(offset===4000)return null;
   }
   return buildDiscussionObservations(rows.filter(row =>
-    matchesStackExchangeTitleQuery(row.title_original, row.raw_metadata_json?.query)
+    isEligibleStackExchangeQuestion(row.title_original, row.raw_metadata_json)
   ));
 }
 

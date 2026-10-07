@@ -1,5 +1,6 @@
 export const DISCUSSION_COMMUNITIES = [
   { site: "economics", label: "Economics Stack Exchange", language: "English" },
+  { site: "quant", label: "Quantitative Finance Stack Exchange", language: "English" },
   { site: "money", label: "Personal Finance & Money", language: "English" },
   { site: "ai", label: "Artificial Intelligence", language: "English" },
   { site: "datascience", label: "Data Science", language: "English" },

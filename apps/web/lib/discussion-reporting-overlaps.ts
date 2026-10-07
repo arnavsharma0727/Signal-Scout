@@ -1,4 +1,4 @@
-import { isPublicEvidenceEligible, matchesStackExchangeTitleQuery } from "./source-policy";
+import { isEligibleStackExchangeQuestion, isPublicEvidenceEligible } from "./source-policy";
 
 export type OverlapInput = {
   id: string;
@@ -47,7 +47,7 @@ export function buildDiscussionReportingOverlaps(
     if (row.source_type === "stack-exchange") {
       const metadata = asRecord(row.raw_metadata_json);
       if (metadata.contentLicense !== QUESTION_LICENSE || !Array.isArray(metadata.tags) ||
-        !matchesStackExchangeTitleQuery(row.title_original, metadata.query)) continue;
+        !isEligibleStackExchangeQuestion(row.title_original, metadata)) continue;
       const tags = [...new Set(metadata.tags.filter((tag): tag is string => typeof tag === "string")
         .map((tag) => tag.trim().normalize("NFC").toLocaleLowerCase())
         .filter((tag) => tag.length >= 3 && tag.length <= 50))];

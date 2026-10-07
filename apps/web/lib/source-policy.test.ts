@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hasUnclearedHackerNewsEvidence, isHackerNewsIngestionEnabled, isPublicEvidenceEligible, matchesStackExchangeTitleQuery } from './source-policy';
+import { hasUnclearedHackerNewsEvidence, isEligibleStackExchangeQuestion, isHackerNewsIngestionEnabled, isPublicEvidenceEligible, matchesStackExchangeTitleQuery } from './source-policy';
 
 describe('source rights gate', () => {
   it('keeps Hacker News ingestion off unless both collection and rights are explicitly enabled', () => {
@@ -27,5 +27,20 @@ describe('source rights gate', () => {
     expect(matchesStackExchangeTitleQuery('AI and interest rates', 'interest rates')).toBe(true);
     expect(matchesStackExchangeTitleQuery('Artificial intelligence', 'AI')).toBe(false);
     expect(matchesStackExchangeTitleQuery('Question title', undefined)).toBe(false);
+  });
+
+  it('allows broad Stack Exchange feed items only when CC BY-SA title-only metadata is explicit', () => {
+    const metadata = {
+      collectionMethod: 'recent-licensed-question-feed',
+      contentLicense: 'CC BY-SA 4.0',
+      titleUnmodified: true,
+      questionBodyRetained: false,
+      answerBodyRetained: false,
+    };
+    expect(isEligibleStackExchangeQuestion('A recent question', metadata)).toBe(true);
+    expect(isEligibleStackExchangeQuestion('', metadata)).toBe(false);
+    expect(isEligibleStackExchangeQuestion('A recent question', { ...metadata, contentLicense: 'CC BY-NC-SA 4.0' })).toBe(false);
+    expect(isEligibleStackExchangeQuestion('A recent question', { ...metadata, questionBodyRetained: true })).toBe(false);
+    expect(isEligibleStackExchangeQuestion('Inflation and tariffs', { query: 'tariffs' })).toBe(true);
   });
 });

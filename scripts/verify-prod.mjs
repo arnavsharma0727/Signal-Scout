@@ -139,8 +139,8 @@ if (!url || !key) {
     const eligible=(recent.data??[]).filter(row=>!['hacker-news','researcher-linked-source'].includes(row.source_type) && !['news.google.com','www.news.google.com'].includes((row.source_domain??'').toLowerCase()));
     const types=new Set(eligible.map(row=>row.source_type).filter(Boolean));
     const domains=new Set(eligible.map(row=>row.source_domain).filter(Boolean));
-    const discussionViews=eligible.filter(row=>['stack-exchange','wikimedia-talk','lemmy','mastodon','bluesky'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)) || isReviewedLicensedForum(row));
-    const conversationRecords=eligible.filter(row=>['stack-exchange','lemmy','mastodon','bluesky'].includes(row.source_type) && (row.source_type!=='stack-exchange'||matchesDiscussionTitle(row.title_original,row.raw_metadata_json?.query)) || isReviewedLicensedForum(row));
+    const discussionViews=eligible.filter(row=>(['stack-exchange','wikimedia-talk','lemmy','mastodon','bluesky'].includes(row.source_type) && (row.source_type!=='stack-exchange'||isUsableStackExchangeRecord(row))) || isReviewedLicensedForum(row));
+    const conversationRecords=eligible.filter(row=>(['stack-exchange','lemmy','mastodon','bluesky'].includes(row.source_type) && (row.source_type!=='stack-exchange'||isUsableStackExchangeRecord(row))) || isReviewedLicensedForum(row));
     const communities=new Set(conversationRecords.filter(row=>row.source_type==='stack-exchange').map(row=>row.raw_metadata_json?.site).filter(Boolean));
     const wikiEditions=new Set(discussionViews.filter(row=>row.source_type==='wikimedia-talk').map(row=>row.raw_metadata_json?.editionLanguage).filter(Boolean));
     const licensedForums=conversationRecords.filter(isReviewedLicensedForum);
@@ -239,6 +239,15 @@ function matchesDiscussionTitle(title, query) {
   const expected = tokens(query);
   const present = new Set(tokens(title));
   return expected.length > 0 && expected.every(token => present.has(token));
+}
+
+function isUsableStackExchangeRecord(row) {
+  const metadata=row?.raw_metadata_json&&typeof row.raw_metadata_json==='object'?row.raw_metadata_json:{};
+  if(metadata.collectionMethod==='recent-licensed-question-feed') {
+    const hosts={economics:'economics.stackexchange.com',quant:'quant.stackexchange.com',money:'money.stackexchange.com',politics:'politics.stackexchange.com',law:'law.stackexchange.com',ai:'ai.stackexchange.com',datascience:'datascience.stackexchange.com',security:'security.stackexchange.com','es.stackoverflow':'es.stackoverflow.com','pt.stackoverflow':'pt.stackoverflow.com','ja.stackoverflow':'ja.stackoverflow.com','ru.stackoverflow':'ru.stackoverflow.com'};
+    return metadata.contentLicense==='CC BY-SA 4.0'&&metadata.licenseUrl==='https://creativecommons.org/licenses/by-sa/4.0/'&&metadata.titleUnmodified===true&&metadata.questionBodyRetained===false&&metadata.answerBodyRetained===false&&typeof metadata.site==='string'&&hosts[metadata.site]===row.source_domain;
+  }
+  return matchesDiscussionTitle(row?.title_original,metadata.query);
 }
 
 function isReviewedLicensedForum(row) {

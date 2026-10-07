@@ -28,3 +28,17 @@ export function matchesStackExchangeTitleQuery(title: string | null | undefined,
   const titleTokens = new Set(tokens(title));
   return expected.every((token) => titleTokens.has(token));
 }
+
+/** Eligibility for either legacy title-query records or the bounded licensed recent-question feed. */
+export function isEligibleStackExchangeQuestion(
+  title: string | null | undefined,
+  metadata: Record<string, unknown> | null | undefined,
+): boolean {
+  if (metadata?.collectionMethod === 'recent-licensed-question-feed') {
+    return metadata.contentLicense === 'CC BY-SA 4.0' &&
+      metadata.titleUnmodified === true &&
+      metadata.questionBodyRetained === false && metadata.answerBodyRetained === false &&
+      Boolean(title?.trim());
+  }
+  return matchesStackExchangeTitleQuery(title, metadata?.query);
+}

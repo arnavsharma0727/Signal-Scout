@@ -1,5 +1,6 @@
 import type { ResearchEvidence } from "./research-brief";
 import { isReviewedStackExchangeSiteHost } from "./researcher-linked-source";
+import { isEligibleStackExchangeQuestion } from "./source-policy";
 
 type StoredPublisherRow = {
   id: string;
@@ -141,14 +142,17 @@ export function toPublisherEvidence(
   } else if (row.source_type === "stack-exchange" && isStackExchangeHost(host) &&
       row.source_domain === host && meta.contentLicense === "CC BY-SA 4.0" &&
       meta.licenseUrl === CC_BY_SA_4 && typeof meta.attributionName === "string" &&
-      meta.attributionName.trim() && typeof meta.query === "string" &&
-      matchesTitleQuery(row.title_original, meta.query)) {
+      (meta.collectionMethod !== "recent-licensed-question-feed" ||
+        (typeof meta.site === "string" && isReviewedStackExchangeSiteHost(host, meta.site) && meta.titleUnmodified === true)) &&
+      meta.attributionName.trim() && isEligibleStackExchangeQuestion(row.title_original, meta)) {
     evidenceClass = "expert Q&A";
     attribution = `Author: ${meta.attributionName.trim().slice(0, 120)}`;
     licenseName = "CC BY-SA 4.0";
     licenseUrl = CC_BY_SA_4;
     sourceOperatorKey = "stack-exchange";
-    context = "Licensed title-only Stack Exchange question; specialist Q&A, not general public opinion";
+    context = meta.collectionMethod === "recent-licensed-question-feed"
+      ? "Recent question sampled from this specialist community; title and attribution only under CC BY-SA 4.0, not a general public-opinion sample"
+      : "Licensed title-only Stack Exchange question; specialist Q&A, not general public opinion";
   } else {
     return null;
   }
@@ -183,14 +187,6 @@ function isStackExchangeHost(host: string) {
 function isStackExchangeAuthorUrl(value: string, host: string) {
   const url = safeHttpsUrl(value);
   return Boolean(url && url.hostname === host && /^\/users\/\d+(?:\/[^/]+)?\/?$/.test(url.pathname));
-}
-
-function matchesTitleQuery(title: string, query: string) {
-  const tokens = (value: string) => value.normalize("NFKC").toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [];
-  const expected = tokens(query);
-  if (!expected.length) return false;
-  const titleTokens = new Set(tokens(title));
-  return expected.every((token) => titleTokens.has(token));
 }
 
 /** Exact phrase filter for original headlines only; intentionally does not translate or infer related topics. */

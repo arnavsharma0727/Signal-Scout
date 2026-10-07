@@ -124,7 +124,7 @@ export default async function Sources() {
       key: "stack-exchange",
       enabled: process.env.STACK_EXCHANGE_ENABLED === "true",
       detail:
-        "Keyless daily collection across 11 communities, re-querying a 30-day window with one page (up to 100 items) per title term, plus on-demand Explore searches across up to four selected communities with a separately supplied phrase for each language. Search terms must appear in question titles. Only individually CC BY-SA 4.0 items are retained in scheduled ingestion or shown in Explore, with author and license attribution. Results may omit matches beyond the per-query page cap. All 11 are one expert-Q&A platform operator, not independent sources or representative public opinion; on-demand results are not stored.",
+        "Keyless daily collection samples the latest public questions from 12 communities across economics, quantitative finance, personal finance, politics, law, AI, data science, information security, and four non-English Stack Overflow editions. Each community is bounded to one API page of up to 100 questions from the last 30 days. Only individually CC BY-SA 4.0 items are retained, with unmodified title, original link, author/profile attribution, site, tags, and license; question and answer bodies are discarded. Explore offers on-demand title searches across up to four selected communities with a separately supplied phrase for each language. This is specialist Q&A from one platform operator, not a general forum, independent operators, or representative public opinion; feed caps omit older/lower-ranked items and on-demand results are not stored.",
     },
     {
       name: "Typst Forum · licensed community discussion",
@@ -285,7 +285,7 @@ export default async function Sources() {
         <h1 className="mb-4 text-4xl font-extrabold">Sources</h1>
         <p className="mb-10 max-w-2xl leading-7 text-muted">
           Configured does not mean recently successful. Discussion inputs
-          include query-selected Stack Exchange expert Q&amp;A and narrow,
+          include broad licensed Stack Exchange expert Q&amp;A and narrow,
           licensed Typst and Fedora community forums. Each source has a
           different audience and coverage; none is a representative measure of
           public opinion. Check each source&apos;s health and limits below.

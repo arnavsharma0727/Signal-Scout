@@ -1,32 +1,31 @@
 import { makeDocument } from "./normalize";
 import { fetchWithRetry } from "./fetch";
-import { matchesStackExchangeTitleQuery } from "../source-policy";
 import type { Connector, ConnectorResult } from "./types";
 
-const endpoint = "https://api.stackexchange.com/2.3/search/advanced";
+const endpoint = "https://api.stackexchange.com/2.3/questions";
 const HISTORY_LOOKBACK_MS = 30 * 24 * 60 * 60 * 1000;
-const siteQueries: ReadonlyArray<{
-  site: string;
-  languageCode: string;
-  terms: readonly string[];
-}> = [
-  { site: "economics", languageCode: "en", terms: ["inflation", "interest rates", "tariffs"] },
-  { site: "money", languageCode: "en", terms: ["inflation", "interest rates", "ETF"] },
-  { site: "ai", languageCode: "en", terms: ["AI", "large language model", "GPU"] },
-  { site: "datascience", languageCode: "en", terms: ["AI", "large language model", "data quality"] },
-  { site: "security", languageCode: "en", terms: ["ransomware", "data breach", "vulnerability"] },
-  { site: "es.stackoverflow", languageCode: "es", terms: ["inteligencia artificial", "GPU", "modelo de lenguaje"] },
-  { site: "pt.stackoverflow", languageCode: "pt", terms: ["inteligência artificial", "GPU", "modelo de linguagem"] },
-  { site: "ja.stackoverflow", languageCode: "ja", terms: ["生成AI", "LLM", "GPU"] },
-  { site: "ru.stackoverflow", languageCode: "ru", terms: ["искусственный интеллект", "LLM", "GPU"] },
-  // Current-affairs terms are kept separate so API title matching remains
-  // exact and each imported question keeps the query that surfaced it.
-  { site: "politics", languageCode: "en", terms: ["tariffs", "sanctions", "trade", "election"] },
-  { site: "law", languageCode: "en", terms: ["tariffs", "sanctions", "trade"] },
+const LICENSE = "CC BY-SA 4.0";
+const COLLECTION_METHOD = "recent-licensed-question-feed";
+const sites: ReadonlyArray<{ site: string; languageCode: string }> = [
+  { site: "economics", languageCode: "en" },
+  { site: "quant", languageCode: "en" },
+  { site: "money", languageCode: "en" },
+  { site: "politics", languageCode: "en" },
+  { site: "law", languageCode: "en" },
+  { site: "ai", languageCode: "en" },
+  { site: "datascience", languageCode: "en" },
+  { site: "security", languageCode: "en" },
+  { site: "es.stackoverflow", languageCode: "es" },
+  { site: "pt.stackoverflow", languageCode: "pt" },
+  { site: "ja.stackoverflow", languageCode: "ja" },
+  { site: "ru.stackoverflow", languageCode: "ru" },
 ];
 const siteLabels: Record<string, string> = {
   economics: "Economics Stack Exchange",
+  quant: "Quantitative Finance Stack Exchange",
   money: "Personal Finance & Money Stack Exchange",
+  politics: "Politics Stack Exchange",
+  law: "Law Stack Exchange",
   ai: "Artificial Intelligence Stack Exchange",
   datascience: "Data Science Stack Exchange",
   security: "Information Security Stack Exchange",
@@ -34,12 +33,24 @@ const siteLabels: Record<string, string> = {
   "pt.stackoverflow": "Stack Overflow em Português",
   "ja.stackoverflow": "スタック・オーバーフロー",
   "ru.stackoverflow": "Stack Overflow на русском",
-  politics: "Politics Stack Exchange",
-  law: "Law Stack Exchange",
+};
+const siteHosts: Record<string, string> = {
+  economics: "economics.stackexchange.com",
+  quant: "quant.stackexchange.com",
+  money: "money.stackexchange.com",
+  politics: "politics.stackexchange.com",
+  law: "law.stackexchange.com",
+  ai: "ai.stackexchange.com",
+  datascience: "datascience.stackexchange.com",
+  security: "security.stackexchange.com",
+  "es.stackoverflow": "es.stackoverflow.com",
+  "pt.stackoverflow": "pt.stackoverflow.com",
+  "ja.stackoverflow": "ja.stackoverflow.com",
+  "ru.stackoverflow": "ru.stackoverflow.com",
 };
 const licenseUrl = "https://creativecommons.org/licenses/by-sa/4.0/";
 
-type SearchResponse = {
+type QuestionsResponse = {
   items?: Array<{
     title?: string;
     tags?: string[];
@@ -50,9 +61,15 @@ type SearchResponse = {
   }>;
   quota_remaining?: number;
   backoff?: number;
+  error_id?: number;
+  error_message?: string;
 };
 
-/** Public keyless search; persist only individually CC BY-SA 4.0 licensed items. */
+/**
+ * Sample the latest public questions from each reviewed Stack Exchange site.
+ * Keep only individually CC BY-SA 4.0 licensed titles and attribution; bodies
+ * and answer text are never persisted. This is expert Q&A, not a population poll.
+ */
 export class StackExchangeConnector implements Connector {
   name = "stack-exchange";
   validateConfiguration() {
@@ -65,78 +82,78 @@ export class StackExchangeConnector implements Connector {
     const documents = [];
     let requestsUsed = 0;
     let stoppedForBackoff = false;
-    const rejectedUnlicensed = { count: 0 };
-    const rejectedTitleMismatch = { count: 0 };
+    let rejectedUnlicensed = 0;
+    let rejectedInvalid = 0;
     const historyStart = new Date(input.end.getTime() - HISTORY_LOOKBACK_MS);
 
-    search: for (const { site, languageCode, terms } of siteQueries) {
-      for (const term of terms) {
-        const params = new URLSearchParams({
-          order: "desc",
-          sort: "creation",
-          site,
-          pagesize: "100",
-          title: term,
-          // Re-sample the same bounded 30-day window each daily run so the
-          // descriptive baseline need not wait for 14 cron days.
-          fromdate: String(Math.floor(historyStart.getTime() / 1000)),
-          todate: String(Math.floor(input.end.getTime() / 1000)),
-        });
-        const response = await fetchWithRetry(`${endpoint}?${params}`, {
-          headers: { accept: "application/json" },
-        });
-        const body = (await response.json()) as SearchResponse;
-        requestsUsed++;
+    for (const { site, languageCode } of sites) {
+      const params = new URLSearchParams({
+        order: "desc",
+        sort: "creation",
+        site,
+        pagesize: "100",
+        fromdate: String(Math.floor(historyStart.getTime() / 1000)),
+        todate: String(Math.floor(input.end.getTime() / 1000)),
+      });
+      const response = await fetchWithRetry(`${endpoint}?${params}`, {
+        headers: { accept: "application/json" },
+      });
+      const body = (await response.json()) as QuestionsResponse;
+      requestsUsed++;
+      if (body.error_id) {
+        throw new Error(`Stack Exchange API error ${body.error_id}: ${body.error_message ?? "unknown error"}`);
+      }
 
-        for (const item of body.items ?? []) {
-          if (item.content_license !== "CC BY-SA 4.0") {
-            rejectedUnlicensed.count++;
-            continue;
-          }
-          if (!item.title || !item.link || !item.owner?.display_name) continue;
-          const title = decodeEntities(item.title);
-          // Enforce the API's documented title constraint locally as well.
-          // This prevents malformed/upstream-mismatched results from entering
-          // discussion baselines or being surfaced as on-topic evidence.
-          if (!matchesStackExchangeTitleQuery(title, term)) {
-            rejectedTitleMismatch.count++;
-            continue;
-          }
-          const publishedAt = item.creation_date
-            ? new Date(item.creation_date * 1000).toISOString()
-            : undefined;
-          documents.push(
-            makeDocument({
-              marketCode: "INTL",
-              sourceType: "stack-exchange",
-              sourceName: siteLabels[site],
-              sourceUrl: item.link,
-              title,
-              publishedAt,
-              languageCode,
-              tier: 4,
-              entityConfidence: 0,
-              raw: {
-                attributionName: item.owner.display_name,
-                attributionUrl: item.owner.link,
-                contentLicense: item.content_license,
-                licenseUrl,
-                site,
-                query: term,
-                tags: item.tags ?? [],
-              },
-            }),
-          );
+      for (const item of body.items ?? []) {
+        if (item.content_license !== LICENSE) {
+          rejectedUnlicensed++;
+          continue;
         }
-        if (body.backoff && body.backoff > 0) {
-          // Do not hold a scheduled serverless invocation through a long backoff.
-          // Stop making requests instead of violating the API's required wait.
-          if (body.backoff > 15) {
-            stoppedForBackoff = true;
-            break search;
-          }
-          await new Promise((resolve) => setTimeout(resolve, body.backoff! * 1000));
+        const title = safeDecodeEntities(item.title ?? "");
+        const link = safeHttpsUrl(item.link);
+        const author = item.owner?.display_name?.trim();
+        const authorUrl = safeHttpsUrl(item.owner?.link);
+        const createdAt = typeof item.creation_date === "number" ? item.creation_date * 1000 : NaN;
+        if (!title || !link || !author || !authorUrl ||
+            link.hostname !== siteHosts[site] || authorUrl.hostname !== siteHosts[site] ||
+            !/^\/questions\/\d+\/[^/]+\/?$/.test(link.pathname) ||
+            !/^\/users\/\d+(?:\/[^/]+)?\/?$/.test(authorUrl.pathname) ||
+            !Number.isFinite(createdAt) || createdAt < historyStart.getTime() || createdAt > input.end.getTime()) {
+          rejectedInvalid++;
+          continue;
         }
+
+        documents.push(makeDocument({
+          marketCode: "INTL",
+          sourceType: "stack-exchange",
+          sourceName: siteLabels[site],
+          sourceUrl: link.toString(),
+          title,
+          publishedAt: new Date(createdAt).toISOString(),
+          languageCode,
+          tier: 4,
+          entityConfidence: 0,
+          raw: {
+            attributionName: author,
+            attributionUrl: authorUrl.toString(),
+            contentLicense: LICENSE,
+            licenseUrl,
+            site,
+            collectionMethod: COLLECTION_METHOD,
+            titleUnmodified: true,
+            tags: (item.tags ?? []).filter((tag): tag is string => typeof tag === "string").slice(0, 20),
+            questionBodyRetained: false,
+            answerBodyRetained: false,
+          },
+        }));
+      }
+
+      if (body.backoff && body.backoff > 0) {
+        if (body.backoff > 15) {
+          stoppedForBackoff = true;
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, body.backoff! * 1000));
       }
     }
 
@@ -145,29 +162,41 @@ export class StackExchangeConnector implements Connector {
       documents: unique,
       requestsUsed,
       metadata: {
-        sites: siteQueries.map(({ site }) => site),
+        sites: sites.map(({ site }) => site),
         lookbackDays: 30,
-        terms: siteQueries.flatMap(({ site, terms }) =>
-          terms.map((term) => ({ site, term })),
-        ),
+        collectionMethod: COLLECTION_METHOD,
+        pageSizePerCommunity: 100,
         resultCount: unique.length,
-        rejectedUnlicensed: rejectedUnlicensed.count,
-        rejectedTitleMismatch: rejectedTitleMismatch.count,
+        rejectedUnlicensed,
+        rejectedInvalid,
         stoppedForBackoff,
       },
     };
   }
 }
 
-function decodeEntities(value: string) {
-  return value
-    .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&#x([\da-f]+);/gi, (_, code: string) =>
-      String.fromCodePoint(parseInt(code, 16)),
-    )
-    .replace(/&amp;/g, "&")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">");
+function safeHttpsUrl(value: string | undefined): URL | null {
+  try {
+    const url = new URL(value ?? "");
+    return url.protocol === "https:" && !url.username && !url.password && !url.port && !url.search && !url.hash
+      ? url
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeDecodeEntities(value: string): string | null {
+  try {
+    return value
+      .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
+      .replace(/&#x([\da-f]+);/gi, (_, code: string) => String.fromCodePoint(parseInt(code, 16)))
+      .replace(/&amp;/g, "&")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;|&apos;/g, "'")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">");
+  } catch {
+    return null;
+  }
 }
