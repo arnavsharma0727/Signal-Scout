@@ -5,6 +5,7 @@ import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
 import { passesIndependentEvidenceGate, sourceOperatorsByLead, verifiedLeadEvidenceDocumentIds } from "../../lib/research-lead-qualification";
 import { summarizeConversationCoverage, type ConversationCoverageRow } from "../../lib/research-conversation-coverage";
+import { recentDiscussionObservations, recentDiscussionReportingOverlaps } from "../../lib/public-data";
 import SiteHeader from "../../components/site-header";
 
 export const dynamic = "force-dynamic";
@@ -35,8 +36,16 @@ export default async function Candidates({ searchParams }: { searchParams: Promi
   let coverageUnavailable = !db;
   let coverageRows: ConversationCoverageRow[] = [];
   let coverageCapped = false;
+  let sampleObservations: Awaited<ReturnType<typeof recentDiscussionObservations>> = null;
+  let discussionReportingOverlaps: Awaited<ReturnType<typeof recentDiscussionReportingOverlaps>> = null;
+  let discoveryUnavailable = !db;
 
   if (db) {
+    [sampleObservations, discussionReportingOverlaps] = await Promise.all([
+      recentDiscussionObservations(),
+      recentDiscussionReportingOverlaps(),
+    ]);
+    discoveryUnavailable = sampleObservations === null || discussionReportingOverlaps === null;
     const coverageSince = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: recentConversationRows, error: coverageError, count: coverageCount } = await db
       .from("source_documents")
@@ -160,6 +169,48 @@ export default async function Candidates({ searchParams }: { searchParams: Promi
               </p>
             </>
           )}
+        </section>
+
+        <section className="mt-7 border-b border-line pb-7" aria-labelledby="automated-observations">
+          <div className="eyebrow">Automatic discovery · source-level cues</div>
+          <h2 id="automated-observations" className="mt-2 text-lg font-semibold">Patterns to investigate</h2>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted">
+            These are reproducible observations from stored, reviewed records—not qualified leads. Tag-share prompts compare Stack Exchange questions with that platform’s observed baseline; phrase overlaps are literal same-language matches between discussion titles and licensed reporting headlines. Neither establishes public attention, sentiment, causality, or market impact.
+          </p>
+          {discoveryUnavailable ? (
+            <p className="mt-4 text-sm text-muted">Automatic observations are unavailable because the source records could not be read. No inference is substituted.</p>
+          ) : (() => {
+            const tagPrompts = (sampleObservations ?? []).filter((row) => row.sampleReviewCandidate);
+            const overlaps = (discussionReportingOverlaps ?? []).slice(0, 6);
+            if (!tagPrompts.length && !overlaps.length) return (
+              <p className="mt-4 text-sm text-muted">No reproducible patterns cleared the current source-level checks. This may reflect sparse coverage or the narrowness of the collected sources; it is not evidence that no conversation is changing.</p>
+            );
+            return <div className="mt-5 grid gap-5 lg:grid-cols-2">
+              <div>
+                <h3 className="text-sm font-semibold">Observed Q&amp;A tag-share prompts</h3>
+                {tagPrompts.length ? <ul className="mt-3 space-y-3">{tagPrompts.map((row) => (
+                  <li key={row.tag} className="border-t border-line pt-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2">
+                      <Link className="font-medium underline underline-offset-4" href={`/explore#${new URLSearchParams({ topic: row.tag }).toString()}`}>{row.tag}</Link>
+                      <span className="mono text-xs text-muted">{row.recentQuestionCount} / {row.recentSampleSize} recent questions</span>
+                    </div>
+                    <p className="mt-1 text-xs leading-5 text-muted">{row.sampleReviewReason} Baseline: {row.priorObservedDays} prior observed days; one Q&amp;A operator.</p>
+                    <ul className="mt-2 space-y-1 text-xs">{row.evidence.map((item) => <li key={item.id}><a className="underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><span className="text-muted"> · {item.community}</span></li>)}</ul>
+                  </li>
+                ))}</ul> : <p className="mt-3 text-xs leading-5 text-muted">No tag-share prompt cleared the current minimums. A usable baseline requires at least 14 prior observed days and adequate recent sample volume.</p>}
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold">Literal discussion–reporting overlaps</h3>
+                {overlaps.length ? <ul className="mt-3 space-y-3">{overlaps.map((row) => (
+                  <li key={`${row.language}:${row.matchBasis}:${row.phrase}`} className="border-t border-line pt-3">
+                    <div className="flex flex-wrap items-baseline justify-between gap-2"><span className="font-medium">{row.phrase}</span><span className="mono text-xs text-muted">{row.language} · {row.matchBasis}</span></div>
+                    <p className="mt-1 text-xs text-muted">{row.discussionItemCount} discussion item(s); reporting labels: {row.reportingPublishers.join(", ") || "not resolved"}. Lexical match only.</p>
+                    <ul className="mt-2 space-y-1 text-xs">{[...row.discussions, ...row.reporting].slice(0, 4).map((item) => <li key={item.id}><a className="underline underline-offset-2" href={item.url} target="_blank" rel="noreferrer">{item.title}</a><span className="text-muted"> · {item.source}</span></li>)}</ul>
+                  </li>
+                ))}</ul> : <p className="mt-3 text-xs leading-5 text-muted">No exact phrase appeared in both eligible discussion titles and same-language licensed headlines in the last seven days.</p>}
+              </div>
+            </div>;
+          })()}
         </section>
 
         {leads.length > 0 && (

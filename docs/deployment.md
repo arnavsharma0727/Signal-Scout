@@ -21,7 +21,7 @@ The database transaction deletes the source item, its attached analyses and enti
 
 ### Private briefs, lead publishing, and Supabase Auth
 
-The Auth UI, cookie-session refresh, callback, private research briefs, watchlists, and CSV import/export are implemented, but Auth is **disabled by default**. The login UI uses GitHub OAuth through Supabase and requests only basic profile/email identity (no repository scopes). Create a GitHub OAuth app with Supabase's provider callback URL, then configure its client ID/secret in Supabase Auth → Sign In / Providers → GitHub. Never put the client secret in this repository or a browser variable. To enable after configuring the provider, provide these variables in `.env.local` / Vercel:
+The Auth UI, cookie-session refresh, callback, private research briefs, watchlists, and CSV import/export are implemented. As of 2026-10-08, the production login page renders the GitHub sign-in action; this verifies provider availability, not a complete end-to-end login with every account. The login uses Supabase GitHub OAuth and requests only basic profile/email identity (no repository scopes). Never put the client secret in this repository or a browser variable. Required app-side variables are:
 
 - `SUPABASE_URL` (already used by the server)
 - `SUPABASE_ANON_KEY` (the Supabase anon/publishable key; not the service-role key)
@@ -35,6 +35,8 @@ Watchlist data is read/written through the authenticated server client and owner
 Migration `0015_research_lead_authorship.sql` adds an optional author reference without changing existing operator-created rows; production verification confirms it is installed. The publication action verifies every cited source row server-side, creates a hidden draft, links every citation, and only then makes it active; the author can withdraw it later. It requires explicit researcher confirmation. This workflow is not automatic lead generation, and the current production source sample may not pass its gate. Do not seed synthetic records in production.
 
 Watchlist mutations use a Supabase Postgres per-user hourly quota (10 create, 10 delete, 200 membership changes, 6 CSV imports, 30 CSV exports). Migration `0011_watchlist_action_limits.sql` must be applied before deploying the corresponding server actions. These quotas do not rate-limit anonymous page reads.
+
+Anonymous GDELT searches are rate-limited server-side by migration `0016_public_endpoint_rate_limits.sql`: 10 requests per one-minute window per client and 30 globally. The Vercel-provided `x-forwarded-for` client address is HMAC-SHA256 hashed with the server-only service-role secret before storage; no raw address is stored, and expired buckets are removed after two minutes. The route fails closed (503) if the database limiter is unavailable. Apply migration 0016 before deploying code that calls it.
 
 ## Production
 
@@ -54,4 +56,4 @@ npm run verify:prod
 npm audit
 ```
 
-`verify:prod` checks public routes, confirms ingestion rejects unauthenticated requests, and queries product data gates when server credentials are available locally. It never logs credential values. A nonzero exit is expected until minimum coverage, computed metrics, evidence-backed leads, and prospective track-record requirements are genuinely met. Do not fabricate records to make the check pass.
+`verify:prod` checks public routes, confirms protected endpoints reject unauthenticated requests, and queries product data gates when server credentials are available locally. It never logs credential values. It deliberately fails when actual recent conversation coverage or evidence-backed leads are missing. Passing a connector-run check is not proof of current published conversation or representative geographic coverage. Do not fabricate records to make the check pass.

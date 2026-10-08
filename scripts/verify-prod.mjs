@@ -180,8 +180,8 @@ if (!url || !key) {
       const run=groupedRuns.get(name);
       return run?.success>0&&run.stored>0;
     });
-    if(healthyDiscussionRuns.length>=2)pass('scheduled discussion connectors are operational',`${healthyDiscussionRuns.length}/${discussionRunNames.length} connectors have successful runs with stored items: ${healthyDiscussionRuns.join(', ')}`);
-    else fail('scheduled discussion connectors are operational',`${healthyDiscussionRuns.length}/${discussionRunNames.length} connectors have successful runs with stored items`);
+    if(healthyDiscussionRuns.length>=2)pass('scheduled discussion connector runs are recorded',`${healthyDiscussionRuns.length}/${discussionRunNames.length} connectors have a successful run and stored rows: ${healthyDiscussionRuns.join(', ')}. This does not establish that stored posts were newly published or that coverage is representative; recent source-document counts are checked separately.`);
+    else fail('scheduled discussion connector runs are recorded',`${healthyDiscussionRuns.length}/${discussionRunNames.length} connectors have a successful run and stored rows`);
     const gdeltRuns=groupedRuns.get('gdelt');
     if(gdeltRuns)pass('GDELT source health reported',`${gdeltRuns.success} successful/partial, ${gdeltRuns.failed} failed, ${gdeltRuns.stored} stored in 24h`);
     else pass('GDELT source health reported','GDELT is visitor-triggered in the current product; no scheduled run is expected');

@@ -6,6 +6,8 @@ import {
   type GdeltOutletLanguage,
   searchGdeltNews,
 } from "../../../../lib/gdelt-public";
+import { serverSupabase } from "../../../../lib/server-supabase";
+import { allowPublicGdeltRequest } from "../../../../lib/public-api-rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,6 +40,12 @@ export async function POST(request: NextRequest) {
       !GDELT_OUTLET_LANGUAGES.some(({ value }) => value === outletLanguage))
     return reply({ error: "Choose a 3–100 character query and supported filters." }, 400);
 
+  const rateLimit = await allowPublicGdeltRequest(request, serverSupabase());
+  if (rateLimit === "limited")
+    return reply({ error: "GDELT search limit reached. Try again in one minute." }, 429, { "Retry-After": "60" });
+  if (rateLimit === "unavailable")
+    return reply({ error: "GDELT search is temporarily unavailable." }, 503);
+
   try {
     const boundedFetch: typeof fetch = (input, init) => fetch(input, {
       ...init,
@@ -55,9 +63,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function reply(payload: Record<string, unknown>, status: number) {
+function reply(payload: Record<string, unknown>, status: number, extraHeaders: Record<string, string> = {}) {
   return NextResponse.json(payload, {
     status,
-    headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" },
+    headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff", ...extraHeaders },
   });
 }

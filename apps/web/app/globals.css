@@ -1,6 +1,13 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@source "./";
+@theme {
+  --color-ink: #171717;
+  --color-muted: #666666;
+  --color-panel: #ffffff;
+  --color-line: #dedede;
+  --color-accent: #171717;
+  --color-base: #ffffff;
+}
 
 :root{color-scheme:light;--ink:#171717;--muted:#666;--panel:#fff;--line:#dedede;--accent:#171717;--bg:#fff}
 *{box-sizing:border-box}
