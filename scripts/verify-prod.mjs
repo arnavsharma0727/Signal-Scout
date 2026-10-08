@@ -262,6 +262,26 @@ function isReviewedLicensedForum(row) {
 function reviewedSourceOperator(source) {
   const domain=(source?.source_domain??'').toLowerCase().replace(/^www\./,'');
   const metadata=source?.raw_metadata_json&&typeof source.raw_metadata_json==='object'?source.raw_metadata_json:{};
+  if(source?.source_type==='researcher-linked-source'&&metadata.researcherLinkedOnly===true&&metadata.postBodyDiscarded===true&&metadata.transientPreviewDiscarded===true){
+    const provider=metadata.citationProvider;
+    if(provider==='bluesky'&&domain==='bsky.app')return 'bluesky';
+    if(provider==='mastodon'&&['mastodon.social','mastodon.online','mstdn.jp','mastodon.world'].includes(domain))return 'mastodon-network';
+    if(provider==='lemmy'&&['lemmy.world','discuss.tchncs.de','feddit.org','feddit.uk'].includes(domain))return 'lemmy-federation';
+    if(provider==='newslink'){
+      const reviewed={
+        'apnews.com':['associated-press','Associated Press'],
+        'theguardian.com':['guardian-news-media','The Guardian'],
+        'reuters.com':['reuters','Reuters'],
+        'abc.net.au':['abc-news-australia','ABC News Australia'],
+        'smartcompany.com.au':['smartcompany','SmartCompany'],
+      };
+      const match=Object.entries(reviewed).find(([host])=>domain===host||domain.endsWith(`.${host}`));
+      if(match&&metadata.reviewedPublisherKey===match[1][0]&&metadata.reviewedPublisherLabel===match[1][1])return match[1][0];
+    }
+    if(provider==='surveylink'&&domain==='verasight.io'&&metadata.reviewedPublisherKey==='verasight'&&metadata.reviewedPublisherLabel==='Verasight')return 'verasight';
+    if(provider==='companylink'&&domain==='firmus.co'&&metadata.reviewedPublisherKey==='firmus'&&metadata.reviewedPublisherLabel==='Firmus')return 'firmus';
+    return null;
+  }
   if(source?.source_type==='stack-exchange')return 'stack-exchange';
   if(source?.source_type==='licensed-forum'&&domain==='forum.typst.app'&&metadata.publisher==='Typst Forum')return 'typst-forum';
   if(source?.source_type==='licensed-analysis'&&domain==='theconversation.com'&&metadata.publisher==='The Conversation')return 'the-conversation';
