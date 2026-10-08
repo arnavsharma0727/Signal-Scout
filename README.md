@@ -29,7 +29,7 @@ To run the keyless live discovery pipeline from a terminal:
 npm run discover:leads
 ```
 
-The bounded run accepts an optional researcher-specified topic, adds a few current Bluesky trend seeds and recent headlines from rights-reviewed publisher feeds, then checks those topics through Bluesky search and Stack Exchange's public API. For example: `npm run discover:leads -- --topic "Firmus IPO"`. It prints JSON citations and explicit gaps; it does not crawl websites, store results, or publish leads. See [automated discovery](docs/automated-discovery.md).
+The bounded run accepts an optional researcher-specified topic, adds a few current Bluesky trend seeds and recent headlines from rights-reviewed publisher feeds, then checks those topics through Bluesky search and Stack Exchange's public API. For example: `npm run discover:leads -- --topic "Firmus"`. It prints JSON citations and explicit gaps; it does not crawl websites, store results, or publish leads. See [automated discovery](docs/automated-discovery.md).
 
 Use a private `.env.local` for local server configuration. Never commit it. Production secrets belong in Vercel environment settings. See [deployment](docs/deployment.md), [sources](docs/data-sources.md), and [methodology](/methodology).
 
