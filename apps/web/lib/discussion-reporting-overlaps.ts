@@ -99,6 +99,9 @@ export function buildDiscussionReportingOverlaps(
       if (isBroadShortLatinAcronym(candidate.phrase)) continue;
       const phrase = normalizeText(candidate.phrase.replace(/[_-]+/g, " "));
       if (candidate.basis === "community tag" && phrase.length < 3) continue;
+      // Short, single-token labels such as "brain" or "demand" collide with
+      // unrelated headlines too easily to be useful discovery cues on their own.
+      if (phrase.split(" ").length === 1 && phrase.length < 12) continue;
       const key = `${discussion.language}\u0000${candidate.basis}\u0000${phrase}`;
       const group = groups.get(key) ?? {
         phrase: candidate.phrase,

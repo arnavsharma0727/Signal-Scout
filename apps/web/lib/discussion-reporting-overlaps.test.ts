@@ -170,6 +170,19 @@ describe("discussion-reporting literal overlaps", () => {
     expect(buildDiscussionReportingOverlaps([question, ...headlines], asOf)).toEqual([]);
   });
 
+  it("suppresses generic single-word tags that create incidental title collisions", () => {
+    const question = row({
+      title_original: "Should the word brain be used in this context?",
+      raw_metadata_json: { contentLicense: "CC BY-SA 4.0", tags: ["brain", "demand", "economics"] },
+    });
+    const headline = row({
+      id: "r-generic", source_type: "licensed-analysis", source_name: "The Conversation",
+      source_domain: "theconversation.com", title_original: "The brain and demand in modern economics",
+      source_url: "https://theconversation.com/generic", raw_metadata_json: {},
+    });
+    expect(buildDiscussionReportingOverlaps([question, headline], asOf)).toEqual([]);
+  });
+
   it("keeps fully spelled phrases as exact, query-selected cross-source cues", () => {
     const question = row({
       title_original: "Artificial intelligence adoption in financial services",
