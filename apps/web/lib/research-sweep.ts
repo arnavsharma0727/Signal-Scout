@@ -16,6 +16,8 @@ export type ResearchSweepSelection = {
   stackExchangeQueries?: readonly { site: string; query: string }[];
   lemmy: boolean;
   lemmyInstances?: readonly LemmyInstance[];
+  /** Visitor-supplied local-language query for each selected instance; never translated or pooled. */
+  lemmyQueries?: readonly { host: LemmyInstance; query: string }[];
   lemmyTermsAccepted: boolean;
   mastodon?: { hashtag: string; instance: string };
   mastodonTermsAccepted?: boolean;
@@ -74,8 +76,16 @@ export async function runResearchSweep(
   const lemmyInstances = selection.lemmyInstances ?? [LEMMY_INSTANCES[0].host];
   if (selection.lemmy && (!lemmyInstances.length || lemmyInstances.some(
     (host) => !LEMMY_INSTANCES.some((instance) => instance.host === host),
-  ))) {
-    throw new Error("Choose one or more listed public Lemmy instances.");
+  ) || lemmyInstances.length > 4)) {
+    throw new Error("Choose one to four listed public Lemmy instances.");
+  }
+  if (selection.lemmy && selection.lemmyQueries) {
+    if (selection.lemmyQueries.length !== new Set(lemmyInstances).size ||
+      new Set(selection.lemmyQueries.map(({ host }) => host)).size !== selection.lemmyQueries.length ||
+      lemmyInstances.some((host) => !selection.lemmyQueries!.some((item) => item.host === host)) ||
+      selection.lemmyQueries.some(({ query: term }) => term.trim().length < 2 || term.trim().length > 100)) {
+      throw new Error("Provide one 2–100 character search phrase for every selected Lemmy instance.");
+    }
   }
   if (!selection.hackerNews && !selection.globalVoices && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !blueskyQueries.length && !selection.wikimediaLanguage) {
     throw new Error("Select at least one source.");
@@ -179,8 +189,9 @@ export async function runResearchSweep(
   }
   if (selection.lemmy) {
     for (const host of new Set(lemmyInstances)) {
+      const term = selection.lemmyQueries?.find((item) => item.host === host)?.query.trim() ?? query;
       tasks.push(capture(`lemmy:${host}`, `Lemmy · ${host}`, "Recent posts within 7 days; up to 20 per server view", async () =>
-      (await searchLemmyPosts(query, host, fetcher, now)).map((post) => ({
+      (await searchLemmyPosts(term, host, fetcher, now)).map((post) => ({
         id: `lemmy:${post.url}`,
         title: post.title,
         url: post.url,

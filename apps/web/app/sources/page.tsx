@@ -149,8 +149,10 @@ export default async function Sources() {
       key: "lemmy-public",
       enabled: true,
       onDemand: true,
+      referenceUrl: "https://join-lemmy.org/docs/contributors/04-api.html",
+      referenceLabel: "Official Lemmy API documentation",
       detail:
-        "Visitor-triggered, keyless search of up to 20 newest matching posts per selected instance: lemmy.world, discuss.tchncs.de, or feddit.org. feddit.uk was removed after its API returned instance_is_private. Phrases are sent directly to the selected server, not translated or persisted by Signal Scout. A short excerpt is transiently shown for manual relevance review; saved citations discard it. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Federation can duplicate posts; these are incomplete, non-independent views, not a global timeline, country proxy, representative population sample, or measure of attention. Posts remain their authors’ content; no blanket license is implied. Visitors must review selected-server terms and privacy information and affirm before searching.",
+        "Visitor-triggered, keyless search of up to 20 newest matching posts per selected instance: lemmy.world, discuss.tchncs.de, feddit.org, or the French-speaking jlai.lu instance. feddit.uk was removed after its API returned instance_is_private. Each instance can receive a visitor-supplied phrase; Signal Scout does not translate or persist search phrases. A short excerpt is transiently shown for manual relevance review; saved citations discard it. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Federation can duplicate posts; these are incomplete, non-independent views, not a global timeline, country proxy, representative population sample, or measure of attention. Posts remain their authors’ content; no blanket license is implied. Visitors must review selected-server terms and privacy information and affirm before searching.",
     },
     {
       name: "Wikimedia · article talk pages",

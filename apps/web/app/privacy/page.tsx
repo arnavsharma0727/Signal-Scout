@@ -102,8 +102,10 @@ export default function Privacy() {
             snippets may contain older text from a recently edited page.
           </p>
           <p>
-            Explore can search lemmy.world for up to 20 newest matching posts.
-            The topic is sent directly from your browser to that instance;
+            Explore can search selected public Lemmy instances for up to 20
+            newest matching posts per instance. Each server receives its own
+            phrase directly from your browser; the French-speaking jlai.lu
+            instance is available as an optional view.
             Signal Scout does not receive the query or store the results.
             Results are limited to post title,
             original link, author attribution, community, date, and an optional

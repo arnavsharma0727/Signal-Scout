@@ -204,6 +204,29 @@ describe("runResearchSweep", () => {
     ]);
   });
 
+  it("uses a separately supplied local-language phrase for each Lemmy instance", async () => {
+    const requested: Array<{ host: string; phrase: string | null }> = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requested.push({ host: url.hostname, phrase: url.searchParams.get("q") });
+      return new Response(JSON.stringify({ posts: [] }));
+    });
+    await runResearchSweep("semiconductor", {
+      gdelt: false,
+      lemmy: true,
+      lemmyInstances: ["lemmy.world", "jlai.lu"],
+      lemmyQueries: [
+        { host: "lemmy.world", query: "semiconductor" },
+        { host: "jlai.lu", query: "semi-conducteur" },
+      ],
+      lemmyTermsAccepted: true,
+    }, fetcher, NOW);
+    expect(requested).toEqual([
+      { host: "lemmy.world", phrase: "semiconductor" },
+      { host: "jlai.lu", phrase: "semi-conducteur" },
+    ]);
+  });
+
   it("sends researcher-supplied localized phrases to separate Stack Exchange communities", async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));

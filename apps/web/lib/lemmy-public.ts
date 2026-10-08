@@ -1,14 +1,16 @@
-export type LemmyInstance = "lemmy.world" | "discuss.tchncs.de" | "feddit.org";
+export type LemmyInstance = "lemmy.world" | "discuss.tchncs.de" | "feddit.org" | "jlai.lu";
 
 export const LEMMY_INSTANCES: readonly {
   host: LemmyInstance;
   label: string;
+  languages: string;
   legalUrl: string;
   privacyUrl: string;
 }[] = [
-  { host: "lemmy.world", label: "lemmy.world", legalUrl: "https://legal.lemmy.world/tos/", privacyUrl: "https://legal.lemmy.world/privacy-policy/" },
-  { host: "discuss.tchncs.de", label: "discuss.tchncs.de", legalUrl: "https://discuss.tchncs.de/legal", privacyUrl: "https://tchncs.de/privacy" },
-  { host: "feddit.org", label: "feddit.org · German/English community", legalUrl: "https://feddit.org/legal", privacyUrl: "https://wiki.fediverse.foundation/books/fediverse-foundation-announcements/page/data-protection-policy" },
+  { host: "lemmy.world", label: "lemmy.world", languages: "Mixed / English", legalUrl: "https://legal.lemmy.world/tos/", privacyUrl: "https://legal.lemmy.world/privacy-policy/" },
+  { host: "discuss.tchncs.de", label: "discuss.tchncs.de", languages: "German / English", legalUrl: "https://discuss.tchncs.de/legal", privacyUrl: "https://tchncs.de/privacy" },
+  { host: "feddit.org", label: "feddit.org · German/English community", languages: "German / English", legalUrl: "https://feddit.org/legal", privacyUrl: "https://wiki.fediverse.foundation/books/fediverse-foundation-announcements/page/data-protection-policy" },
+  { host: "jlai.lu", label: "jlai.lu · French-speaking community", languages: "French", legalUrl: "https://jlai.lu/post/5", privacyUrl: "https://jlai.lu/legal" },
 ];
 
 export type LemmyPost = {

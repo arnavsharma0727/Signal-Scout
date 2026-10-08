@@ -79,12 +79,13 @@ export default function LemmySearch({
               className="mt-1"
               type="checkbox"
               checked={selectedHosts.includes(instance.host)}
+              disabled={!selectedHosts.includes(instance.host) && selectedHosts.length >= 4}
               onChange={(event) => setSelectedHosts((current) => event.target.checked
                 ? [...current, instance.host]
                 : current.filter((host) => host !== instance.host))}
             />
             <span>
-              {instance.label}{" · "}
+              {instance.label}{` · ${instance.languages} · `}
               <a className="underline" href={instance.legalUrl} target="_blank" rel="noreferrer">legal information</a>
               {" · "}
               <a className="underline" href={instance.privacyUrl} target="_blank" rel="noreferrer">privacy</a>

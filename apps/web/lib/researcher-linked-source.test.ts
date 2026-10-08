@@ -131,6 +131,16 @@ describe("researcher-linked social citation gate", () => {
     });
     expect(prepareResearcherLinkedSource({
       ...valid,
+      id: "lemmy:https://jlai.lu/post/123",
+      url: "https://jlai.lu/post/123",
+      title: "Une discussion publique",
+      attribution: "Lemmy author: lecteur",
+    }, id, now)).toMatchObject({
+      raw_metadata_json: { citationProvider: "lemmy" },
+      title_original: "Public Lemmy post by lecteur",
+    });
+    expect(prepareResearcherLinkedSource({
+      ...valid,
       id: "mastodon:123",
       url: "https://unknown.example/@reader/12345",
     }, id, now)).toBeNull();

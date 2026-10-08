@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { DISCUSSION_COMMUNITIES } from "../../lib/live-topic-search";
 import { LEMMY_INSTANCES, type LemmyInstance } from "../../lib/lemmy-public";
 import { runResearchSweep, ResearchSweepSourceResult } from "../../lib/research-sweep";
+import { buildPerspectiveSnapshot } from "../../lib/perspective-snapshot";
 
 const DEFAULT_COMMUNITIES = ["economics", "quant", "money"];
 
@@ -16,8 +17,10 @@ export default function ResearchSweep({
 }) {
   const [query, setQuery] = useState("");
   const [communities, setCommunities] = useState<string[]>(DEFAULT_COMMUNITIES);
+  const [localizedQueries, setLocalizedQueries] = useState<Record<string, string>>({});
   const [lemmyEnabled, setLemmyEnabled] = useState(false);
   const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
+  const [lemmyQueries, setLemmyQueries] = useState<Record<string, string>>({});
   const [lemmyTermsAccepted, setLemmyTermsAccepted] = useState(false);
   const [results, setResults] = useState<ResearchSweepSourceResult[]>([]);
   const [searched, setSearched] = useState(false);
@@ -41,9 +44,18 @@ export default function ResearchSweep({
         hackerNews: true,
         globalVoices: true,
         bluesky: false,
-        stackExchangeQueries: communities.map((site) => ({ site, query: topic })),
+        stackExchangeQueries: communities.map((site) => ({
+          site,
+          query: DISCUSSION_COMMUNITIES.find((community) => community.site === site)?.language === "English"
+            ? topic
+            : localizedQueries[site]?.trim() ?? "",
+        })),
         lemmy: lemmyEnabled,
         lemmyInstances,
+        lemmyQueries: lemmyEnabled ? lemmyInstances.map((host) => ({
+          host,
+          query: lemmyQueries[host]?.trim() || topic,
+        })) : undefined,
         lemmyTermsAccepted,
       }));
     } catch (cause) {
@@ -81,28 +93,43 @@ export default function ResearchSweep({
       {searched && (
         <details className="search-refine">
           <summary>Refine community coverage</summary>
-          <p>Choose up to four Stack Exchange communities. Communities are separate specialist samples, not a measure of public opinion.</p>
+          <p>Choose up to four Stack Exchange communities. Enter a phrase in each selected language; the app does not silently translate or treat specialist Q&amp;A as public opinion.</p>
           <fieldset className="search-community-options">
             <legend>Expert communities · title search, latest 30 days</legend>
             {DISCUSSION_COMMUNITIES.map((community) => {
               const checked = communities.includes(community.site);
               return (
-                <label key={community.site}>
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={!checked && communities.length >= 4}
-                    onChange={(event) => setCommunities((current) => event.target.checked
-                      ? [...current, community.site]
-                      : current.filter((site) => site !== community.site))}
-                  />
-                  {community.label} <span>{community.language}</span>
-                </label>
+                <div className="search-community-option" key={community.site}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={!checked && communities.length >= 4}
+                      onChange={(event) => setCommunities((current) => event.target.checked
+                        ? [...current, community.site]
+                        : current.filter((site) => site !== community.site))}
+                    />
+                    {community.label} <span>{community.language}</span>
+                  </label>
+                  {checked && community.language !== "English" && (
+                    <input
+                      className="search-localized-query"
+                      aria-label={`Search phrase in ${community.language}`}
+                      placeholder={`Phrase in ${community.language}`}
+                      value={localizedQueries[community.site] ?? ""}
+                      minLength={3}
+                      maxLength={80}
+                      required
+                      onChange={(event) => setLocalizedQueries((current) => ({ ...current, [community.site]: event.target.value }))}
+                    />
+                  )}
+                </div>
               );
             })}
           </fieldset>
           <fieldset className="search-lemmy-options">
             <legend>Public federated forums · Lemmy</legend>
+            <p>Each selected instance is searched separately. Use a local-language phrase for a broader cross-language view; results can overlap across federated servers.</p>
             <label className="search-lemmy-toggle">
               <input type="checkbox" checked={lemmyEnabled} onChange={(event) => { setLemmyEnabled(event.target.checked); setLemmyTermsAccepted(false); }} />
               Include Lemmy public forum posts
@@ -110,21 +137,35 @@ export default function ResearchSweep({
             {lemmyEnabled && <>
               <div className="search-lemmy-instances">
                 {LEMMY_INSTANCES.map((instance) => (
-                  <label key={instance.host}>
-                    <input
-                      type="checkbox"
-                      checked={lemmyInstances.includes(instance.host)}
-                      disabled={lemmyInstances.includes(instance.host) && lemmyInstances.length === 1}
-                      onChange={(event) => {
-                        setLemmyInstances((current) => event.target.checked
-                          ? [...current, instance.host]
-                          : current.filter((host) => host !== instance.host));
-                        setLemmyTermsAccepted(false);
-                      }}
-                    />
-                    {instance.label}
-                    <span><a href={instance.legalUrl} target="_blank" rel="noreferrer">Terms</a> · <a href={instance.privacyUrl} target="_blank" rel="noreferrer">Privacy</a></span>
-                  </label>
+                  <div className="search-lemmy-instance" key={instance.host}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={lemmyInstances.includes(instance.host)}
+                        disabled={lemmyInstances.includes(instance.host) && lemmyInstances.length === 1 || !lemmyInstances.includes(instance.host) && lemmyInstances.length >= 4}
+                        onChange={(event) => {
+                          setLemmyInstances((current) => event.target.checked
+                            ? [...current, instance.host]
+                            : current.filter((host) => host !== instance.host));
+                          setLemmyTermsAccepted(false);
+                        }}
+                      />
+                      {instance.label}
+                      <span>{instance.languages} · <a href={instance.legalUrl} target="_blank" rel="noreferrer">Terms</a> · <a href={instance.privacyUrl} target="_blank" rel="noreferrer">Privacy</a></span>
+                    </label>
+                    {lemmyInstances.includes(instance.host) && instance.languages !== "Mixed / English" && (
+                      <input
+                        className="search-localized-query"
+                        aria-label={`Lemmy search phrase for ${instance.label}`}
+                        placeholder={`Phrase for ${instance.languages} communities`}
+                        value={lemmyQueries[instance.host] ?? ""}
+                        minLength={2}
+                        maxLength={100}
+                        required
+                        onChange={(event) => setLemmyQueries((current) => ({ ...current, [instance.host]: event.target.value }))}
+                      />
+                    )}
+                  </div>
                 ))}
               </div>
               <label className="search-lemmy-consent">
@@ -148,6 +189,7 @@ export default function ResearchSweep({
             </div>
             <p>Discussion, specialist Q&amp;A, and reporting · shown separately</p>
           </div>
+          <PerspectiveSnapshot results={results} />
           <div className="market-results-grid">
             {results.map((result) => <SourceResults key={result.key} result={result} />)}
           </div>
@@ -155,6 +197,49 @@ export default function ResearchSweep({
         </div>
       )}
     </section>
+  );
+}
+
+function PerspectiveSnapshot({ results }: { results: ResearchSweepSourceResult[] }) {
+  const snapshot = buildPerspectiveSnapshot(results);
+  return (
+    <section className="perspective-snapshot" aria-labelledby="perspective-snapshot-title">
+      <header>
+        <div>
+          <p className="eyebrow">Before the sources</p>
+          <h3 id="perspective-snapshot-title">A quick read across perspectives</h3>
+        </div>
+        <p>Evidence-linked snapshots, not an AI-generated consensus.</p>
+      </header>
+      <p className="perspective-snapshot-note">
+        The English-language slice is a comparison point, not a verified U.S. view: these sources do not establish contributors’ location. Other views stay separate by source and language rather than being blended into one “global” take.
+      </p>
+      <div className="perspective-snapshot-grid">
+        <PerspectiveGroup title="English-language baseline · not a U.S. sample" items={snapshot.englishMarketAngle} empty="No matching English-language discussion surfaced in this search." />
+        {snapshot.otherPerspectives.map((group) => (
+          <PerspectiveGroup key={`${group.source}:${group.language}`} title={`${group.source} · ${group.language}`} items={group.items} />
+        ))}
+        {!snapshot.otherPerspectives.length && (
+          <p className="perspective-no-global">No separate international-language perspectives matched this phrase. Try a local-language equivalent in Refine community coverage; an empty result is not evidence that a view is absent.</p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function PerspectiveGroup({ title, items, empty }: { title: string; items: Array<{ title: string; url: string; transientPreview?: string }>; empty?: string }) {
+  return (
+    <article className="perspective-card">
+      <header><h4>{title}</h4><span>{items.length} {items.length === 1 ? "match" : "matches"}</span></header>
+      {items.length ? (
+        <ul>{items.slice(0, 2).map((item) => (
+          <li key={item.url}>
+            <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
+            {item.transientPreview && <p>{compactPreview(item.transientPreview)}</p>}
+          </li>
+        ))}</ul>
+      ) : <p className="perspective-empty">{empty}</p>}
+    </article>
   );
 }
 
