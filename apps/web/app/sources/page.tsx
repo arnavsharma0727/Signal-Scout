@@ -107,7 +107,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "On-demand search uses the public Algolia Hacker News Search API for recent comments. Matching excerpts are shown transiently in the search session only; Signal Scout does not schedule collection or persist comment text. This is a technology-oriented, English-language community, not an international or representative sample. Public API availability does not grant broader reuse rights; review provider terms before expanding retention or commercial use.",
+        "On-demand search uses the public Algolia Hacker News Search API, sorted by relevance and filtered to comments from the last 30 days. Matching excerpts are shown transiently in the search session only; Signal Scout does not schedule collection or persist comment text. This is a technology-oriented, English-language community, not an international or representative sample. Public API availability does not grant broader reuse rights; review provider terms before expanding retention or commercial use.",
       referenceUrl: "https://hn.algolia.com/api",
       referenceLabel: "Hacker News Search API documentation",
       secondaryReferenceUrl: "https://github.com/HackerNews/API",
@@ -188,7 +188,7 @@ export default async function Sources() {
       key: "global-voices",
       enabled: true,
       detail:
-        "Daily keyless RSS collection plus on-demand headline search through the public WordPress search API across twelve localized editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. On-demand search requests only headline metadata and links through a first-party no-store route; edition language does not establish author or audience geography. RSS-retained content follows item-level rights checks and attribution; descriptions and story bodies are discarded. Localized editions share one publisher and may include translations; this is reporting, not raw forum discussion, independent outlets, or a representative survey.",
+        "Daily keyless RSS collection plus on-demand search through the public WordPress API across twelve localized editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. The provider may match article text while Signal Scout requests and displays only headline metadata and links through a first-party no-store route. Edition language does not establish author or audience geography. RSS-retained content follows item-level rights checks and attribution; descriptions and story bodies are discarded. Localized editions share one publisher and may include translations; this is reporting, not raw forum discussion, independent outlets, or a representative survey.",
     },
     {
       name: "Bluesky · retired from live search",

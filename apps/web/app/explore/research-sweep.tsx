@@ -67,7 +67,7 @@ export default function ResearchSweep({
           onChange={(event) => setQuery(event.target.value)}
           minLength={2}
           maxLength={100}
-          placeholder="Search an industry, company, or market interest"
+          placeholder="Search a market, company, or idea"
           autoComplete="off"
           required
         />
@@ -75,6 +75,8 @@ export default function ResearchSweep({
           {loading ? "Searching…" : "Search"}
         </button>
       </form>
+
+      <p className="market-attribution">By: Arnav Sharma UVA30'</p>
 
       {searched && (
         <details className="search-refine">
@@ -136,20 +138,20 @@ export default function ResearchSweep({
       )}
 
       {error && <p role="alert" className="search-error">{error}</p>}
-      {searched && loading && <p className="search-status" role="status">Searching live sources for “{query}”…</p>}
+      {searched && loading && <div className="search-loading" role="status"><span className="search-spinner" aria-hidden="true" /> Searching recent conversations for <strong>“{query}”</strong> across live sources…</div>}
       {searched && !loading && !error && (
         <div className="market-results">
           <div className="market-results-heading">
             <div>
-              <p className="eyebrow">Live results</p>
-              <h2>What people are saying</h2>
+              <p className="eyebrow">Search results</p>
+              <h2>Recent perspectives on “{query}”</h2>
             </div>
-            <p>Separate source samples · not a measure of worldwide opinion</p>
+            <p>Discussion, specialist Q&amp;A, and reporting · shown separately</p>
           </div>
           <div className="market-results-grid">
             {results.map((result) => <SourceResults key={result.key} result={result} />)}
           </div>
-          <p className="search-limits">These are public, provider-returned results—not a representative poll. A post’s language or publisher country does not verify where its author or audience lives. Open original sources to read context. <a href="/sources">Sources &amp; limitations</a> · <a href="/privacy">Privacy</a>.</p>
+          <p className="search-limits">These public results are incomplete source samples, not a poll or a measure of any country’s opinion. Open the original links for context. <a href="/sources">How sources work</a> · <a href="/privacy">Privacy</a>.</p>
         </div>
       )}
     </section>
@@ -163,7 +165,7 @@ function SourceResults({ result }: { result: ResearchSweepSourceResult }) {
     <section className="source-results" aria-label={result.label}>
       <header>
         <h3>{result.label}</h3>
-        <span>{result.error ? "Unavailable" : `${result.evidence.length} results`}</span>
+        <span className={result.error ? "source-count source-count--error" : "source-count"}>{result.error ? "Unavailable" : `${result.evidence.length} ${result.evidence.length === 1 ? "result" : "results"}`}</span>
       </header>
       <p className="source-window">{result.window}</p>
       {result.error ? (
@@ -174,10 +176,9 @@ function SourceResults({ result }: { result: ResearchSweepSourceResult }) {
           {items.map((item) => (
             <li key={item.id}>
               <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
-              {item.transientPreview && <p className="source-preview" lang={item.language === "not provided" ? undefined : item.language}>{item.transientPreview}</p>}
+              {item.transientPreview && <p className="source-preview" lang={item.language === "not provided" ? undefined : item.language}>{compactPreview(item.transientPreview)}</p>}
               <p className="source-meta">
                 {item.source} · {item.language} · {item.timeLabel.toLowerCase()} {new Date(item.timeValue).toLocaleString()}
-                {item.context ? ` · ${item.context}` : ""}
               </p>
             </li>
           ))}
@@ -189,8 +190,18 @@ function SourceResults({ result }: { result: ResearchSweepSourceResult }) {
         )}
         </>
       ) : (
-        <p className="source-empty">No matching results returned. That does not mean the topic is absent from this community.</p>
+        <div className="source-empty">
+          <span className="source-empty-mark" aria-hidden="true">↗</span>
+          <div><strong>No matches this time</strong><p>Try a broader or alternate phrase. For Stack Exchange, you can also change the selected communities above. No matches here doesn’t mean the topic is absent.</p></div>
+        </div>
       )}
     </section>
   );
+}
+
+function compactPreview(value: string) {
+  const limit = 420;
+  if (value.length <= limit) return value;
+  const boundary = value.lastIndexOf(" ", limit);
+  return `${value.slice(0, boundary > 280 ? boundary : limit).trimEnd()}…`;
 }

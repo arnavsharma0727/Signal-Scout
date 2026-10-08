@@ -92,7 +92,7 @@ export async function runResearchSweep(
 
   const tasks: Promise<ResearchSweepSourceResult>[] = [];
   if (selection.hackerNews) {
-    tasks.push(capture("hacker-news", "Hacker News · tech community", "Comments published within 30 days · up to 20", async () =>
+    tasks.push(capture("hacker-news", "Hacker News · tech community", "Relevant comments from the last 30 days · up to 20", async () =>
       (await searchHackerNewsComments(query, fetcher, now)).map((item) => ({
         id: `hacker-news:${item.id}`,
         title: item.title,
@@ -136,7 +136,7 @@ export async function runResearchSweep(
           language,
           timeLabel: "Published",
           timeValue: article.publishedAt,
-          context: "Citizen-media reporting; edition language does not identify the people or audience represented",
+          context: "The provider may match article text even when the headline omits the phrase; edition language does not identify the people or audience represented",
           attribution: "Global Voices headline",
           attributionUrl: "https://globalvoices.org/about/global-voices-attribution-policy/",
           sourceOperatorKey: "global-voices",
@@ -145,12 +145,12 @@ export async function runResearchSweep(
         return {
           key,
           label,
-          window: `${available.length}/${body.editions.length} localized editions responded · last 30 days · headlines only`,
+          window: `${available.length}/${body.editions.length} editions · last 30 days · provider may match story text; headline shown`,
           evidence,
           error: null,
         };
       } catch (cause) {
-        return { key, label, window: "Localized edition search · last 30 days · headlines only", evidence: [], error: cause instanceof Error ? cause.message : "Global Voices search is unavailable." };
+        return { key, label, window: "Localized edition search · last 30 days · headline metadata shown", evidence: [], error: cause instanceof Error ? cause.message : "Global Voices search is unavailable." };
       }
     })());
   }

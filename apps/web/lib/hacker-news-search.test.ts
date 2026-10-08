@@ -24,6 +24,8 @@ describe("searchHackerNewsComments", () => {
     const request = new URL(String(fetcher.mock.calls[0][0]));
     expect(request.hostname).toBe("hn.algolia.com");
     expect(request.searchParams.get("tags")).toBe("comment");
+    expect(request.pathname).toBe("/api/v1/search");
+    expect(request.searchParams.get("query")).toBe("inflation");
     expect(request.searchParams.get("numericFilters")).toContain("created_at_i>");
   });
 

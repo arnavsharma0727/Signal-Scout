@@ -17,7 +17,7 @@ type ApiResponse = {
   }>;
 };
 
-const API = "https://hn.algolia.com/api/v1/search_by_date";
+const API = "https://hn.algolia.com/api/v1/search";
 const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Query the public Algolia index of Hacker News comments; no account or API key. */
