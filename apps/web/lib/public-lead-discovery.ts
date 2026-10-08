@@ -34,6 +34,18 @@ export function classifyPublicDiscussionPost(text: string, headlines: string[]):
   return "non-headline";
 }
 
+/** Cheap retrieval triage only: require more than a single generic token hit. */
+export function matchesPublicTopic(query: string, text: string): boolean {
+  const stopWords = new Set(["about", "after", "against", "amid", "among", "and", "are", "been", "before", "between", "but", "for", "from", "has", "have", "into", "its", "new", "not", "now", "of", "off", "on", "or", "over", "the", "this", "to", "was", "were", "what", "when", "with"]);
+  const tokens = (value: string) => value.normalize("NFKC").toLocaleLowerCase()
+    .match(/[\p{L}\p{N}]{2,}/gu)?.filter((word) => !stopWords.has(word)) ?? [];
+  const terms = [...new Set(tokens(query))];
+  if (!terms.length) return false;
+  const textTokens = new Set(tokens(text));
+  const matched = terms.filter((term) => textTokens.has(term)).length;
+  return matched >= Math.min(2, terms.length) && matched / terms.length >= 0.5;
+}
+
 const MAX_TREND_SEEDS = 4;
 const MAX_HEADLINE_SEEDS = 4;
 const STOP_WORDS = new Set([
@@ -74,6 +86,10 @@ export function buildPublicLeadSeeds(
       providerPostCount: null,
     });
   }
+
+  // An explicit query is a focused investigation, not an invitation to fan
+  // out into unrelated trend and headline searches.
+  if (researcherQueries.length) return seeds;
 
   let trendCount = 0;
   for (const trend of dedupeTrends(trends)) {

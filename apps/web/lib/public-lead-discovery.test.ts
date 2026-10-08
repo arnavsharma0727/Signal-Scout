@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPublicLeadSeeds, classifyPublicDiscussionPost } from "./public-lead-discovery";
+import { buildPublicLeadSeeds, classifyPublicDiscussionPost, matchesPublicTopic } from "./public-lead-discovery";
 
 describe("bounded source-led public lead discovery seeds", () => {
   const now = Date.parse("2026-10-08T16:00:00.000Z");
@@ -25,7 +25,10 @@ describe("bounded source-led public lead discovery seeds", () => {
   it("prioritizes explicit researcher queries and deduplicates them against other sources", () => {
     const seeds = buildPublicLeadSeeds([
       { topic: "Firmus", category: null, postCount: 1, startedAt: null, feedUrl: null },
-    ], [], now, ["  Firmus  ", "AI infrastructure"]);
+      { topic: "Unrelated provider trend", category: null, postCount: 99, startedAt: null, feedUrl: null },
+    ], [
+      { title: "An unrelated publisher headline", url: "https://example.com/story", publishedAt: "2026-10-08T12:00:00.000Z" },
+    ], now, ["  Firmus  ", "AI infrastructure"]);
 
     expect(seeds.map(({ topic, source }) => [topic, source])).toEqual([
       ["Firmus", "researcher query"],
@@ -76,5 +79,12 @@ describe("public discussion relay triage", () => {
 
   it("does not count a link-only post as conversation", () => {
     expect(classifyPublicDiscussionPost("https://example.org/story", [headline])).toBe("link-only");
+  });
+});
+
+describe("public topic retrieval triage", () => {
+  it("rejects loose single-token matches and accepts multiple topic terms", () => {
+    expect(matchesPublicTopic("Banned Books Week", "Word of the day: Orwellian")).toBe(false);
+    expect(matchesPublicTopic("Banned Books Week", "Join us during Banned Books Week")).toBe(true);
   });
 });

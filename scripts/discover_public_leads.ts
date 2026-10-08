@@ -1,9 +1,10 @@
 import { fetchBlueskyTrends } from "../apps/web/lib/bluesky-trends";
 import { searchBlueskyPosts } from "../apps/web/lib/bluesky-public";
+import { searchLemmyPosts } from "../apps/web/lib/lemmy-public";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "../apps/web/lib/live-topic-search";
 import { GlobalVoicesConnector } from "../apps/web/lib/connectors/global-voices";
 import { TheConversationConnector } from "../apps/web/lib/connectors/the-conversation";
-import { buildPublicLeadSeeds, classifyPublicDiscussionPost } from "../apps/web/lib/public-lead-discovery";
+import { buildPublicLeadSeeds, classifyPublicDiscussionPost, matchesPublicTopic } from "../apps/web/lib/public-lead-discovery";
 
 /**
  * Keyless, bounded discovery run. Live provider trends supply query seeds; the
@@ -38,8 +39,12 @@ type TopicResult = {
   };
   citations: Citation[];
   coverage: {
+    blueskySearchHits: number;
     socialPosts: number;
     nonHeadlineAuthors: number;
+    lemmySearchHits: number;
+    lemmyPosts: number;
+    lemmyNonHeadlineAuthors: number;
     headlineEchoPosts: number;
     linkOnlyPosts: number;
     licensedQuestions: number;
@@ -53,7 +58,7 @@ type TopicResult = {
 
 async function main() {
   const researcherQueries = readResearcherQueries(process.argv.slice(2));
-  const trends = await fetchBlueskyTrends();
+  const trends = researcherQueries.length ? [] : await fetchBlueskyTrends();
   const feeds = await fetchReviewedFeeds();
   const topics = buildPublicLeadSeeds(trends, feeds.documents.map((document) => ({
     title: document.titleOriginal,
@@ -64,7 +69,7 @@ async function main() {
   if (!topics.length) {
     process.stdout.write(JSON.stringify({
       generatedAt: new Date().toISOString(),
-      mode: "researcher/provider/publisher-seeded; bounded API cross-checks",
+      mode: researcherQueries.length ? "researcher-seeded; focused API cross-checks" : "provider/publisher-seeded; bounded API cross-checks",
       status: "no_current_provider_trends",
       candidates: [],
       limitations: limitations(),
@@ -79,10 +84,11 @@ async function main() {
 
   process.stdout.write(JSON.stringify({
     generatedAt: new Date().toISOString(),
-    mode: "researcher/provider/publisher-seeded; bounded API cross-checks",
+    mode: researcherQueries.length ? "researcher-seeded; focused API cross-checks" : "provider/publisher-seeded; bounded API cross-checks",
     status: "complete",
     providers: [
       { name: "Bluesky public trends + search", authentication: "none", role: "query discovery and public conversation" },
+      { name: "Lemmy public search API (lemmy.world)", authentication: "none", role: "targeted public forum discussion; citation metadata only" },
       { name: "Stack Exchange API v2.3", authentication: "none", role: "recent CC BY-SA 4.0 expert-Q&A titles and attribution" },
       { name: "Global Voices licensed RSS", authentication: "none", role: "current international reporting headlines with feed-verified attribution and rights" },
       { name: "The Conversation licensed Atom feeds", authentication: "none", role: "current expert-analysis headlines with feed-verified attribution and rights" },
@@ -102,18 +108,29 @@ async function discoverTopic(
   const citations: Citation[] = [];
   const query = trend.topic.trim();
   const community = chooseCommunity(query);
+  const matchedHeadlines = publisherDocuments
+    .filter((document) => matchesHeadline(query, document.titleOriginal))
+    .map((document) => document.titleOriginal);
 
+  const lemmyPromise = searchLemmyPosts(query, "lemmy.world").then(
+    (posts) => ({ status: "fulfilled" as const, value: posts }),
+    (reason: unknown) => ({ status: "rejected" as const, reason }),
+  );
   const [social, questions, news] = await Promise.allSettled([
     searchBlueskyPosts(query),
     community ? searchLiveDiscussion(query.slice(0, 80), community.site) : Promise.resolve([]),
     Promise.resolve(publisherDocuments.filter((document) => matchesHeadline(query, document.titleOriginal))),
   ]);
+  const lemmy = await lemmyPromise;
+  const relevantSocial = social.status === "fulfilled"
+    ? social.value.filter((post) => matchesPublicTopic(query, post.transientPreview))
+    : [];
+  const relevantLemmy = lemmy.status === "fulfilled"
+    ? lemmy.value.filter((post) => matchesPublicTopic(query, `${post.title} ${post.transientPreview ?? ""}`))
+    : [];
 
   if (social.status === "fulfilled") {
-    const matchedHeadlines = publisherDocuments
-      .filter((document) => matchesHeadline(query, document.titleOriginal))
-      .map((document) => document.titleOriginal);
-    const classifiedPosts = social.value.map((post) => ({
+    const classifiedPosts = relevantSocial.map((post) => ({
       post,
       role: classifyPublicDiscussionPost(post.transientPreview, matchedHeadlines),
     }));
@@ -121,6 +138,9 @@ async function discoverTopic(
     const echoes = classifiedPosts.filter(({ role }) => role === "headline-echo");
     const linkOnly = classifiedPosts.filter(({ role }) => role === "link-only");
     const nonHeadlineAuthors = new Set(nonHeadlinePosts.map(({ post }) => post.authorHandle));
+    if (social.value.length > relevantSocial.length) {
+      triageNotes.push(`Bluesky: excluded ${social.value.length - relevantSocial.length} loose search hit(s) that did not match at least two meaningful query terms.`);
+    }
     const selectedPosts = [
       ...nonHeadlinePosts.slice(0, 4),
       ...echoes.slice(0, Math.max(0, 4 - Math.min(nonHeadlinePosts.length, 4))),
@@ -142,6 +162,31 @@ async function discoverTopic(
     if (echoes.length) triageNotes.push(`Bluesky: ${echoes.length} result(s) repeat a matched publisher headline and are excluded from the non-headline author count.`);
     if (linkOnly.length) triageNotes.push(`Bluesky: ${linkOnly.length} result(s) contain only links and are excluded from the non-headline author count.`);
   } else errors.push(`Bluesky: ${message(social.reason)}`);
+
+  const lemmyClassified = lemmy.status === "fulfilled" ? relevantLemmy.map((post) => ({
+    post,
+    role: classifyPublicDiscussionPost(`${post.title} ${post.transientPreview ?? ""}`, matchedHeadlines),
+  })) : [];
+  if (lemmy.status === "fulfilled") {
+    if (lemmy.value.length > relevantLemmy.length) {
+      triageNotes.push(`Lemmy: excluded ${lemmy.value.length - relevantLemmy.length} loose search hit(s) that did not match at least two meaningful query terms.`);
+    }
+    for (const { post, role } of lemmyClassified.filter(({ role }) => role === "non-headline").slice(0, 4)) {
+      citations.push({
+        source: `Lemmy · ${post.community} on lemmy.world`,
+        sourceClass: "public social post",
+        operator: "Lemmy · lemmy.world",
+        title: post.title,
+        url: post.url,
+        publishedAt: post.publishedAt,
+        attribution: post.author,
+        conversationRole: role,
+      });
+    }
+    if (lemmyClassified.some(({ role }) => role === "headline-echo")) {
+      triageNotes.push(`Lemmy: ${lemmyClassified.filter(({ role }) => role === "headline-echo").length} result(s) repeat matched publisher headline text and are excluded from the non-headline author count.`);
+    }
+  } else errors.push(`Lemmy public search (lemmy.world): ${message(lemmy.reason)}`);
 
   if (questions.status === "fulfilled") {
     for (const item of questions.value.slice(0, 4)) citations.push({
@@ -172,21 +217,25 @@ async function discoverTopic(
     license: typeof item.rawMetadata.licenseName === "string" ? item.rawMetadata.licenseName : "Creative Commons; see source attribution",
   });
 
-  const socialCount = social.status === "fulfilled" ? social.value.length : 0;
-  const matchedHeadlines = publisherDocuments
-    .filter((document) => matchesHeadline(query, document.titleOriginal))
-    .map((document) => document.titleOriginal);
-  const classifiedSocial = social.status === "fulfilled"
-    ? social.value.map((post) => classifyPublicDiscussionPost(post.transientPreview, matchedHeadlines))
-    : [];
-  const nonHeadlineAuthors = social.status === "fulfilled"
-    ? new Set(social.value.filter((post) => classifyPublicDiscussionPost(post.transientPreview, matchedHeadlines) === "non-headline")
-      .map((post) => post.authorHandle)).size
-    : 0;
+  const socialCount = relevantSocial.length;
+  const classifiedSocial = relevantSocial
+    .map((post) => classifyPublicDiscussionPost(post.transientPreview, matchedHeadlines));
+  const nonHeadlineAuthors =
+    new Set(relevantSocial.filter((post) => classifyPublicDiscussionPost(post.transientPreview, matchedHeadlines) === "non-headline")
+      .map((post) => post.authorHandle)).size;
+  const lemmyNonHeadlineAuthors = new Set(lemmyClassified
+    .filter(({ role }) => role === "non-headline")
+    .map(({ post }) => post.author)).size;
+  const combinedNonHeadlineAuthors = new Set([
+    ...relevantSocial
+      .filter((post) => classifyPublicDiscussionPost(post.transientPreview, matchedHeadlines) === "non-headline")
+      .map((post) => `bluesky:${post.authorHandle}`),
+    ...lemmyClassified.filter(({ role }) => role === "non-headline").map(({ post }) => `lemmy:${post.author}`),
+  ]).size;
   const questionCount = questions.status === "fulfilled" ? questions.value.length : 0;
   const newsOperators = [...new Set(reviewedNews.map((item) => String(item.rawMetadata.publisher ?? item.sourceName)))];
-  const enoughCoverage = (nonHeadlineAuthors >= 2 || questionCount > 0) && newsOperators.length > 0;
-  const providerError = social.status === "rejected" && questions.status === "rejected" && news.status === "rejected";
+  const enoughCoverage = (combinedNonHeadlineAuthors >= 2 || questionCount > 0) && newsOperators.length > 0;
+  const providerError = social.status === "rejected" && lemmy.status === "rejected" && questions.status === "rejected" && news.status === "rejected";
   return {
     topic: query,
     discovery: {
@@ -198,8 +247,12 @@ async function discoverTopic(
     },
     citations,
     coverage: {
+      blueskySearchHits: social.status === "fulfilled" ? social.value.length : 0,
       socialPosts: socialCount,
       nonHeadlineAuthors,
+      lemmySearchHits: lemmy.status === "fulfilled" ? lemmy.value.length : 0,
+      lemmyPosts: relevantLemmy.length,
+      lemmyNonHeadlineAuthors,
       headlineEchoPosts: classifiedSocial.filter((role) => role === "headline-echo").length,
       linkOnlyPosts: classifiedSocial.filter((role) => role === "link-only").length,
       licensedQuestions: questionCount,
@@ -209,12 +262,13 @@ async function discoverTopic(
     qualificationGaps: [
       "A researcher query, provider trend, or publisher headline is a search seed—not a representative or geographic measure.",
       "Bluesky search returns a mix of individual posts, media relays, and institutional accounts; hits are not necessarily conversation.",
-      ...(nonHeadlineAuthors < 2 ? ["Fewer than two distinct Bluesky authors posted text beyond matched publisher headlines or links; original-source review is still needed to establish relevant conversation."] : []),
+      ...(combinedNonHeadlineAuthors < 2 ? ["Fewer than two distinct Bluesky/Lemmy authors posted text beyond matched publisher headlines or links; original-source review is still needed to establish relevant conversation."] : []),
       "Non-headline text is a lexical triage signal only; it may be unrelated, copied, institutional, or non-substantive.",
       ...(classifiedSocial.some((role) => role === "headline-echo") ? ["Headline-echo results are listed for context but excluded from the non-headline author count."] : []),
       "A researcher must open each original source and write claim-specific supporting and contradictory observations.",
       "The output does not infer sentiment, causality, market impact, or a buy/sell conclusion.",
       "At least two independent reviewed operators, a credible alternative explanation, and a disconfirmation test must be documented before publication.",
+      "Lemmy search uses one public instance (lemmy.world), whose federated index and community mix are incomplete and not representative.",
       "Publisher coverage is limited to current items in the reviewed Global Voices and The Conversation feeds; it is not a general news census.",
     ],
     triageNotes,
@@ -290,7 +344,7 @@ async function mapLimit<T, R>(items: T[], limit: number, task: (item: T) => Prom
           ...(trend.sourceUrl ? { sourceUrl: trend.sourceUrl } : {}),
         },
           citations: [],
-          coverage: { socialPosts: 0, nonHeadlineAuthors: 0, headlineEchoPosts: 0, linkOnlyPosts: 0, licensedQuestions: 0, reviewedNewsOperators: [] },
+          coverage: { blueskySearchHits: 0, socialPosts: 0, nonHeadlineAuthors: 0, lemmySearchHits: 0, lemmyPosts: 0, lemmyNonHeadlineAuthors: 0, headlineEchoPosts: 0, linkOnlyPosts: 0, licensedQuestions: 0, reviewedNewsOperators: [] },
           state: "provider_error",
           qualificationGaps: limitations(),
           triageNotes: [],
@@ -330,7 +384,7 @@ function readResearcherQueries(args: string[]) {
 function limitations() {
   return [
     "No credentials, scraping, login bypass, or page-body retention: only documented public APIs and rights-reviewed feed connectors are called.",
-    "This bounded run checks at most eight provider-ranked topics and is not exhaustive.",
+    "Default discovery checks at most eight provider/publisher-seeded topics; explicit --topic runs check only the supplied topics.",
     "Provider search indexes and trend lists are partial, query-selected samples; counts are not public attention or population estimates.",
     "Social search hits can include media relays and institutional accounts rather than person-to-person discussion.",
     "Automated discovery creates review candidates only. It cannot attest that evidence supports or contradicts a thesis.",
