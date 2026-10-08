@@ -9,6 +9,7 @@ export const DISCUSSION_COMMUNITIES = [
   { site: "pt.stackoverflow", label: "Stack Overflow em Português", language: "Portuguese" },
   { site: "ja.stackoverflow", label: "スタック・オーバーフロー", language: "Japanese" },
   { site: "ru.stackoverflow", label: "Stack Overflow на русском", language: "Russian" },
+  { site: "literature", label: "Literature Stack Exchange", language: "English" },
   { site: "politics", label: "Politics Stack Exchange", language: "English" },
   { site: "law", label: "Law Stack Exchange", language: "English" },
 ] as const;
