@@ -1,5 +1,6 @@
-import { searchGdeltNews } from "./gdelt-public";
 import { searchBlueskyPosts } from "./bluesky-public";
+import { searchHackerNewsComments } from "./hacker-news-search";
+import type { GlobalVoicesEditionResult } from "./global-voices-search";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "./live-topic-search";
 import { LEMMY_INSTANCES, LemmyInstance, searchLemmyPosts } from "./lemmy-public";
 import { MASTODON_INSTANCES, mastodonHtmlToTransientText, searchPublicHashtag } from "./mastodon-public";
@@ -7,7 +8,10 @@ import { WIKIMEDIA_TALK_WIKIS, searchWikimediaTalk } from "./wikimedia-talk";
 import type { ResearchEvidence } from "./research-brief";
 
 export type ResearchSweepSelection = {
-  gdelt: boolean;
+  /** Kept for backwards-compatible callers; GDELT is retired from live search. */
+  gdelt?: boolean;
+  hackerNews?: boolean;
+  globalVoices?: boolean;
   stackExchangeSite?: string;
   stackExchangeQueries?: readonly { site: string; query: string }[];
   lemmy: boolean;
@@ -49,9 +53,6 @@ export async function runResearchSweep(
   if (query.length < 2 || query.length > 100) {
     throw new Error("Enter a search phrase between 2 and 100 characters.");
   }
-  if (selection.gdelt && query.length < 3) {
-    throw new Error("GDELT needs at least 3 characters. Choose another source or lengthen the phrase.");
-  }
   if (stackExchangeQueries.length > 4) throw new Error("Choose no more than four Stack Exchange communities per sweep.");
   if (new Set(stackExchangeQueries.map(({ site }) => site)).size !== stackExchangeQueries.length) {
     throw new Error("Choose each Stack Exchange community only once.");
@@ -76,7 +77,7 @@ export async function runResearchSweep(
   ))) {
     throw new Error("Choose one or more listed public Lemmy instances.");
   }
-  if (!selection.gdelt && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !blueskyQueries.length && !selection.wikimediaLanguage) {
+  if (!selection.hackerNews && !selection.globalVoices && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !blueskyQueries.length && !selection.wikimediaLanguage) {
     throw new Error("Select at least one source.");
   }
   if (selection.wikimediaLanguage && !WIKIMEDIA_TALK_WIKIS.some(({ language }) => language === selection.wikimediaLanguage)) {
@@ -90,24 +91,68 @@ export async function runResearchSweep(
   }
 
   const tasks: Promise<ResearchSweepSourceResult>[] = [];
-  if (selection.gdelt) {
-    tasks.push(capture("gdelt", "GDELT news index", "Indexed/seen within 7 days", async () =>
-      (await searchGdeltNews(query, fetcher, now)).map((article) => ({
-        id: `gdelt:${article.url}`,
-        title: article.title,
-        url: article.url,
-        source: article.sourceOperatorLabel ?? article.domain,
-        evidenceClass: "news coverage" as const,
-        language: article.language,
-        timeLabel: "Indexed/seen",
-        timeValue: article.seenAt,
-        context: `Publisher country: ${article.sourceCountry} (outlet metadata, not audience geography)`,
-        attribution: "Headline belongs to publisher; indexed by GDELT",
-        attributionUrl: "https://www.gdeltproject.org/",
-        sourceOperatorKey: article.sourceOperatorKey,
-        sourceOperatorLabel: article.sourceOperatorLabel,
+  if (selection.hackerNews) {
+    tasks.push(capture("hacker-news", "Hacker News · tech community", "Comments published within 30 days · up to 20", async () =>
+      (await searchHackerNewsComments(query, fetcher, now)).map((item) => ({
+        id: `hacker-news:${item.id}`,
+        title: item.title,
+        url: item.url,
+        source: "Hacker News",
+        evidenceClass: "social discussion" as const,
+        language: "English",
+        timeLabel: "Published",
+        timeValue: item.createdAt,
+        transientPreview: item.transientPreview,
+        attribution: `Author: ${item.author}`,
+        sourceOperatorKey: "hacker-news",
+        sourceOperatorLabel: "Hacker News",
+        context: "An English-language technology community; not a cross-country or general-population sample",
       })),
     ));
+  }
+  if (selection.globalVoices) {
+    tasks.push((async () => {
+      const key = "global-voices";
+      const label = "Global Voices · multilingual reporting";
+      try {
+        const response = await fetcher("/api/research/global-voices", {
+          method: "POST",
+          headers: { accept: "application/json", "content-type": "application/json" },
+          body: JSON.stringify({ query }),
+        });
+        if (!response.ok) throw new Error(response.status === 429
+          ? "Global Voices search limit reached. Try again in one minute."
+          : "Global Voices search is temporarily unavailable.");
+        const body = await response.json() as { editions?: GlobalVoicesEditionResult[] };
+        if (!Array.isArray(body.editions)) throw new Error("Global Voices returned an unexpected response.");
+        const available = body.editions.filter(({ error }) => !error);
+        if (!available.length) throw new Error("All Global Voices language editions are temporarily unavailable.");
+        const evidence = available.flatMap(({ edition, language, articles }) => articles.map((article) => ({
+          id: `global-voices:${article.id}`,
+          title: article.title,
+          url: article.url,
+          source: `Global Voices · ${edition} edition`,
+          evidenceClass: "news coverage" as const,
+          language,
+          timeLabel: "Published",
+          timeValue: article.publishedAt,
+          context: "Citizen-media reporting; edition language does not identify the people or audience represented",
+          attribution: "Global Voices headline",
+          attributionUrl: "https://globalvoices.org/about/global-voices-attribution-policy/",
+          sourceOperatorKey: "global-voices",
+          sourceOperatorLabel: "Global Voices",
+        })));
+        return {
+          key,
+          label,
+          window: `${available.length}/${body.editions.length} localized editions responded · last 30 days · headlines only`,
+          evidence,
+          error: null,
+        };
+      } catch (cause) {
+        return { key, label, window: "Localized edition search · last 30 days · headlines only", evidence: [], error: cause instanceof Error ? cause.message : "Global Voices search is unavailable." };
+      }
+    })());
   }
   for (const { site, query: termInput } of stackExchangeQueries) {
     const term = termInput.trim();

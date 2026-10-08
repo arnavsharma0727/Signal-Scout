@@ -9,30 +9,24 @@ export default function About() {
           From public conversation to a question worth researching.
         </p>
         <p className="mt-5 leading-7 text-muted">
-          Signal Scout is an international research workspace for following
-          public online discussion and reporting into evidence-linked research
-          questions. Sources are shown with their original context, links, and
-          coverage limits; news and discussion are not treated as interchangeable.
+          Signal Scout is a search tool for seeing how a market interest appears
+          across selected public communities and multilingual reporting. Search
+          results link to their original sources and keep each source sample
+          separate; news and discussion are not treated as interchangeable.
         </p>
         <p className="mt-5 leading-7 text-muted">
-          Scheduled sources include licensed international Stack Exchange
-          questions and attributed publisher reporting and analysis. Explore
-          also offers visitor-triggered searches across four public Lemmy
-          instances, four Mastodon server views, Stack Exchange, ten Wikimedia
-          language editions, and GDELT news discovery. Access and result
-          availability vary by source; read the Sources page for current health.
-          Results stay tied to their source and language. No translation or
-          cross-language semantic merge is inferred.
+          Live search uses public Hacker News and Stack Exchange endpoints,
+          three reachable Lemmy instances when selected, and headline search
+          across twelve Global Voices editions. Provider access and results can
+          change; unavailable sources are removed from the active search and
+          listed with their observed status on the Sources page. Language or
+          publisher location does not establish where a speaker or audience is.
         </p>
         <p className="mt-5 leading-7 text-muted">
-          Signal Scout is a conversation-to-research workspace, not a stock
-          analyzer. It does not produce buy/sell recommendations. The current
-          release does not have a validated topic classifier, population-level
-          trend detector, or qualified automated thesis leads. Researchers can
-          select citations, inspect the originals, and write a working thesis,
-          alternatives, and a disconfirmation test themselves. Counts describe
-          only the selected, incomplete samples—not what a country or
-          population believes.
+          Signal Scout is a market-interest search engine, not a stock analyzer.
+          It does not produce buy/sell recommendations or measure what a country
+          believes. Results are incomplete provider samples, not representative
+          surveys; open the original sources to inspect context.
         </p>
       </div>
       <p className="mt-7 text-sm text-muted">

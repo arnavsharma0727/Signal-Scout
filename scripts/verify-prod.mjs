@@ -52,19 +52,19 @@ try {
 try {
   const response = await fetch(`${base}/sources`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Hacker News comments') && page.includes('keeps this source disabled until its collection and display rights are explicitly cleared') && page.includes('Official public API documentation') && page.includes('Y Combinator Terms and Privacy Policy') && page.includes('public API access is not a reuse license')) pass('uncleared Hacker News source is visibly disabled','source remains behind an explicit rights gate and links both primary references');
-  else fail('uncleared Hacker News source is visibly disabled',`HTTP ${response.status}; rights gate copy missing`);
-  if (response.ok && page.includes('apnews.com') && page.includes('theguardian.com') && page.includes('reuters.com') && page.includes('GDELT\'s own domain/title fields do not establish publisher identity')) pass('GDELT publisher provenance is disclosed','only three reviewed publisher hosts are mapped; unknowns remain unresolved');
-  else fail('GDELT publisher provenance is disclosed',`HTTP ${response.status}; reviewed publisher allowlist or limitation copy missing`);
+  if (response.ok && page.includes('Hacker News · public comment search') && page.includes('Hacker News Search API documentation') && page.includes('Signal Scout does not schedule collection or persist comment text')) pass('keyless Hacker News search is disclosed','on-demand only; no scheduled collection or saved comment text');
+  else fail('keyless Hacker News search is disclosed',`HTTP ${response.status}; current search-source description missing`);
+  if (response.ok && page.includes('GDELT · retired from live search') && page.includes('HTTP 429') && page.includes('Mastodon · retired from live keyword search') && page.includes('Bluesky · retired from live search') && page.includes('HTTP 403') && page.includes('feddit.uk was removed')) pass('unavailable search providers are retired','GDELT, Mastodon keyword search, Bluesky, and private feddit.uk are not presented as active providers');
+  else fail('unavailable search providers are retired',`HTTP ${response.status}; provider retirement state missing`);
 } catch (error) { fail('uncleared Hacker News source is visibly disabled',error.message); }
 
 try {
   const response = await fetch(`${base}/explore`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && page.includes('Live API results') && page.includes('Bluesky conversation')) pass('international live search is public', `HTTP ${response.status}; focused query input and keyless source workflow rendered`);
+  if (response.ok && page.includes('Search an industry, company, or market interest') && page.includes('SIGNAL SCOUT')) pass('international live search is public', `HTTP ${response.status}; minimal market-search input rendered`);
   else fail('international live search is public', `HTTP ${response.status}; focused search UI missing`);
-  if (response.ok && page.includes('What are people saying') && page.includes('Live API results') && !page.includes('Build a research brief')) pass('research workflow waits for a user search','the initial screen is focused on topic entry; evidence review opens only after live results are requested');
-  else fail('research workflow waits for a user search',`HTTP ${response.status}; initial search focus or deferred results workflow missing`);
+  if (response.ok && page.includes('Search an industry, company, or market interest') && !page.includes('Build a research brief') && !page.includes('Specialized source views')) pass('search landing stays single-purpose','the initial screen contains only the market search, not a briefing workflow or secondary source dashboard');
+  else fail('search landing stays single-purpose',`HTTP ${response.status}; unrelated workflow appeared on the initial screen`);
 } catch (error) { fail('international live source sweep is public',error.message); }
 
 try {
@@ -77,10 +77,10 @@ try {
 try {
   const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && page.includes('Live API results') && page.includes('Bluesky conversation') && !page.includes('Hacker News comment')) pass('public market search withholds uncleared source material','focused live query entry point is public and uncleared source material remains absent');
+  if (response.ok && page.includes('Search an industry, company, or market interest') && page.includes('SIGNAL SCOUT') && !page.includes('Hacker News comment')) pass('public market search withholds uncleared source material','minimal live-query entry point is public and uncleared source material remains absent');
   else fail('public market search withholds uncleared source material',`HTTP ${response.status}; focused live search missing or uncleared source material may be rendered`);
-  if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && !page.includes('Build a research brief')) pass('landing page defers the evidence workspace','the user sees a focused search first; evidence selection and source-review gates follow a topic search');
-  else fail('landing page defers the evidence workspace',`HTTP ${response.status}; focused search or deferred evidence workspace missing`);
+  if (response.ok && page.includes('Search an industry, company, or market interest') && !page.includes('Build a research brief') && !page.includes('Signal review')) pass('landing page contains only market search','the initial screen is a single focused search, without leads, watchlists, or saved briefs');
+  else fail('landing page contains only market search',`HTTP ${response.status}; unrelated user-facing workflow is present on the landing page`);
   const sourcesResponse=await fetch(`${base}/sources`,{redirect:'follow',signal:AbortSignal.timeout(15000)});
   const sourcesPage=await sourcesResponse.text();
   if(sourcesResponse.ok&&sourcesPage.includes('Wikimedia · article talk pages')&&sourcesPage.includes('comment text, edit summaries, usernames, and IPs are never requested or stored')&&sourcesPage.includes('CC BY-SA 4.0'))pass('Wikimedia attribution and limitations are public','source methodology states metadata minimization and links applicable license');

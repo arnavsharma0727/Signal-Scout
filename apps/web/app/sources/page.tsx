@@ -1,7 +1,6 @@
 import Link from "next/link";
 import SiteHeader from "../../components/site-header";
 import { serverSupabase } from "../../lib/server-supabase";
-import { isHackerNewsIngestionEnabled } from "../../lib/source-policy";
 import { getDisplayTimeZone } from "../../lib/display-timezone";
 import { formatTimestamp } from "../../lib/format-time";
 import { summarizeConnectorRuns } from "../../lib/source-health";
@@ -76,20 +75,14 @@ export default async function Sources() {
   const db = serverSupabase();
   const sources: SourceConfig[] = [
     {
-      name: "GDELT · global news index",
+      name: "GDELT · retired from live search",
       key: "gdelt",
-      enabled: true,
-      onDemand: true,
+      enabled: false,
+      onDemand: false,
       referenceUrl: "https://www.gdeltproject.org/",
       referenceLabel: "GDELT Project",
-      secondaryReferenceUrl: "https://www.ap.org/about/",
-      secondaryReferenceLabel: "Associated Press · about and structure",
-      additionalReferences: [
-        { url: "https://www.theguardian.com/about", label: "The Guardian · ownership" },
-        { url: "https://www.thomsonreuters.com/en/products-services/news-media", label: "Reuters · news and media" },
-      ],
       detail:
-        "Optional visitor-triggered search of the last seven days in GDELT's multilingual index, capped at 25 results, through a first-party no-store bridge. Searches are not persisted; GDELT may be slow or rate-limited and no automatic retry is sent. The app assigns reviewed source-operator labels only to original HTTPS article URLs on apnews.com, theguardian.com, or reuters.com; GDELT's own domain/title fields do not establish publisher identity. These labels identify an outlet group only—they do not prove independent reporting on a particular claim. Other publishers remain unresolved. Publisher country describes the outlet, not its audience. Headlines remain publisher material; this is news discovery, not forum discussion or independent-source corroboration.",
+        "Removed from current searches after live requests returned HTTP 429. It is not automatically retried and does not contribute to search results. Historical records, if any, remain subject to the separate source-retention policy.",
     },
     {
       name: "RSS / Atom",
@@ -109,15 +102,16 @@ export default async function Sources() {
         "Optional no-key government-policy context, not investor discussion. Each linked article must show the KOGL Type 1 attribution license; only title, source link, and date are retained.",
     },
     {
-      name: "Hacker News comments",
+      name: "Hacker News · public comment search",
       key: "hacker-news",
-      enabled: isHackerNewsIngestionEnabled(),
+      enabled: true,
+      onDemand: true,
       detail:
-        "The official Firebase API is public and keyless, but public API access is not a reuse license. YC’s current Terms prohibit unapproved scraping/data extraction and commercial reuse of site content, so Signal Scout keeps this source disabled until its collection and display rights are explicitly cleared. This would also be a narrow U.S.-leaning community, not a matched international sample; any prior records remain withheld from public evidence views.",
-      referenceUrl: "https://github.com/HackerNews/API",
-      referenceLabel: "Official public API documentation",
-      secondaryReferenceUrl: "https://www.ycombinator.com/legal/",
-      secondaryReferenceLabel: "Y Combinator Terms and Privacy Policy",
+        "On-demand search uses the public Algolia Hacker News Search API for recent comments. Matching excerpts are shown transiently in the search session only; Signal Scout does not schedule collection or persist comment text. This is a technology-oriented, English-language community, not an international or representative sample. Public API availability does not grant broader reuse rights; review provider terms before expanding retention or commercial use.",
+      referenceUrl: "https://hn.algolia.com/api",
+      referenceLabel: "Hacker News Search API documentation",
+      secondaryReferenceUrl: "https://github.com/HackerNews/API",
+      secondaryReferenceLabel: "Official Hacker News API documentation",
     },
     {
       name: "Stack Exchange · international Q&A",
@@ -143,12 +137,12 @@ export default async function Sources() {
         "One daily keyless request to the public Discourse latest-topics endpoint, capped at 30 topics. Fedora Discussion's terms require acceptable contributor licenses and specify CC BY-SA 4.0 as the default. Only the unmodified title, original-poster username for attribution, topic link, latest-activity timestamp, and reply-count snapshot are retained; profile details, post bodies, replies, and topic tags are discarded. This is a selected Fedora/Linux community sample, not financial discussion, broad public opinion, or a proxy for users' geography. The daily endpoint is incomplete and can resurface old topics; activity timestamps do not mean a new topic.",
     },
     {
-      name: "Mastodon · public hashtag timelines (4 server views)",
+      name: "Mastodon · retired from live keyword search",
       key: "mastodon-public",
-      enabled: true,
-      onDemand: true,
+      enabled: false,
+      onDemand: false,
       detail:
-        "Optional visitor-triggered trend discovery requests up to 10 public hashtag suggestions from each of four fixed Mastodon servers; each server’s internal trend ranking stays separate, with no merged score or storage. A visitor can supply a distinct hashtag for each selected server in a one- or four-server comparison, useful for manually entered language variants. Each server receives only its own query; exact hashtags stay attached to separate server views. Up to 20 public posts per server are transiently shown with author/origin links and content warnings; overlapping statuses are deduplicated and per-server counts are not summed. Instance information links are provided and the visitor must affirm review before a request; Signal Scout does not accept terms for them. Servers are not country proxies. Content remains author-owned and no blanket license is implied. Nothing is stored or analyzed. Not a global timeline or representative measure.",
+        "Removed from current keyword searches because public status search was not returning usable matching results in live checks. No Mastodon keyword-search results are claimed by the product.",
     },
     {
       name: "Lemmy · public federated forum view",
@@ -156,7 +150,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "Visitor-triggered, keyless search of up to 20 newest matching posts per selected instance: lemmy.world, discuss.tchncs.de, feddit.org, and feddit.uk. Each server can receive a separately supplied phrase for cross-language exploration; queries go directly from the browser to that server and are not translated or persisted by Signal Scout. A short post-text excerpt is shown only in the visitor's browser for manual relevance review; selecting a citation strips the excerpt, and neither query nor post text is sent to Signal Scout or saved. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. The views are separate and incomplete; federation can duplicate the same post, and these are not independent samples, a global timeline, country proxy, representative population sample, or measure of attention. feddit.uk requires users to be over 18. Posts remain their authors’ content; no blanket license is implied. Visitors must review the selected instance’s legal/privacy information and explicitly confirm before searching.",
+        "Visitor-triggered, keyless search of up to 20 newest matching posts per selected instance: lemmy.world, discuss.tchncs.de, or feddit.org. feddit.uk was removed after its API returned instance_is_private. Phrases are sent directly to the selected server, not translated or persisted by Signal Scout. A short excerpt is transiently shown for manual relevance review; saved citations discard it. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Federation can duplicate posts; these are incomplete, non-independent views, not a global timeline, country proxy, representative population sample, or measure of attention. Posts remain their authors’ content; no blanket license is implied. Visitors must review selected-server terms and privacy information and affirm before searching.",
     },
     {
       name: "Wikimedia · article talk pages",
@@ -194,19 +188,19 @@ export default async function Sources() {
       key: "global-voices",
       enabled: true,
       detail:
-        "Daily keyless RSS from twelve active Global Voices editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. Each edition is identified from its allowlisted publisher host/title; RSS language metadata is inconsistent, so the reviewed edition supplies the language label. Global Voices-created content defaults to CC BY 3.0 unless an item says otherwise; conflicting item-level rights are rejected. Signal Scout keeps the unmodified edition headline, byline, date, first-party link, and limited categories with attribution; descriptions, story bodies, and media are discarded. Items are limited to a rolling seven-day publication window. Editions share one publisher and may include translated versions; they are never counted as independent outlets or proxies for audience geography. This is editorial reporting, not raw forum discussion or a representative survey.",
+        "Daily keyless RSS collection plus on-demand headline search through the public WordPress search API across twelve localized editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. On-demand search requests only headline metadata and links through a first-party no-store route; edition language does not establish author or audience geography. RSS-retained content follows item-level rights checks and attribution; descriptions and story bodies are discarded. Localized editions share one publisher and may include translations; this is reporting, not raw forum discussion, independent outlets, or a representative survey.",
     },
     {
-      name: "Bluesky · transient public search",
+      name: "Bluesky · retired from live search",
       key: "bluesky",
       enabled: false,
-      onDemand: true,
+      onDemand: false,
       referenceUrl: "https://github.com/bluesky-social/atproto/blob/main/lexicons/app/bsky/unspecced/getTrends.json",
       referenceLabel: "Bluesky getTrends API lexicon",
       secondaryReferenceUrl: "https://docs.bsky.app/docs/advanced-guides/api-directory",
       secondaryReferenceLabel: "Bluesky API hosts and authentication",
       detail:
-        "Explore also offers visitor-triggered topic discovery via the unauthenticated public.api.bsky.app getTrends endpoint, an experimental (unspecced) API that may change or become unavailable; a 10-second timeout surfaces failures. It displays at most eight provider-ranked labels with Bluesky-reported metadata, without saving them. Choosing a label only fills the phrase-search form; the visitor must separately run the sweep and review resulting original sources. This ranking is not geographic, representative, independently verified, or evidence of attention or a market signal. The separate query search shows up to 25 recent indexed results transiently with a source link, author handle, date, and available language metadata. Researchers can run separate manually entered language phrases; each capped query remains a separate, non-comparable sample, and language metadata may be missing. Post text is discarded from the app's citation model; nothing is sent to Signal Scout or persisted. The search index is incomplete, posts remain their authors’ content, and results are not a representative sample. Scheduled ingestion and retention of Bluesky post content are disabled pending a reviewed rights, deletion, and retention basis.",
+        "Temporarily removed from the active search after live requests to the public AppView returned HTTP 403 from the deployment environment. It is not retried automatically or presented as a working source. Re-enable only after a production-environment smoke test passes.",
     },
     {
       name: "YouTube public comments (candidate)",

@@ -1,63 +1,19 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { setDisplayTimeZone } from "./actions";
-import { getDisplayTimeZone } from "../lib/display-timezone";
-import { TIME_ZONE_OPTIONS } from "../lib/time-zones";
 import "./globals.css";
 export const metadata: Metadata = {
-  title: "Signal Scout — International Conversation Research",
+  title: "Signal Scout — Global market conversations",
   description:
-    "A source-aware workspace for turning public online discussion and reporting into evidence-linked research questions.",
+    "Search current public conversations and reporting about market interests around the world.",
 };
 export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const timeZone = await getDisplayTimeZone();
   return (
     <html lang="en">
       <body>
         {children}
-        <footer className="border-t border-line bg-white">
-          <div className="mx-auto flex w-full max-w-5xl flex-col gap-4 px-6 py-6 text-xs text-muted max-[639px]:px-[18px] md:flex-row md:items-center md:justify-between">
-            <p>For research and information only; not investment advice.</p>
-            <div className="flex flex-wrap items-center gap-5">
-              <form
-                action={setDisplayTimeZone}
-                className="flex flex-wrap items-center gap-2"
-              >
-                <label htmlFor="display-timezone">Display time in</label>
-                <select
-                  id="display-timezone"
-                  name="timezone"
-                  defaultValue={timeZone}
-                  className="rounded border border-line bg-white px-2 py-1 text-xs text-ink"
-                >
-                  {TIME_ZONE_OPTIONS.map((zone) => (
-                    <option key={zone.value} value={zone.value}>
-                      {zone.label}
-                    </option>
-                  ))}
-                </select>
-                <button className="underline underline-offset-2" type="submit">
-                  Apply
-                </button>
-                <span className="sr-only">
-                  Stored timestamps remain in UTC.
-                </span>
-              </form>
-              <nav aria-label="Product information" className="flex flex-wrap gap-x-5 gap-y-2">
-                <Link href="/candidates">Signal review</Link>
-                <Link href="/sources">Sources</Link>
-                <Link href="/methodology">Method</Link>
-                <Link href="/about">About</Link>
-                <Link href="/privacy">Privacy</Link>
-                <Link href="/contact">Contact</Link>
-              </nav>
-            </div>
-          </div>
-        </footer>
       </body>
     </html>
   );

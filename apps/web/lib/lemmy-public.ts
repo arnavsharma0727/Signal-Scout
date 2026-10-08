@@ -1,4 +1,4 @@
-export type LemmyInstance = "lemmy.world" | "discuss.tchncs.de" | "feddit.org" | "feddit.uk";
+export type LemmyInstance = "lemmy.world" | "discuss.tchncs.de" | "feddit.org";
 
 export const LEMMY_INSTANCES: readonly {
   host: LemmyInstance;
@@ -9,7 +9,6 @@ export const LEMMY_INSTANCES: readonly {
   { host: "lemmy.world", label: "lemmy.world", legalUrl: "https://legal.lemmy.world/tos/", privacyUrl: "https://legal.lemmy.world/privacy-policy/" },
   { host: "discuss.tchncs.de", label: "discuss.tchncs.de", legalUrl: "https://discuss.tchncs.de/legal", privacyUrl: "https://tchncs.de/privacy" },
   { host: "feddit.org", label: "feddit.org · German/English community", legalUrl: "https://feddit.org/legal", privacyUrl: "https://wiki.fediverse.foundation/books/fediverse-foundation-announcements/page/data-protection-policy" },
-  { host: "feddit.uk", label: "feddit.uk · UK-centric community", legalUrl: "https://feddit.uk/legal", privacyUrl: "https://feddit.uk/legal" },
 ];
 
 export type LemmyPost = {

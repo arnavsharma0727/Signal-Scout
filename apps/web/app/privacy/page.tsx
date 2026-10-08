@@ -113,33 +113,20 @@ export default function Privacy() {
             request metadata under their own terms and privacy policies.
           </p>
           <p>
-            Explore can also query GDELT’s public multilingual news index
-            through a first-party, no-store search endpoint because the
-            provider blocks browser cross-origin requests. The topic and
-            optional publisher-country/language filters pass through Vercel to
-            GDELT; Signal Scout does not persist them or the results. Headlines
-            and links are displayed transiently.
+            Market searches use the public Hacker News Search API, selected
+            Stack Exchange communities, and (when explicitly enabled) selected
+            Lemmy instances. Their providers receive the search phrase directly
+            or through the Global Voices first-party search route. Results are
+            transient and are not stored as search history. Global Voices
+            requests headline metadata from its public localized WordPress APIs;
+            only headline links and edition labels are returned to the browser.
+            Language and edition do not establish a speaker&apos;s location.
+            GDELT, Bluesky, and Mastodon keyword search are currently retired
+            from active search after live availability checks failed; queries
+            are not sent to those services by the current search flow.
           </p>
           <p>
-            Explore can query Bluesky’s public search API from the browser
-            without an account or API key. The query is sent to api.bsky.app,
-            not Signal Scout. Public post text is displayed transiently in
-            the browser search results so a researcher can inspect the actual
-            conversation. Selecting a citation strips the post text; only a
-            public link, author handle, date, and language remain in the brief.
-            Unselected search queries and results are not sent to Signal
-            Scout&apos;s server or persisted as history. If you select a citation,
-            its link and citation metadata are autosaved locally as described
-            above; the post text is not. Search coverage is incomplete and is
-            not representative of public opinion.
-          </p>
-          <p>
-            The optional Mastodon trend-discovery action requests public tag
-            suggestions directly from configured Mastodon instances. Search
-            suggestions and unselected results remain transient in the browser.
-            Selected citation metadata is autosaved only in this browser; it
-            is not synced unless the visitor explicitly saves a brief. On
-            account save, Signal Scout
+            On account save, Signal Scout
             receives the visitor-written topic, thesis, alternatives,
             disconfirmation notes, source-specific paraphrase notes, plus
             link-only citations from a narrow reviewed source allowlist. The

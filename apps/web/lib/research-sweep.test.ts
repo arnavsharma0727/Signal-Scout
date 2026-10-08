@@ -94,14 +94,10 @@ describe("runResearchSweep", () => {
   it("searches selected providers in parallel and preserves provider-specific labels and classes", async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
-      if (url.hostname === "api.gdeltproject.org") {
-        return new Response(JSON.stringify({ articles: [{
-          title: "Global report",
-          url: "https://www.apnews.com/article/example",
-          seendate: "20260930110000",
-          domain: "attacker.example",
-          language: "English",
-          sourcecountry: "United States",
+      if (url.hostname === "hn.algolia.com") {
+        return new Response(JSON.stringify({ hits: [{
+          objectID: "81001", author: "Reader", comment_text: "<p>A useful discussion</p>",
+          story_title: "Markets", created_at: new Date(NOW - 60_000).toISOString(),
         }] }));
       }
       if (url.hostname === "api.stackexchange.com") {
@@ -128,21 +124,6 @@ describe("runResearchSweep", () => {
           community: { name: "economy" },
         }] }));
       }
-      if (url.hostname === "mastodon.social") {
-        return new Response(JSON.stringify([{
-          id: "15",
-          url: "https://mastodon.social/@reader/15",
-          created_at: new Date(NOW - 60_000).toISOString(),
-          visibility: "public",
-          content: "<p>Post &amp; body can be inspected without HTML</p>",
-          account: {
-            display_name: "Reader",
-            acct: "reader",
-            url: "https://mastodon.social/@reader",
-            bot: false,
-          },
-        }]));
-      }
       if (url.hostname === "en.wikipedia.org") {
         return new Response(JSON.stringify({ query: { search: [{
           pageid: 14,
@@ -154,21 +135,18 @@ describe("runResearchSweep", () => {
       throw new Error("Unexpected provider");
     });
     const results = await runResearchSweep("markets", {
-      gdelt: true,
+      hackerNews: true,
       stackExchangeSite: "economics",
       lemmy: true,
       lemmyTermsAccepted: true,
-      mastodon: { hashtag: "markets", instance: "mastodon.social" },
-      mastodonTermsAccepted: true,
       wikimediaLanguage: "en",
     }, fetcher, NOW);
 
-    expect(fetcher).toHaveBeenCalledTimes(5);
+    expect(fetcher).toHaveBeenCalledTimes(4);
     expect(results.map(({ key, evidence, error }) => [key, evidence.length, error])).toEqual([
-      ["gdelt", 1, null],
+      ["hacker-news", 1, null],
       ["stack-exchange:economics", 1, null],
       ["lemmy:lemmy.world", 1, null],
-      ["mastodon", 1, null],
       ["wikimedia", 1, null],
     ]);
     expect(results[1].evidence[0]).toMatchObject({
@@ -179,25 +157,16 @@ describe("runResearchSweep", () => {
       sourceOperatorKey: "lemmy-federation",
       sourceOperatorLabel: "Lemmy federated search",
     });
-    expect(results[3].evidence[0]).toMatchObject({
-      sourceOperatorKey: "mastodon-network",
-      sourceOperatorLabel: "Mastodon public instances",
-    });
     expect(results[0].evidence[0]).toMatchObject({
-      source: "Associated Press",
-      sourceOperatorKey: "associated-press",
-      sourceOperatorLabel: "Associated Press",
+      source: "Hacker News",
+      sourceOperatorKey: "hacker-news",
+      sourceOperatorLabel: "Hacker News",
+      transientPreview: "A useful discussion",
     });
     expect(results[2].evidence[0].evidenceClass).toBe("social discussion");
     expect(results[2].evidence[0].transientPreview).toBe("This post body is transiently previewed, never saved");
     expect(results[2].evidence[0].context ?? "").not.toContain("markets");
-    expect(results[3].evidence[0].transientPreview).toBe("Post & body can be inspected without HTML");
     expect(results[3].evidence[0]).toMatchObject({
-      evidenceClass: "social discussion",
-      context: expect.stringContaining("not a geographic market proxy"),
-    });
-    expect(results[3].evidence[0].context).not.toContain("#markets");
-    expect(results[4].evidence[0]).toMatchObject({
       evidenceClass: "editorial discussion",
       context: expect.stringContaining("not a general forum"),
     });
@@ -298,11 +267,11 @@ describe("runResearchSweep", () => {
   it("keeps source failures separate so one rate-limited API does not erase other results", async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));
-      if (url.hostname === "api.gdeltproject.org") return new Response("rate limited", { status: 429 });
+      if (url.hostname === "hn.algolia.com") return new Response("rate limited", { status: 429 });
       return new Response(JSON.stringify({ query: { search: [] } }));
     });
     const results = await runResearchSweep("markets", {
-      gdelt: true,
+      hackerNews: true,
       lemmy: false,
       lemmyTermsAccepted: false,
       wikimediaLanguage: "en",
