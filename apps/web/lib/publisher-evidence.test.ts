@@ -71,6 +71,59 @@ describe("reviewed publisher evidence", () => {
     expect(toPublisherEvidence({ ...row, raw_metadata_json: { ...row.raw_metadata_json, derivativesAllowed: true } }, now)).toBeNull();
   });
 
+  it("classifies reviewed link-only news and issuer citations without retaining supplied headlines", () => {
+    const base = {
+      id: "external-1", source_type: "researcher-linked-source", source_name: "ABC News Australia",
+      source_domain: "www.abc.net.au", language_code: "en",
+      source_url: "https://www.abc.net.au/news/2026-10-01/business/123456",
+      published_at: recent,
+      raw_metadata_json: {
+        citationProvider: "newslink", reviewedPublisherKey: "abc-news-australia",
+        reviewedPublisherLabel: "ABC News Australia", attribution: "Source: ABC News Australia",
+        researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+      },
+      title_original: "Link-only report from ABC News Australia",
+    };
+    expect(toPublisherEvidence(base, now)).toMatchObject({
+      title: "Link-only report from ABC News Australia", evidenceClass: "news coverage",
+      sourceOperatorKey: "abc-news-australia", sourceOperatorLabel: "ABC News Australia",
+      context: "Researcher-verified first-party report link; headline, article text, and byline are not retained",
+    });
+    expect(toPublisherEvidence({ ...base, raw_metadata_json: { ...base.raw_metadata_json, reviewedPublisherKey: "fake" } }, now)).toBeNull();
+
+    const issuer = {
+      ...base,
+      source_name: "Firmus", source_domain: "firmus.co",
+      source_url: "https://firmus.co/newsroom/announcement",
+      title_original: "Link-only company disclosure from Firmus",
+      raw_metadata_json: {
+        citationProvider: "companylink", reviewedPublisherKey: "firmus",
+        reviewedPublisherLabel: "Firmus", attribution: "Source: Firmus",
+        researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+      },
+    };
+    expect(toPublisherEvidence(issuer, now)).toMatchObject({
+      evidenceClass: "official company disclosure", sourceOperatorKey: "firmus",
+      context: "Researcher-verified issuer disclosure link; company claims are not independent verification",
+    });
+
+    const survey = {
+      ...base,
+      source_name: "Verasight", source_domain: "data.verasight.io",
+      source_url: "https://data.verasight.io/ai/data-centers-and-household-benefits/",
+      title_original: "Link-only survey report from Verasight",
+      raw_metadata_json: {
+        citationProvider: "surveylink", reviewedPublisherKey: "verasight",
+        reviewedPublisherLabel: "Verasight", attribution: "Source: Verasight",
+        researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+      },
+    };
+    expect(toPublisherEvidence(survey, now)).toMatchObject({
+      evidenceClass: "survey research", sourceOperatorKey: "verasight",
+      context: "Researcher-verified survey report link; headline, report content, and byline are not retained",
+    });
+  });
+
   it("requires an allowed URL, intact Typst CC BY fields, and a fresh publication date", () => {
     const row = {
       id: "typst-1", source_type: "licensed-forum", source_name: "Typst Forum",

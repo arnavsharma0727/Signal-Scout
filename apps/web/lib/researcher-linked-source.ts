@@ -1,4 +1,5 @@
 import type { LeadSourceDocument } from "./research-lead-submission";
+import { reviewedLinkSourceForUrl } from "./news-source-operators";
 
 export type ResearcherLinkedCitationInput = {
   id: string;
@@ -13,6 +14,7 @@ export type ResearcherLinkedCitationInput = {
 };
 
 const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const LINK_ONLY_REPORT_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const STACK_EXCHANGE_LICENSE = "CC BY-SA 4.0";
 const STACK_EXCHANGE_LICENSE_URL = "https://creativecommons.org/licenses/by-sa/4.0/";
 const MASTODON_HOSTS = new Set(["mastodon.social", "mastodon.online", "mstdn.jp", "mastodon.world"]);
@@ -55,18 +57,34 @@ export function prepareResearcherLinkedSource(
   const provider = citation.id.split(":", 1)[0];
   const url = safeCanonicalUrl(citation.url);
   const published = Date.parse(citation.timeValue);
-  const attribution = citation.attribution.trim().replace(/\s+/g, " ");
+  const isReviewedExternalLink = ["newslink", "companylink", "surveylink"].includes(provider);
+  const reviewedLinkSource = url && isReviewedExternalLink
+    ? reviewedLinkSourceForUrl(url.toString())
+    : null;
+  const attribution = isReviewedExternalLink
+    ? reviewedLinkSource?.provider === provider ? `Source: ${reviewedLinkSource.label}` : ""
+    : citation.attribution.trim().replace(/\s+/g, " ");
   const suppliedTitle = citation.title.trim().replace(/\s+/g, " ");
   const publicByline = attribution.replace(/^(?:Lemmy )?Author:\s*/i, "");
-  const title = provider === "stackexchange"
-    ? verifiedQuestion?.title ?? ""
-    : provider === "lemmy"
-      ? `Public Lemmy post by ${publicByline}`
-      : `Public post by ${publicByline}`;
+  const title = provider === "newslink" && reviewedLinkSource?.provider === provider
+    ? `Link-only report from ${reviewedLinkSource.label}`
+    : provider === "companylink" && reviewedLinkSource?.provider === provider
+      ? `Link-only company disclosure from ${reviewedLinkSource.label}`
+      : provider === "surveylink" && reviewedLinkSource?.provider === provider
+        ? `Link-only survey report from ${reviewedLinkSource.label}`
+        : provider === "stackexchange"
+          ? verifiedQuestion?.title ?? ""
+          : provider === "lemmy"
+            ? `Public Lemmy post by ${publicByline}`
+            : `Public post by ${publicByline}`;
   const observation = citation.sourceObservation.trim().replace(/\s+/g, " ");
+  const maxAge = isReviewedExternalLink
+    ? LINK_ONLY_REPORT_MAX_AGE_MS
+    : MAX_AGE_MS;
 
   if (!url || !isProviderPermalink(provider, url) || !isUuid(id) ||
-      !Number.isFinite(published) || published > now || now - published > MAX_AGE_MS ||
+      (isReviewedExternalLink && citation.id !== `${provider}:${url.toString()}`) ||
+      !Number.isFinite(published) || published > now || now - published > maxAge ||
       title.length < 3 || title.length > 300 || suppliedTitle.length > 500 || attribution.length < 2 || attribution.length > 250 ||
       citation.language.trim().length > 60 || observation.length < 20 || observation.length > 1000 ||
       citation.researcherVerifiedOriginal !== true ||
@@ -78,7 +96,8 @@ export function prepareResearcherLinkedSource(
       verifiedQuestion.siteLabel !== STACK_EXCHANGE_SITES[verifiedQuestion.site]?.label ||
       new URL(verifiedQuestion.url).hostname !== STACK_EXCHANGE_SITES[verifiedQuestion.site]?.host)) return null;
 
-  const sourceName = provider === "bluesky" ? "Bluesky public post"
+  const sourceName = isReviewedExternalLink && reviewedLinkSource?.provider === provider ? reviewedLinkSource.label
+    : provider === "bluesky" ? "Bluesky public post"
     : provider === "mastodon" ? `Mastodon · ${url.hostname}`
       : provider === "lemmy" ? `Lemmy · ${url.hostname}`
         : provider === "stackexchange" ? verifiedQuestion!.siteLabel : null;
@@ -104,11 +123,17 @@ export function prepareResearcherLinkedSource(
         licenseUrl: STACK_EXCHANGE_LICENSE_URL,
         titleUnmodified: true,
       } : {}),
+      ...(reviewedLinkSource && isReviewedExternalLink ? {
+        reviewedPublisherKey: reviewedLinkSource.key,
+        reviewedPublisherLabel: reviewedLinkSource.label,
+      } : {}),
       researcherLinkedOnly: true,
       postBodyDiscarded: true,
       transientPreviewDiscarded: true,
       rightsBasis: provider === "stackexchange"
         ? "provider-verified CC BY-SA 4.0 title and attribution; question body discarded"
+        : isReviewedExternalLink
+          ? "researcher-verified canonical source link and researcher-authored note only; headline, report text, and byline not retained"
         : "public permalink and researcher-authored citation only",
     },
   };
@@ -184,8 +209,11 @@ export function isPublishableResearcherLinkedCitation(item: { id: string; url: s
   const provider = item.id.split(":", 1)[0];
   const url = safeCanonicalUrl(item.url);
   const published = Date.parse(item.timeValue);
+  const maxAge = ["newslink", "companylink", "surveylink"].includes(provider)
+    ? LINK_ONLY_REPORT_MAX_AGE_MS
+    : MAX_AGE_MS;
   return Boolean(url && isProviderPermalink(provider, url) && Number.isFinite(published) &&
-    published <= Date.now() && Date.now() - published <= MAX_AGE_MS);
+    published <= Date.now() && Date.now() - published <= maxAge);
 }
 
 function isProviderPermalink(provider: string, url: URL) {
@@ -197,6 +225,10 @@ function isProviderPermalink(provider: string, url: URL) {
     return LEMMY_HOSTS.has(url.hostname) && /^\/post\/\d+\/?$/.test(url.pathname);
   if (provider === "stackexchange")
     return Boolean(stackExchangeSiteForHost(url.hostname) && /^\/questions\/\d+\/[^/]+\/?$/.test(url.pathname));
+  if (provider === "newslink" || provider === "companylink" || provider === "surveylink") {
+    const source = reviewedLinkSourceForUrl(url.toString());
+    return Boolean(source?.provider === provider && url.pathname.length > 1 && !url.search && !url.hash);
+  }
   return false;
 }
 

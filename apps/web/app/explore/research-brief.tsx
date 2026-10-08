@@ -12,6 +12,7 @@ import { countExcludedPrivateEvidence, preparePrivateEvidenceLinks } from "../..
 import { publishEvidenceQualifiedLead, saveResearchBrief } from "../briefs/actions";
 import { LOCAL_RESEARCH_NOTES_KEY, parseLocalResearchNotes, serializeLocalResearchNotes } from "../../lib/local-research-draft";
 import { isPublishableResearcherLinkedCitation } from "../../lib/researcher-linked-source";
+import { reviewedLinkSourceForUrl } from "../../lib/news-source-operators";
 
 const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
   "expert Q&A",
@@ -20,6 +21,8 @@ const EVIDENCE_CLASSES: ResearchEvidenceClass[] = [
   "editorial discussion",
   "expert analysis",
   "community forum",
+  "official company disclosure",
+  "survey research",
 ];
 
 export default function ResearchBrief({
@@ -30,6 +33,7 @@ export default function ResearchBrief({
   localStorageAvailable,
   leadStatus = "",
   onRemove,
+  onAdd,
   onAssess,
   onNote,
   onVerifyOriginal,
@@ -42,6 +46,7 @@ export default function ResearchBrief({
   localStorageAvailable: boolean | null;
   leadStatus?: string;
   onRemove: (id: string) => void;
+  onAdd: (item: ResearchEvidence) => void;
   onAssess: (id: string, assessment: "supports" | "contradicts" | "context" | "not relevant" | undefined) => void;
   onNote: (id: string, note: string) => void;
   onVerifyOriginal: (id: string, checked: boolean) => void;
@@ -52,6 +57,9 @@ export default function ResearchBrief({
   const [alternatives, setAlternatives] = useState("");
   const [disconfirmingEvidence, setDisconfirmingEvidence] = useState("");
   const [notice, setNotice] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+  const [linkDate, setLinkDate] = useState("");
+  const [linkError, setLinkError] = useState("");
   const [localNotesReady, setLocalNotesReady] = useState(false);
   const [notesStorageAvailable, setNotesStorageAvailable] = useState<boolean | null>(null);
   useEffect(() => {
@@ -186,6 +194,48 @@ export default function ResearchBrief({
     setNotice("The in-memory brief was cleared.");
   }
 
+  function addReviewedLink() {
+    const source = reviewedLinkSourceForUrl(linkUrl.trim());
+    let url: URL;
+    try { url = new URL(linkUrl.trim()); } catch { setLinkError("Enter a valid HTTPS article link from a reviewed publisher or issuer."); return; }
+    const published = Date.parse(`${linkDate}T12:00:00.000Z`);
+    const age = Date.now() - published;
+    if (!source || url.protocol !== "https:" || url.username || url.password || url.port ||
+        url.search || url.hash || url.pathname.length < 2) {
+      setLinkError("That link is not an allowlisted article URL. Use a clean, first-party article link without tracking parameters.");
+      return;
+    }
+    if (!linkDate || !Number.isFinite(published) || age < -5 * 60_000 || age > 30 * 86400000) {
+      setLinkError("Enter the original publication date; only items from the last 30 days can be added.");
+      return;
+    }
+    const urlText = url.toString();
+    const company = source.provider === "companylink";
+    const survey = source.provider === "surveylink";
+    onAdd({
+      id: `${source.provider}:${urlText}`,
+      title: company ? `Link-only company disclosure from ${source.label}`
+        : survey ? `Link-only survey report from ${source.label}` : `Link-only report from ${source.label}`,
+      url: urlText,
+      source: source.label,
+      evidenceClass: company ? "official company disclosure" : survey ? "survey research" : "news coverage",
+      language: "not provided",
+      timeLabel: "Publication date (researcher entered)",
+      timeValue: new Date(published).toISOString(),
+      context: company
+        ? "Issuer statement; company claims are not independent verification"
+        : survey
+          ? "Survey report link only; headline, report content, and byline are not stored"
+          : "First-party publisher link only; headline, article text, and byline are not stored",
+      attribution: `Source: ${source.label}`,
+      sourceOperatorKey: source.key,
+      sourceOperatorLabel: source.label,
+    });
+    setLinkError("");
+    setLinkUrl("");
+    setLinkDate("");
+  }
+
   return (
     <section id="research-brief" className="panel mt-8 p-5 md:p-7" aria-labelledby="research-brief-title">
       {leadStatus && <p role={leadStatus === "published" ? "status" : "alert"} className="mb-4 border-y border-line py-3 text-sm leading-6">
@@ -223,6 +273,20 @@ export default function ResearchBrief({
       </div>
 
       <div className="mt-6 border-t border-line pt-4">
+        <div className="max-w-3xl border-b border-line pb-5">
+          <h3 className="font-semibold">Add a verified publisher link</h3>
+          <p className="mt-1 text-xs leading-5 text-muted">For current reporting, survey research, or a reviewed issuer announcement missing from the feed. Only allowlisted first-party URLs qualify. Signal Scout stores the link, source label, and date you enter—not the headline, report/article body, or byline. Open the original yourself and document what it contributes below.</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem_auto] sm:items-end">
+            <label className="block text-xs font-medium text-muted">Clean article URL
+              <input className="mt-1 block w-full rounded border border-line bg-white px-3 py-2.5 text-sm font-normal text-ink outline-none focus:border-ink" type="url" value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="https://publisher.example/article" />
+            </label>
+            <label className="block text-xs font-medium text-muted">Original publication date
+              <input className="mt-1 block w-full rounded border border-line bg-white px-3 py-2.5 text-sm font-normal text-ink outline-none focus:border-ink" type="date" value={linkDate} onChange={(event) => setLinkDate(event.target.value)} />
+            </label>
+            <button className="btn" type="button" onClick={addReviewedLink}>Add link</button>
+          </div>
+          {linkError && <p className="mt-2 text-xs text-muted" role="alert">{linkError}</p>}
+        </div>
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <h3 className="font-semibold">Selected source links ({evidence.length})</h3>
           <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted" aria-label="Evidence types selected">
@@ -346,7 +410,7 @@ export default function ResearchBrief({
           <div className="eyebrow">Shared lead queue</div>
           <h3 className="mt-2 font-semibold">Publish this researcher-reviewed lead?</h3>
           <p className="mt-1 text-xs leading-5 text-muted">
-            Publishing shares your thesis, alternatives, disconfirmation test, source links, public byline labels, and source-specific notes with anyone using Signal Scout. Bluesky, Mastodon, and Lemmy are stored only as links plus minimal citation metadata; their post text and transient previews are discarded. A Stack Exchange question is rechecked at publication and is shared only when its current license is CC BY-SA 4.0, with its original title, author attribution/profile, and license; its body is not stored. These source records are public. The result is a researcher-authored prompt, not an independently verified finding or investment recommendation.
+            Publishing shares your thesis, alternatives, disconfirmation test, source links, public byline labels, and source-specific notes with anyone using Signal Scout. Bluesky, Mastodon, Lemmy, and added publisher/survey/issuer links are stored only as links plus minimal citation metadata; post text, headlines, report/article text, and bylines are not stored. A Stack Exchange question is rechecked at publication and is shared only when its current license is CC BY-SA 4.0, with its original title, author attribution/profile, and license; its body is not stored. These source records are public. The result is a researcher-reviewed prompt, not an independently verified finding or investment recommendation.
           </p>
           {!hasPublishableSources ? (
             <p className="mt-3 text-sm leading-6 text-muted">This checklist passes, but one or more citations is not an approved stored record or a supported public social permalink. Keep or export the local dossier; it cannot be published to the shared queue.</p>
@@ -364,7 +428,7 @@ export default function ResearchBrief({
               <input type="hidden" name="reviewed_external_evidence" value={externalEvidencePacket} />
               <label className="flex items-start gap-2 text-xs leading-5 text-muted">
                 <input className="mt-1 shrink-0" type="checkbox" name="publish_confirmation" value="yes" required />
-                <span>I understand this publishes my thesis, notes, source links, and public attribution labels to the shared lead queue. Social post text is excluded; an eligible Stack Exchange question title and CC BY-SA attribution are public.</span>
+                <span>I understand this publishes my thesis, notes, source links, and public attribution labels to the shared lead queue. Social post text and added publisher headlines/report text are excluded; an eligible Stack Exchange question title and CC BY-SA attribution are public.</span>
               </label>
               <button className="btn btn-primary" type="submit">Publish to shared lead queue</button>
             </form>

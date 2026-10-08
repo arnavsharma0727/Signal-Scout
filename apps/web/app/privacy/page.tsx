@@ -66,9 +66,14 @@ export default function Privacy() {
             its unmodified question title, link, date/language, author name and
             profile link, and license for attribution; question and answer
             bodies are not stored. These shared source records are publicly
-            readable and are not deleted when a lead is withdrawn. Original
-            providers receive revalidation requests and may process them under
-            their own policies.
+            readable and are not deleted when a lead is withdrawn. Manually
+            added links from reviewed news publishers, survey research, or the
+            allowlisted issuer
+            are stored with a generated source label and researcher-entered
+            publication date; article headlines, text, and bylines are not
+            copied. Issuer material is labeled as company disclosure, not
+            independent verification. Original providers receive revalidation
+            requests and may process them under their own policies.
           </p>
           <p>
             Lead review can pass an observed topic to Explore in the URL

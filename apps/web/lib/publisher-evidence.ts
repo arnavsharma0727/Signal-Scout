@@ -1,6 +1,7 @@
 import type { ResearchEvidence } from "./research-brief";
 import { isReviewedStackExchangeSiteHost } from "./researcher-linked-source";
 import { isEligibleStackExchangeQuestion } from "./source-policy";
+import { reviewedLinkSourceForUrl } from "./news-source-operators";
 
 type StoredPublisherRow = {
   id: string;
@@ -26,6 +27,10 @@ const OPERATOR_LABELS: Record<string, string> = {
   bluesky: "Bluesky",
   "mastodon-network": "Mastodon public instances",
   "lemmy-federation": "Lemmy federated search",
+  "abc-news-australia": "ABC News Australia",
+  smartcompany: "SmartCompany",
+  firmus: "Firmus",
+  verasight: "Verasight",
 };
 
 /** Convert only recent, allowlisted publisher records or researcher-published link-only citations to public evidence. */
@@ -36,8 +41,13 @@ export function toPublisherEvidence(
   const url = safeHttpsUrl(row.source_url);
   const host = url?.hostname.toLowerCase();
   const published = Date.parse(row.published_at);
-  const maxAge = row.source_type === "researcher-linked-source"
-    ? 7 * 24 * 60 * 60_000
+  const linkProvider = typeof row.raw_metadata_json?.citationProvider === "string"
+    ? row.raw_metadata_json.citationProvider
+    : "";
+  const maxAge = row.source_type === "researcher-linked-source" && ["newslink", "companylink", "surveylink"].includes(linkProvider)
+    ? 30 * 24 * 60 * 60_000
+    : row.source_type === "researcher-linked-source"
+      ? 7 * 24 * 60 * 60_000
     : 72 * 60 * 60_000;
   if (!url || !host || !row.id || !row.title_original?.trim() ||
       !Number.isFinite(published) || published > now + 5 * 60_000 || now - published > maxAge) return null;
@@ -71,6 +81,26 @@ export function toPublisherEvidence(
       licenseUrl = CC_BY_SA_4;
       sourceOperatorKey = "stack-exchange";
       context = "Provider-verified question title only; question body is not retained";
+    } else if ((meta.citationProvider === "newslink" || meta.citationProvider === "companylink" || meta.citationProvider === "surveylink") &&
+        row.source_domain === host && url.search === "" && url.hash === "" && url.pathname.length > 1) {
+      const source = reviewedLinkSourceForUrl(url.toString());
+      if (!source || source.provider !== meta.citationProvider ||
+          meta.reviewedPublisherKey !== source.key || meta.reviewedPublisherLabel !== source.label ||
+          attribution !== `Source: ${source.label}` ||
+          row.title_original !== (meta.citationProvider === "newslink"
+            ? `Link-only report from ${source.label}`
+            : meta.citationProvider === "companylink"
+              ? `Link-only company disclosure from ${source.label}`
+              : `Link-only survey report from ${source.label}`)) return null;
+      evidenceClass = meta.citationProvider === "newslink" ? "news coverage"
+        : meta.citationProvider === "companylink" ? "official company disclosure" : "survey research";
+      sourceOperatorKey = source.key;
+      attribution = `Source: ${source.label}`;
+      context = meta.citationProvider === "newslink"
+        ? "Researcher-verified first-party report link; headline, article text, and byline are not retained"
+        : meta.citationProvider === "companylink"
+          ? "Researcher-verified issuer disclosure link; company claims are not independent verification"
+          : "Researcher-verified survey report link; headline, report content, and byline are not retained";
     } else if (meta.citationProvider === "bluesky" && host === "bsky.app" &&
         meta.researcherLinkedOnly === true && meta.postBodyDiscarded === true &&
         meta.transientPreviewDiscarded === true &&

@@ -76,6 +76,70 @@ describe("public research lead submission gate", () => {
     });
   });
 
+  it("accepts two source-checked social links plus a reviewed report and separately labeled issuer context", () => {
+    const mixed: LeadSourceDocument[] = [
+      ...documents.slice(0, 2).map((document, index) => ({
+        ...document,
+        source_type: "researcher-linked-source",
+        source_name: "Bluesky public post",
+        source_domain: "bsky.app",
+        source_url: `https://bsky.app/profile/reader-${index + 1}.example/post/${index + 1}`,
+        title_original: `Public post by @reader-${index + 1}.example`,
+        raw_metadata_json: {
+          citationProvider: "bluesky", attribution: `Author: @reader-${index + 1}.example`,
+          researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+        },
+      })),
+      {
+        ...documents[2],
+        id: "44444444-4444-4444-8444-444444444444",
+        source_type: "researcher-linked-source", source_name: "ABC News Australia",
+        source_domain: "www.abc.net.au", source_url: "https://www.abc.net.au/news/2026-10-06/business/123456",
+        title_original: "Link-only report from ABC News Australia",
+        raw_metadata_json: {
+          citationProvider: "newslink", reviewedPublisherKey: "abc-news-australia",
+          reviewedPublisherLabel: "ABC News Australia", attribution: "Source: ABC News Australia",
+          researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+        },
+      },
+      {
+        ...documents[2],
+        id: "55555555-5555-4555-8555-555555555555",
+        source_type: "researcher-linked-source", source_name: "Firmus", source_domain: "firmus.co",
+        source_url: "https://firmus.co/newsroom/announcement",
+        title_original: "Link-only company disclosure from Firmus",
+        raw_metadata_json: {
+          citationProvider: "companylink", reviewedPublisherKey: "firmus", reviewedPublisherLabel: "Firmus",
+          attribution: "Source: Firmus", researcherLinkedOnly: true,
+          postBodyDiscarded: true, transientPreviewDiscarded: true,
+        },
+      },
+      {
+        ...documents[2],
+        id: "66666666-6666-4666-8666-666666666666",
+        source_type: "researcher-linked-source", source_name: "Verasight", source_domain: "data.verasight.io",
+        source_url: "https://data.verasight.io/ai/data-centers-and-household-benefits/",
+        title_original: "Link-only survey report from Verasight",
+        raw_metadata_json: {
+          citationProvider: "surveylink", reviewedPublisherKey: "verasight", reviewedPublisherLabel: "Verasight",
+          attribution: "Source: Verasight", researcherLinkedOnly: true,
+          postBodyDiscarded: true, transientPreviewDiscarded: true,
+        },
+      },
+    ];
+    const reviewed: ReviewedLeadCitation[] = [
+      { documentId: mixed[0].id, assessment: "supports", sourceObservation: "This public author frames the reported offer change as a warning about investor demand.", researcherVerifiedOriginal: true },
+      { documentId: mixed[1].id, assessment: "contradicts", sourceObservation: "A second public author disputes the credibility of the reported valuation and planned float.", researcherVerifiedOriginal: true },
+      { documentId: mixed[2].id, assessment: "context", sourceObservation: "The independent report documents that book closure and repricing were still being assessed.", researcherVerifiedOriginal: true },
+      { documentId: mixed[3].id, assessment: "context", sourceObservation: "The issuer announcement describes customer commitments but does not establish that planned sites are operating.", researcherVerifiedOriginal: true },
+      { documentId: mixed[4].id, assessment: "context", sourceObservation: "The survey report states its U.S. adult population, field dates, sample size, and scenario wording.", researcherVerifiedOriginal: true },
+    ];
+    expect(preparePublicLeadSubmission({ ...input, citations: reviewed, documents: mixed })?.lead).toMatchObject({
+      status: "draft", independent_source_count: 4,
+      methodology_version: "human-reviewed-v1",
+    });
+  });
+
   it("rejects duplicate source links even when they use different database IDs and bylines", () => {
     const socialDocuments = documents.map((document, index) => index === 2 ? document : {
       ...document,

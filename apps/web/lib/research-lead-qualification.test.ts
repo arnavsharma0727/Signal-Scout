@@ -40,6 +40,18 @@ describe("research lead source-operator gate", () => {
     expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "bsky.app", raw_metadata_json: { ...metadata, citationProvider: "bluesky", postBodyDiscarded: false } })).toBeNull();
   });
 
+  it("counts reviewed first-party news and issuer link operators without conflating the two", () => {
+    const metadata = {
+      researcherLinkedOnly: true, postBodyDiscarded: true, transientPreviewDiscarded: true,
+      reviewedPublisherKey: "abc-news-australia", reviewedPublisherLabel: "ABC News Australia",
+    };
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "www.abc.net.au", raw_metadata_json: { ...metadata, citationProvider: "newslink" } })).toBe("abc-news-australia");
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "firmus.co", raw_metadata_json: { ...metadata, citationProvider: "companylink", reviewedPublisherKey: "firmus", reviewedPublisherLabel: "Firmus" } })).toBe("firmus");
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "data.verasight.io", raw_metadata_json: { ...metadata, citationProvider: "surveylink", reviewedPublisherKey: "verasight", reviewedPublisherLabel: "Verasight" } })).toBe("verasight");
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "www.abc.net.au.attacker.example", raw_metadata_json: { ...metadata, citationProvider: "newslink" } })).toBeNull();
+    expect(knownSourceOperator({ source_type: "researcher-linked-source", source_domain: "www.abc.net.au", raw_metadata_json: { ...metadata, citationProvider: "newslink", reviewedPublisherKey: "fake" } })).toBeNull();
+  });
+
   it("counts researcher-linked Stack Exchange only with reviewed-site and CC BY-SA metadata", () => {
     const metadata = {
       citationProvider: "stackexchange", researcherLinkedOnly: true, postBodyDiscarded: true,

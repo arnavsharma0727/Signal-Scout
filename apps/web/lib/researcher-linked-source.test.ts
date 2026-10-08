@@ -32,6 +32,66 @@ const stackExchangeCitation: ResearcherLinkedCitationInput = {
 };
 
 describe("researcher-linked social citation gate", () => {
+  it("stores reviewed first-party news and issuer links without article content or bylines", () => {
+    const articleUrl = "https://www.abc.net.au/news/2026-10-06/business/123456";
+    const article = prepareResearcherLinkedSource({
+      ...valid,
+      id: `newslink:${articleUrl}`,
+      url: articleUrl,
+      title: "Original article title is deliberately not stored",
+      attribution: "A client-supplied author is deliberately ignored",
+    }, id, now);
+    expect(article).toMatchObject({
+      source_type: "researcher-linked-source",
+      source_name: "ABC News Australia",
+      title_original: "Link-only report from ABC News Australia",
+      source_url: articleUrl,
+      raw_metadata_json: {
+        citationProvider: "newslink",
+        reviewedPublisherKey: "abc-news-australia",
+        reviewedPublisherLabel: "ABC News Australia",
+        attribution: "Source: ABC News Australia",
+        rightsBasis: "researcher-verified canonical source link and researcher-authored note only; headline, report text, and byline not retained",
+      },
+    });
+    expect(article).not.toHaveProperty("excerpt_original");
+    const issuerUrl = "https://firmus.co/newsroom/announcement";
+    expect(prepareResearcherLinkedSource({
+      ...valid,
+      id: `companylink:${issuerUrl}`,
+      url: issuerUrl,
+      title: "Title excluded",
+      attribution: "Byline excluded",
+    }, id, now)).toMatchObject({
+      source_name: "Firmus",
+      title_original: "Link-only company disclosure from Firmus",
+      raw_metadata_json: { citationProvider: "companylink", reviewedPublisherKey: "firmus" },
+    });
+    const surveyUrl = "https://data.verasight.io/ai/data-centers-and-household-benefits/";
+    expect(prepareResearcherLinkedSource({
+      ...valid,
+      id: `surveylink:${surveyUrl}`,
+      url: surveyUrl,
+      title: "Survey report title is not copied",
+      attribution: "A supplied byline is ignored",
+    }, id, now)).toMatchObject({
+      source_name: "Verasight",
+      title_original: "Link-only survey report from Verasight",
+      raw_metadata_json: {
+        citationProvider: "surveylink", reviewedPublisherKey: "verasight",
+        reviewedPublisherLabel: "Verasight", attribution: "Source: Verasight",
+      },
+    });
+  });
+
+  it("rejects unreviewed or noncanonical link-only publisher URLs", () => {
+    const url = "https://www.abc.net.au/news/2026-10-06/business/123456";
+    expect(prepareResearcherLinkedSource({ ...valid, id: "newslink:https://unknown.example/story", url: "https://unknown.example/story" }, id, now)).toBeNull();
+    expect(prepareResearcherLinkedSource({ ...valid, id: `newslink:${url}?utm_source=x`, url: `${url}?utm_source=x` }, id, now)).toBeNull();
+    expect(prepareResearcherLinkedSource({ ...valid, id: `newslink:${url}`, url, timeValue: "2026-08-01T12:00:00Z" }, id, now)).toBeNull();
+    expect(isPublishableResearcherLinkedCitation({ id: `newslink:${url}`, url, timeValue: "2026-09-15T00:00:00Z" })).toBe(true);
+  });
+
   it("stores a recent supported Bluesky citation as link-only metadata", () => {
     const row = prepareResearcherLinkedSource(valid, id, now);
     expect(row).toMatchObject({

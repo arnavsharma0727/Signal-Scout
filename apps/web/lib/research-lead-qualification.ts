@@ -1,4 +1,5 @@
 import { isReviewedStackExchangeSiteHost } from "./researcher-linked-source";
+import { reviewedLinkSourceForUrl } from "./news-source-operators";
 
 type EvidenceSource = {
   source_type: string | null;
@@ -52,6 +53,14 @@ export function knownSourceOperator(source: EvidenceSource): string | null {
         metadata.licenseUrl === "https://creativecommons.org/licenses/by-sa/4.0/" &&
         metadata.titleUnmodified === true && typeof metadata.site === "string" &&
         isReviewedStackExchangeSiteHost(domain, metadata.site)) return "stack-exchange";
+    if ((metadata.citationProvider === "newslink" || metadata.citationProvider === "companylink" || metadata.citationProvider === "surveylink") &&
+        typeof source.source_domain === "string" && metadata.researcherLinkedOnly === true &&
+        metadata.postBodyDiscarded === true && metadata.transientPreviewDiscarded === true) {
+      const reviewed = reviewedLinkSourceForUrl(`https://${source.source_domain}/article`);
+      if (reviewed?.provider === metadata.citationProvider &&
+          metadata.reviewedPublisherKey === reviewed.key && metadata.reviewedPublisherLabel === reviewed.label)
+        return reviewed.key;
+    }
     if (metadata.citationProvider === "bluesky" && domain === "bsky.app") return "bluesky";
     if (metadata.citationProvider === "mastodon" &&
         ["mastodon.social", "mastodon.online", "mstdn.jp", "mastodon.world"].includes(domain))
