@@ -61,10 +61,8 @@ try {
 try {
   const response = await fetch(`${base}/explore`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Search one topic across selected sources') && page.includes('Run source sweep')) pass('international live source sweep is public', `HTTP ${response.status}; source choices and direct-search workflow rendered`);
-  else fail('international live source sweep is public', `HTTP ${response.status}; source sweep UI missing`);
-  if (response.ok && page.includes('Load current topics') && page.includes('not country-specific, representative, independently verified')) pass('keyless Bluesky trend discovery is clearly bounded','transient provider-ranked labels only prefill a user-run search and are not presented as qualified evidence');
-  else fail('keyless Bluesky trend discovery is clearly bounded',`HTTP ${response.status}; discovery entry point or representativeness limitation missing`);
+  if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && page.includes('Live API results') && page.includes('Bluesky conversation')) pass('international live search is public', `HTTP ${response.status}; focused query input and keyless source workflow rendered`);
+  else fail('international live search is public', `HTTP ${response.status}; focused search UI missing`);
   if (response.ok && page.includes('Multiple conversation bylines; no single label over 60%') && page.includes('who an author is')) pass('local dossier checks conversation attribution concentration','the local review gate requires attributed conversation items and discloses that labels are not identity verification');
   else fail('local dossier checks conversation attribution concentration',`HTTP ${response.status}; byline concentration gate or identity limitation missing`);
 } catch (error) { fail('international live source sweep is public',error.message); }
@@ -79,8 +77,8 @@ try {
 try {
   const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Find a conversation. Follow its evidence.') && page.includes('Search one topic across selected sources') && page.includes('Evidence-qualified leads') && page.includes('View lead queue') && !page.includes('Hacker News comment')) pass('public research desk withholds uncleared source material','focused topic-to-brief workflow links directly to the evidence-qualified lead queue without uncleared source content');
-  else fail('public research desk withholds uncleared source material',`HTTP ${response.status}; focused workflow missing or uncleared source material may be rendered`);
+  if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && page.includes('Live API results') && page.includes('Bluesky conversation') && !page.includes('Hacker News comment')) pass('public market search withholds uncleared source material','focused live query entry point is public and uncleared source material remains absent');
+  else fail('public market search withholds uncleared source material',`HTTP ${response.status}; focused live search missing or uncleared source material may be rendered`);
   if (response.ok && page.includes('Original sources checked') && page.includes('original-source attestations') && page.includes('Download research brief')) pass('local lead dossier requires source-review attestation','the brief exposes the original-source check and distinguishes incomplete research briefs from completed dossiers');
   else fail('local lead dossier requires source-review attestation',`HTTP ${response.status}; original-source review gate or local brief state was not rendered`);
   const sourcesResponse=await fetch(`${base}/sources`,{redirect:'follow',signal:AbortSignal.timeout(15000)});

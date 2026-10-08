@@ -17,6 +17,7 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
   const [localDraftReady, setLocalDraftReady] = useState(false);
   const [localStorageAvailable, setLocalStorageAvailable] = useState<boolean | null>(null);
   const [initialTopic, setInitialTopic] = useState("");
+  const [searchStarted, setSearchStarted] = useState(false);
   const selectedIds = useMemo(() => new Set(evidence.map(({ id }) => id)), [evidence]);
 
   useEffect(() => {
@@ -68,7 +69,8 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
 
   return (
     <>
-      <ResearchSweep initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} onSearchTopic={setInitialTopic} />
+      <ResearchSweep initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} onSearchTopic={(topic) => { setInitialTopic(topic); setSearchStarted(true); }} />
+      {searchStarted && <>
       <LicensedPublisherEvidence items={publisherEvidence} initialTopic={initialTopic} onAdd={addEvidence} selectedIds={selectedIds} />
       <details className="panel mt-6 p-5 md:p-6">
         <summary className="cursor-pointer font-semibold">Specialized source views</summary>
@@ -103,6 +105,7 @@ export default function ExploreWorkspace({ authAvailable, saveEnabled, publisher
         onAdd={addEvidence}
         onClear={() => setEvidence([])}
       />
+      </>}
     </>
   );
 }

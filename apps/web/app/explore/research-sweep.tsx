@@ -11,7 +11,6 @@ import {
   runResearchSweep,
   ResearchSweepSourceResult,
 } from "../../lib/research-sweep";
-import { fetchBlueskyTrends, type BlueskyTrend } from "../../lib/bluesky-trends";
 import { groupRepeatedPostText, hasSelectedRepeatedTextMember, summarizeConversationBylines, summarizeRepeatedPostText, type ResearchEvidence } from "../../lib/research-brief";
 
 export default function ResearchSweep({
@@ -26,7 +25,7 @@ export default function ResearchSweep({
   onSearchTopic: (topic: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [gdelt, setGdelt] = useState(false);
+  const [gdelt, setGdelt] = useState(true);
   const [stackExchangeSites, setStackExchangeSites] = useState<string[]>([]);
   const [stackExchangeTerms, setStackExchangeTerms] = useState<Record<string, string>>({});
   const [lemmy, setLemmy] = useState(false);
@@ -35,10 +34,6 @@ export default function ResearchSweep({
   const [mastodonEnabled, setMastodonEnabled] = useState(false);
   const [mastodonTermsAccepted, setMastodonTermsAccepted] = useState(false);
   const [bluesky, setBluesky] = useState(true);
-  const [trends, setTrends] = useState<BlueskyTrend[]>([]);
-  const [trendsLoaded, setTrendsLoaded] = useState(false);
-  const [trendsLoading, setTrendsLoading] = useState(false);
-  const [trendsError, setTrendsError] = useState("");
   const [blueskyVariant, setBlueskyVariant] = useState("");
   const [mastodonHashtag, setMastodonHashtag] = useState("");
   const [mastodonInstance, setMastodonInstance] = useState<MastodonInstance>("mastodon.social");
@@ -52,22 +47,6 @@ export default function ResearchSweep({
   useEffect(() => {
     if (initialTopic) setQuery(initialTopic);
   }, [initialTopic]);
-
-  async function loadTrends() {
-    if (trendsLoading) return;
-    setTrendsLoading(true);
-    setTrendsError("");
-    setTrends([]);
-    setTrendsLoaded(false);
-    try {
-      setTrends(await fetchBlueskyTrends());
-      setTrendsLoaded(true);
-    } catch (cause) {
-      setTrendsError(cause instanceof Error ? cause.message : "Bluesky trends are temporarily unavailable.");
-    } finally {
-      setTrendsLoading(false);
-    }
-  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -102,66 +81,34 @@ export default function ResearchSweep({
   }
 
   return (
-    <section className="panel mt-8 p-5 md:p-7" aria-labelledby="research-sweep-title">
-      <div className="eyebrow">Live, browser-only source sweep</div>
-      <h2 id="research-sweep-title" className="mt-2 text-xl font-semibold">Search one topic across selected sources</h2>
-      <p className="mt-2 text-sm leading-6 text-muted">
-        Start with current conversation topics or enter a phrase, then inspect public discussion and optional news evidence. Add specialist Q&amp;A, federated forums, or editorial discussion only when useful. Searches go directly from this browser to public sources, except GDELT, which uses a first-party no-store bridge. Enter equivalent phrases separately for each language; Signal Scout does not auto-translate. Source samples stay separate and are not audience measures.
-      </p>
-      <details className="mt-4 border-y border-line py-3">
-        <summary className="cursor-pointer text-sm font-medium">
-          Optional discovery: Bluesky provider-ranked trends
-        </summary>
-        <div className="mt-3">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <h3 className="text-sm font-semibold">Conversation topics now trending on Bluesky</h3>
-              <p className="mt-1 text-xs leading-5 text-muted">Provider-ranked network topics for discovery only; not country-specific, representative, independently verified, or evidence of a market signal.</p>
-            </div>
-            <button className="btn" type="button" onClick={loadTrends} disabled={trendsLoading}>
-              {trendsLoading ? "Loading trends…" : trendsLoaded ? "Refresh trends" : "Load current topics"}
-            </button>
-          </div>
-          {trendsError && <p className="mt-3 text-sm" role="alert">{trendsError}</p>}
-          {trendsLoaded && trends.length === 0 && !trendsError && <p className="mt-3 text-xs text-muted">No topics were returned by Bluesky.</p>}
-          {trends.length > 0 && (
-            <ul className="mt-3 divide-y divide-line border-t border-line">
-              {trends.slice(0, 8).map((trend) => (
-                <li key={`${trend.topic}:${trend.startedAt ?? "unknown"}`} className="flex flex-wrap items-center justify-between gap-3 py-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium">{trend.topic}</div>
-                    <p className="mt-0.5 text-xs text-muted">
-                      {trend.category ?? "Uncategorized"}
-                      {trend.postCount !== null ? ` · ${trend.postCount.toLocaleString()} posts reported by Bluesky` : ""}
-                      {trend.startedAt ? ` · started ${new Intl.DateTimeFormat("en", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }).format(new Date(trend.startedAt))} UTC` : ""}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    {trend.feedUrl && <a className="text-xs underline" href={trend.feedUrl} target="_blank" rel="noreferrer">Trend feed</a>}
-                    <button className="btn" type="button" onClick={() => { setQuery(trend.topic); onSearchTopic(trend.topic); }}>
-                      Search this topic
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-          <p className="mt-2 text-[11px] leading-4 text-muted">Live metadata request to Bluesky’s experimental public API; results stay in this browser and are not saved. Ranked trends can reflect provider design and network demographics, and the endpoint may change or become unavailable.</p>
-        </div>
-      </details>
-      <form onSubmit={submit} className="mt-5 grid gap-4">
-        <label className="block text-sm font-medium">
-          Topic or phrase
-          <input
-            className="mt-2 block w-full rounded border border-line bg-white px-3 py-2.5 font-normal outline-none focus:border-ink"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            minLength={2}
-            maxLength={100}
-            placeholder="e.g. semiconductor export controls"
-            required
-          />
-        </label>
+    <section className={`market-search ${searched ? "market-search--results" : "market-search--landing"}`} aria-labelledby="research-sweep-title">
+      {!searched && <div className="market-search-copy">
+        <div className="eyebrow">Signal Scout · global market conversations</div>
+        <h1 id="research-sweep-title">What are people saying<br className="hidden sm:block" /> about your market?</h1>
+        <p>Search current public conversation and reporting across sources. Follow the original evidence.</p>
+      </div>}
+      {searched && <h1 id="research-sweep-title" className="sr-only">Live market search results for {query}</h1>}
+      <form onSubmit={submit} className={`market-search-form ${searched ? "market-search-form--compact" : ""}`}>
+        <label className="sr-only" htmlFor="market-query">Search a market, industry, or topic</label>
+        <input
+          id="market-query"
+          className="market-query-input"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          minLength={2}
+          maxLength={100}
+          placeholder="Search any market, industry, or topic…"
+          required
+        />
+        <button className="btn btn-primary market-search-button" type="submit" disabled={loading}>
+          {loading ? "Searching live sources…" : "Search"}
+        </button>
+      </form>
+      {!searched && <p className="market-search-note">Live API results · Bluesky conversation + global news index · last 7 days</p>}
+      {searched && <form onSubmit={submit} className="source-options-form">
+      <details className="source-options">
+        <summary>Search options · add forums, expert Q&amp;A, or another language</summary>
+        <p className="source-options-note">Searches are source-specific. Add an exact phrase in another language yourself; results remain separate and are not translated or pooled.</p>
         <div className="grid gap-3 border-y border-line py-4 md:grid-cols-2">
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={bluesky} onChange={(event) => setBluesky(event.target.checked)} />
@@ -182,7 +129,7 @@ export default function ResearchSweep({
           )}
           <label className="flex items-start gap-2 text-sm leading-6">
             <input className="mt-1" type="checkbox" checked={gdelt} onChange={(event) => setGdelt(event.target.checked)} />
-            <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · optional · can be slow or rate-limited · up to 25 results</span></span>
+            <span><strong>GDELT news</strong><span className="block text-xs text-muted">Multilingual news index · up to 25 results · may rate-limit</span></span>
           </label>
           <details className="md:col-span-2 rounded border border-line px-3 py-2">
             <summary className="cursor-pointer text-sm font-medium">Add specialist sources · Q&amp;A, forums, and editorial pages</summary>
@@ -325,14 +272,20 @@ export default function ResearchSweep({
             Mastodon servers are not country proxies. Posts remain their authors’ content. Short plain-text previews are shown only in this browser for manual review; selecting a citation strips the post text. No post text is sent to Signal Scout or saved.
           </p>
         )}
-        <button className="btn btn-primary justify-center" type="submit" disabled={loading}>
-          {loading ? "Searching selected sources…" : "Run source sweep"}
-        </button>
-      </form>
-      <p className="mt-3 text-xs leading-5 text-muted">Public Bluesky, Mastodon, and Lemmy text appears transiently in this browser for manual review; selecting a citation strips the text, and only its link, attribution, date, and language can enter your brief. Searches and results are not sent to Signal Scout’s server or saved. These query-selected samples are incomplete and not representative. See <a className="underline" href="https://docs.bsky.app/docs/api/app-bsky-feed-search-posts" target="_blank" rel="noreferrer">Bluesky API documentation</a>.</p>
+      </details>
+      <button className="btn market-options-submit" type="submit" disabled={loading}>
+        {loading ? "Searching…" : "Apply sources & search again"}
+      </button>
+      </form>}
+      {searched && <p className="mt-3 text-xs leading-5 text-muted">Live searches are bounded and query-selected; post text appears only transiently in this browser and is not saved. Publisher/operator labels do not prove audience geography or independent coverage. See <a className="underline" href="https://docs.bsky.app/docs/api/app-bsky-feed-search-posts" target="_blank" rel="noreferrer">Bluesky API documentation</a>.</p>}
       {error && <p role="alert" className="mt-4 text-sm">{error}</p>}
       {searched && !loading && results.length > 0 && (
-        <div className="mt-6 grid gap-6 border-t border-line pt-5 md:grid-cols-2">
+        <div className="market-results mt-8 border-t border-line pt-7">
+          <div className="market-results-heading">
+            <div><div className="eyebrow">Live source results</div><h2>Global views &amp; reporting</h2></div>
+            <p>Separate source samples · not a measure of worldwide opinion</p>
+          </div>
+          <div className="mt-5 grid gap-7 border-t border-line pt-5 md:grid-cols-2">
           {results.map((result) => {
             const groups = groupRepeatedPostText(result.evidence);
             const expanded = expandedSources.has(result.key);
@@ -430,6 +383,7 @@ export default function ResearchSweep({
               )}
             </section>;
           })}
+          </div>
         </div>
       )}
     </section>
