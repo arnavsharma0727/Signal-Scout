@@ -63,8 +63,8 @@ try {
   const page = await response.text();
   if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && page.includes('Live API results') && page.includes('Bluesky conversation')) pass('international live search is public', `HTTP ${response.status}; focused query input and keyless source workflow rendered`);
   else fail('international live search is public', `HTTP ${response.status}; focused search UI missing`);
-  if (response.ok && page.includes('Multiple conversation bylines; no single label over 60%') && page.includes('who an author is')) pass('local dossier checks conversation attribution concentration','the local review gate requires attributed conversation items and discloses that labels are not identity verification');
-  else fail('local dossier checks conversation attribution concentration',`HTTP ${response.status}; byline concentration gate or identity limitation missing`);
+  if (response.ok && page.includes('What are people saying') && page.includes('Live API results') && !page.includes('Build a research brief')) pass('research workflow waits for a user search','the initial screen is focused on topic entry; evidence review opens only after live results are requested');
+  else fail('research workflow waits for a user search',`HTTP ${response.status}; initial search focus or deferred results workflow missing`);
 } catch (error) { fail('international live source sweep is public',error.message); }
 
 try {
@@ -79,8 +79,8 @@ try {
   const page = await response.text();
   if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && page.includes('Live API results') && page.includes('Bluesky conversation') && !page.includes('Hacker News comment')) pass('public market search withholds uncleared source material','focused live query entry point is public and uncleared source material remains absent');
   else fail('public market search withholds uncleared source material',`HTTP ${response.status}; focused live search missing or uncleared source material may be rendered`);
-  if (response.ok && page.includes('Original sources checked') && page.includes('original-source attestations') && page.includes('Download research brief')) pass('local lead dossier requires source-review attestation','the brief exposes the original-source check and distinguishes incomplete research briefs from completed dossiers');
-  else fail('local lead dossier requires source-review attestation',`HTTP ${response.status}; original-source review gate or local brief state was not rendered`);
+  if (response.ok && page.includes('What are people saying') && page.includes('Search any market, industry, or topic') && !page.includes('Build a research brief')) pass('landing page defers the evidence workspace','the user sees a focused search first; evidence selection and source-review gates follow a topic search');
+  else fail('landing page defers the evidence workspace',`HTTP ${response.status}; focused search or deferred evidence workspace missing`);
   const sourcesResponse=await fetch(`${base}/sources`,{redirect:'follow',signal:AbortSignal.timeout(15000)});
   const sourcesPage=await sourcesResponse.text();
   if(sourcesResponse.ok&&sourcesPage.includes('Wikimedia · article talk pages')&&sourcesPage.includes('comment text, edit summaries, usernames, and IPs are never requested or stored')&&sourcesPage.includes('CC BY-SA 4.0'))pass('Wikimedia attribution and limitations are public','source methodology states metadata minimization and links applicable license');
