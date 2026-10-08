@@ -15,6 +15,25 @@ export type ReviewedHeadlineSeed = {
   publishedAt: string;
 };
 
+export type PublicDiscussionRole = "non-headline" | "headline-echo" | "link-only";
+
+/**
+ * Conservatively separate non-headline text from posts that only repeat a
+ * reviewed article headline or contain only a link. This is a triage cue, not
+ * authorship or sentiment detection; all results still need original-source
+ * review.
+ */
+export function classifyPublicDiscussionPost(text: string, headlines: string[]): PublicDiscussionRole {
+  const withoutLinks = text.replace(/https?:\/\/\S+/giu, " ");
+  const post = normalize(withoutLinks);
+  if (!post) return "link-only";
+  const normalizedHeadlines = headlines.map(normalize).filter(Boolean);
+  if (normalizedHeadlines.some((headline) => post === headline || post.startsWith(`${headline} `))) {
+    return "headline-echo";
+  }
+  return "non-headline";
+}
+
 const MAX_TREND_SEEDS = 4;
 const MAX_HEADLINE_SEEDS = 4;
 const STOP_WORDS = new Set([

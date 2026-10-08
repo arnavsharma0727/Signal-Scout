@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPublicLeadSeeds } from "./public-lead-discovery";
+import { buildPublicLeadSeeds, classifyPublicDiscussionPost } from "./public-lead-discovery";
 
 describe("bounded source-led public lead discovery seeds", () => {
   const now = Date.parse("2026-10-08T16:00:00.000Z");
@@ -52,5 +52,29 @@ describe("bounded source-led public lead discovery seeds", () => {
     expect(seeds.filter(({ source }) => source === "reviewed publisher headline")).toHaveLength(4);
     expect(seeds.some(({ topic }) => topic.includes("Stale"))).toBe(false);
     expect(seeds.some(({ topic }) => topic.includes("Future"))).toBe(false);
+  });
+});
+
+describe("public discussion relay triage", () => {
+  const headline = "Why vertical farming is not a fix for our food system";
+
+  it("marks exact or headline-led article posts as echoes, not substantive commentary", () => {
+    expect(classifyPublicDiscussionPost("Why ‘vertical farming’ is not a fix for our food system", [headline]))
+      .toBe("headline-echo");
+    expect(classifyPublicDiscussionPost(
+      "Why ‘vertical farming’ is not a fix for our food system. Growing indoors means replacing free sunlight with energy-intensive systems.",
+      [headline],
+    )).toBe("headline-echo");
+  });
+
+  it("keeps posts with text before a headline in the non-headline bucket", () => {
+    expect(classifyPublicDiscussionPost(
+      `This misses the affordability question. ${headline} https://example.org/story`,
+      [headline],
+    )).toBe("non-headline");
+  });
+
+  it("does not count a link-only post as conversation", () => {
+    expect(classifyPublicDiscussionPost("https://example.org/story", [headline])).toBe("link-only");
   });
 });
