@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { buildPublicLeadSeeds, classifyPublicDiscussionPost, matchesPublicTopic } from "./public-lead-discovery";
+import { buildPublicLeadSeeds, classifyPublicDiscussionPost, matchesPublicTopic, meetsInitialEvidenceCoverage } from "./public-lead-discovery";
+
+describe("automated evidence-candidate threshold", () => {
+  it("requires two distinct conversation authors and an independent reviewed publisher", () => {
+    expect(meetsInitialEvidenceCoverage(0, 2)).toBe(false);
+    expect(meetsInitialEvidenceCoverage(1, 2)).toBe(false);
+    expect(meetsInitialEvidenceCoverage(2, 0)).toBe(false);
+    expect(meetsInitialEvidenceCoverage(2, 1)).toBe(true);
+  });
+});
 
 describe("bounded source-led public lead discovery seeds", () => {
   const now = Date.parse("2026-10-08T16:00:00.000Z");

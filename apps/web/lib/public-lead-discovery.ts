@@ -18,6 +18,15 @@ export type ReviewedHeadlineSeed = {
 export type PublicDiscussionRole = "non-headline" | "headline-echo" | "link-only";
 
 /**
+ * Automatic retrieval may nominate a review candidate only when it has at
+ * least two distinct, non-headline conversation authors and a separate
+ * reviewed publisher. A single Q&A result or a provider trend is not enough.
+ */
+export function meetsInitialEvidenceCoverage(conversationAuthors: number, reviewedNewsOperators: number): boolean {
+  return conversationAuthors >= 2 && reviewedNewsOperators >= 1;
+}
+
+/**
  * Conservatively separate non-headline text from posts that only repeat a
  * reviewed article headline or contain only a link. This is a triage cue, not
  * authorship or sentiment detection; all results still need original-source

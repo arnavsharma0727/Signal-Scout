@@ -4,7 +4,7 @@ import { searchLemmyPosts } from "../apps/web/lib/lemmy-public";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "../apps/web/lib/live-topic-search";
 import { GlobalVoicesConnector } from "../apps/web/lib/connectors/global-voices";
 import { TheConversationConnector } from "../apps/web/lib/connectors/the-conversation";
-import { buildPublicLeadSeeds, classifyPublicDiscussionPost, matchesPublicTopic } from "../apps/web/lib/public-lead-discovery";
+import { buildPublicLeadSeeds, classifyPublicDiscussionPost, matchesPublicTopic, meetsInitialEvidenceCoverage } from "../apps/web/lib/public-lead-discovery";
 
 /**
  * Keyless, bounded discovery run. Live provider trends supply query seeds; the
@@ -234,7 +234,10 @@ async function discoverTopic(
   ]).size;
   const questionCount = questions.status === "fulfilled" ? questions.value.length : 0;
   const newsOperators = [...new Set(reviewedNews.map((item) => String(item.rawMetadata.publisher ?? item.sourceName)))];
-  const enoughCoverage = (combinedNonHeadlineAuthors >= 2 || questionCount > 0) && newsOperators.length > 0;
+  // Candidate status is intentionally stricter than “API returned something”:
+  // require two distinct human conversation bylines plus a separate reviewed
+  // reporting/analysis operator. This is still triage, never publication.
+  const enoughCoverage = meetsInitialEvidenceCoverage(combinedNonHeadlineAuthors, newsOperators.length);
   const providerError = social.status === "rejected" && lemmy.status === "rejected" && questions.status === "rejected" && news.status === "rejected";
   return {
     topic: query,
