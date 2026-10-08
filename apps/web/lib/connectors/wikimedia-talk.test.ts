@@ -76,7 +76,7 @@ describe("Wikimedia talk-page activity connector", () => {
       expect(parsed.searchParams.get("rcprop")).not.toContain("user");
       expect(parsed.searchParams.get("rcprop")).not.toContain("comment");
       expect((init as RequestInit).headers).toMatchObject({
-        "User-Agent": "SignalScout/1.0 (https://signal-scout-xi-ruby.vercel.app)",
+        "User-Agent": "Atlas/1.0 (https://signal-scout-xi-ruby.vercel.app)",
       });
     }
   });

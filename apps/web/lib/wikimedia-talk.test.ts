@@ -38,7 +38,7 @@ describe("searchWikimediaTalk", () => {
     expect(request.searchParams.get("srsearch")).toBe("inflation");
     expect(request.searchParams.get("srsort")).toBe("relevance");
     expect(init.headers).toMatchObject({
-      "Api-User-Agent": "SignalScout/0.1 (https://signal-scout-xi-ruby.vercel.app/)",
+      "Api-User-Agent": "Atlas/0.1 (https://signal-scout-xi-ruby.vercel.app/)",
     });
     expect(result).toEqual([{
       pageId: 123,

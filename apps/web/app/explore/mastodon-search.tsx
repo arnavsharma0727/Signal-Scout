@@ -157,7 +157,7 @@ export default function MastodonSearch({
         </ul>
         <label className="mt-3 flex items-start gap-2">
           <input className="mt-1" type="checkbox" checked={policiesReviewed} onChange={(event) => setPoliciesReviewed(event.target.checked)} />
-          I reviewed the server information for the instances I will query. Signal Scout is not accepting terms on my behalf.
+          I reviewed the server information for the instances I will query. Atlas is not accepting terms on my behalf.
         </label>
       </div>
       <form onSubmit={submit} className="mt-5 grid gap-3">

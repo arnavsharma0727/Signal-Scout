@@ -1,7 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "../../components/site-header";
 
-export const metadata = { title: "Privacy | Signal Scout" };
+export const metadata = { title: "Privacy | Atlas" };
 
 export default function Privacy() {
   return (
@@ -18,7 +18,7 @@ export default function Privacy() {
         </p>
         <section className="mt-8 space-y-6 leading-7 text-muted">
           <p>
-            Signal Scout has no advertising pixels or product analytics. If
+            Atlas has no advertising pixels or product analytics. If
             account sign-in is enabled, authenticated users can choose to save
             private research briefs. The site may receive ordinary server and
             hosting logs when you visit.
@@ -50,7 +50,7 @@ export default function Privacy() {
             citation; a limited content-warning label may remain when needed
             to explain why a preview was withheld. The app does not save an
             unselected search result or maintain a search-history list. This
-            local draft is not sent to Signal Scout, synced to an account, or
+            local draft is not sent to Atlas, synced to an account, or
             backed up by the app. It remains in
             the browser until you use “Clear page draft” or clear this site&apos;s
             browser data. Anyone with access to the same browser profile may be
@@ -85,7 +85,7 @@ export default function Privacy() {
           <p>
             Explore can also request a public hashtag timeline directly from
             mastodon.social. That provider receives the hashtag and the
-            visitor's network request; Signal Scout's server does not receive
+            visitor's network request; Atlas's server does not receive
             or persist the query, returned posts, author handles, or post text.
             Public posts are temporarily displayed in the browser with author
             and original-post links. Content warnings are respected; a warned
@@ -94,7 +94,7 @@ export default function Privacy() {
           <p>
             Explore can search one selected Wikipedia language edition for
             namespace-1 article talk pages. The topic goes directly from your
-            browser to that wiki's public API; Signal Scout does not receive
+            browser to that wiki's public API; Atlas does not receive
             or store the query or returned snippets. The wiki receives the
             request and associated network data under its own policies. Only
             matching pages edited in the previous 90 days are displayed, with
@@ -106,7 +106,7 @@ export default function Privacy() {
             newest matching posts per instance. Each server receives its own
             phrase directly from your browser; the French-speaking jlai.lu
             instance is available as an optional view.
-            Signal Scout does not receive the query or store the results.
+            Atlas does not receive the query or store the results.
             Results are limited to post title,
             original link, author attribution, community, date, and an optional
             language identifier; post bodies are discarded from the app result
@@ -128,7 +128,7 @@ export default function Privacy() {
             are not sent to those services by the current search flow.
           </p>
           <p>
-            On account save, Signal Scout
+            On account save, Atlas
             receives the visitor-written topic, thesis, alternatives,
             disconfirmation notes, source-specific paraphrase notes, plus
             link-only citations from a narrow reviewed source allowlist. The
@@ -143,7 +143,7 @@ export default function Privacy() {
           </p>
           <p>
             Publishing a lead is a separate, explicit public action. For
-            selected Bluesky, Mastodon, or Lemmy citations, Signal Scout stores
+            selected Bluesky, Mastodon, or Lemmy citations, Atlas stores
             and displays the public permalink, provider/host, displayed public
             byline, date, language, a generated citation label, and your own source-specific
             paraphrase. The post body and transient preview are discarded and

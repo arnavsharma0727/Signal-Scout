@@ -318,13 +318,13 @@ export function createResearchBriefMarkdown(draft: ResearchBriefDraft): string {
     asOf: Date.parse(draft.exportedAt),
   });
   const lines = [
-    readiness.readyForHumanReview ? "# Signal Scout human-reviewed lead dossier" : "# Signal Scout research brief",
+    readiness.readyForHumanReview ? "# Atlas human-reviewed lead dossier" : "# Atlas research brief",
     "",
     `Exported: ${cleanText(draft.exportedAt)}`,
     `Topic: ${cleanText(draft.topic) || "Not specified"}`,
     "",
     readiness.readyForHumanReview
-      ? "> The researcher attested to checking each relevant original source and completed the local evidence checklist. This is a human-authored research lead dossier, not an independently verified finding, representative sample, causal conclusion, or investment recommendation. It has not been published to Signal Scout."
+      ? "> The researcher attested to checking each relevant original source and completed the local evidence checklist. This is a human-authored research lead dossier, not an independently verified finding, representative sample, causal conclusion, or investment recommendation. It has not been published to Atlas."
       : "> Exploratory working notes only. Sources are query-selected, incomplete, and not representative by default. This brief is not an investment recommendation or evidence of causality.",
     "",
     "## Working thesis",

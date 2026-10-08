@@ -30,7 +30,7 @@ export class FedoraDiscussionConnector implements Connector {
     const response = await fetchWithRetry(FEDORA_DISCUSSION_LATEST, {
       headers: {
         accept: "application/json",
-        "user-agent": "SignalScout/1.0 (+https://signal-scout-xi-ruby.vercel.app/sources)",
+        "user-agent": "Atlas/1.0 (+https://signal-scout-xi-ruby.vercel.app/sources)",
       },
     }, { attempts: 2, timeoutMs: 12_000 });
     const finalUrl = new URL(response.url || FEDORA_DISCUSSION_LATEST);

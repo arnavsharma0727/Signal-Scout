@@ -248,7 +248,7 @@ function Shell({ children }: { children: React.ReactNode }) {
     <div className="min-h-screen">
       <header className="shell flex h-20 items-center justify-between border-b border-line">
         <Link href="/" className="font-extrabold">
-          SIGNAL SCOUT
+          ATLAS
         </Link>
         <Link href="/companies" className="text-sm text-muted">
           ← Research profiles

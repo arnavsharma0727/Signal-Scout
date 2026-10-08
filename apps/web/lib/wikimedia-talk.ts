@@ -66,7 +66,7 @@ export async function searchWikimediaTalk(
     {
       headers: {
         accept: "application/json",
-        "Api-User-Agent": "SignalScout/0.1 (https://signal-scout-xi-ruby.vercel.app/)",
+        "Api-User-Agent": "Atlas/0.1 (https://signal-scout-xi-ruby.vercel.app/)",
       },
     },
   );

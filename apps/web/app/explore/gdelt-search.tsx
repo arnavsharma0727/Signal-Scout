@@ -56,7 +56,7 @@ export default function GdeltSearch({
         publisher outlet’s country and original language. Country describes the outlet, not the
         audience or people discussing the topic. This is coverage discovery, not a complete news
         corpus, independent reporting count, or public-opinion measure. Your search is sent through
-        Signal Scout’s first-party, no-store bridge to GDELT; neither the query nor results are saved
+        Atlas’s first-party, no-store bridge to GDELT; neither the query nor results are saved
         by the app. GDELT may be slow or rate-limited.
       </p>
       <form onSubmit={submit} className="mt-5 grid gap-3 sm:grid-cols-2">

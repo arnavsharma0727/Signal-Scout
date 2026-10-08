@@ -1,4 +1,4 @@
-# Signal Scout delivery plan
+# Atlas delivery plan
 
 ## Goal
 

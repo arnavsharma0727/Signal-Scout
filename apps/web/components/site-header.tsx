@@ -6,9 +6,12 @@ export default function SiteHeader({ action }: { action?: ReactNode } = {}) {
   return (
     <header className="site-masthead">
       <div className="shell site-masthead-inner">
-        <Link href="/" className="site-brand" aria-label="Signal Scout home">
-          SIGNAL SCOUT
-        </Link>
+        <div className="site-brand-block">
+          <Link href="/" className="site-brand" aria-label="Atlas home">
+            ATLAS
+          </Link>
+          <span className="site-subheading">the engine for global markets</span>
+        </div>
         {action && <span className="site-tagline">{action}</span>}
       </div>
     </header>

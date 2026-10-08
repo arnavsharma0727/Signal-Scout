@@ -158,8 +158,8 @@ export default function ResearchBrief({
     try {
       await navigator.clipboard.writeText(markdown());
       setNotice(readiness.readyForHumanReview
-        ? "Lead dossier copied to clipboard. It has not been published or sent to Signal Scout."
-        : "Research brief copied to clipboard. It has not been sent to Signal Scout.");
+        ? "Lead dossier copied to clipboard. It has not been published or sent to Atlas."
+        : "Research brief copied to clipboard. It has not been sent to Atlas.");
     } catch {
       setNotice("Clipboard access was unavailable. Use the download action instead.");
     }
@@ -171,12 +171,12 @@ export default function ResearchBrief({
     const anchor = document.createElement("a");
     anchor.href = url;
     const slug = topic.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48);
-    anchor.download = `signal-scout-${readiness.readyForHumanReview ? "lead-dossier" : "brief"}${slug ? `-${slug}` : ""}.md`;
+    anchor.download = `atlas-${readiness.readyForHumanReview ? "lead-dossier" : "brief"}${slug ? `-${slug}` : ""}.md`;
     anchor.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     setNotice(readiness.readyForHumanReview
-      ? "Human-reviewed lead dossier downloaded to this device. It has not been published or sent to Signal Scout."
-      : "Research brief downloaded to this device. It has not been sent to Signal Scout.");
+      ? "Human-reviewed lead dossier downloaded to this device. It has not been published or sent to Atlas."
+      : "Research brief downloaded to this device. It has not been sent to Atlas.");
   }
 
   function clearDraft() {
@@ -250,7 +250,7 @@ export default function ResearchBrief({
       <div className="eyebrow">Saved in this browser · not synced</div>
       <h2 id="research-brief-title" className="mt-2 text-xl font-semibold">Build a research brief</h2>
       <p className="mt-2 text-sm leading-6 text-muted">
-        Add source links deliberately, mark each recent item as supporting, contradicting, context, or not relevant, then write your hypothesis, alternatives, and disconfirmation test. Unassessed or unrelated items cannot count toward the qualification checks. These are your judgments, not automated sentiment or verified facts. Citations and notes are autosaved only in this browser; they are sent to Signal Scout only if you explicitly save a private brief or publish a qualifying lead. Exporting or copying sends them only to your device or clipboard.
+        Add source links deliberately, mark each recent item as supporting, contradicting, context, or not relevant, then write your hypothesis, alternatives, and disconfirmation test. Unassessed or unrelated items cannot count toward the qualification checks. These are your judgments, not automated sentiment or verified facts. Citations and notes are autosaved only in this browser; they are sent to Atlas only if you explicitly save a private brief or publish a qualifying lead. Exporting or copying sends them only to your device or clipboard.
       </p>
 
       <div className="mt-5 grid gap-4">
@@ -275,7 +275,7 @@ export default function ResearchBrief({
       <div className="mt-6 border-t border-line pt-4">
         <div className="max-w-3xl border-b border-line pb-5">
           <h3 className="font-semibold">Add a verified publisher link</h3>
-          <p className="mt-1 text-xs leading-5 text-muted">For current reporting, survey research, or a reviewed issuer announcement missing from the feed. Only allowlisted first-party URLs qualify. Signal Scout stores the link, source label, and date you enter—not the headline, report/article body, or byline. Open the original yourself and document what it contributes below.</p>
+          <p className="mt-1 text-xs leading-5 text-muted">For current reporting, survey research, or a reviewed issuer announcement missing from the feed. Only allowlisted first-party URLs qualify. Atlas stores the link, source label, and date you enter—not the headline, report/article body, or byline. Open the original yourself and document what it contributes below.</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_12rem_auto] sm:items-end">
             <label className="block text-xs font-medium text-muted">Clean article URL
               <input className="mt-1 block w-full rounded border border-line bg-white px-3 py-2.5 text-sm font-normal text-ink outline-none focus:border-ink" type="url" value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="https://publisher.example/article" />
@@ -410,7 +410,7 @@ export default function ResearchBrief({
           <div className="eyebrow">Shared lead queue</div>
           <h3 className="mt-2 font-semibold">Publish this researcher-reviewed lead?</h3>
           <p className="mt-1 text-xs leading-5 text-muted">
-            Publishing shares your thesis, alternatives, disconfirmation test, source links, public byline labels, and source-specific notes with anyone using Signal Scout. Bluesky, Mastodon, Lemmy, and added publisher/survey/issuer links are stored only as links plus minimal citation metadata; post text, headlines, report/article text, and bylines are not stored. A Stack Exchange question is rechecked at publication and is shared only when its current license is CC BY-SA 4.0, with its original title, author attribution/profile, and license; its body is not stored. These source records are public. The result is a researcher-reviewed prompt, not an independently verified finding or investment recommendation.
+            Publishing shares your thesis, alternatives, disconfirmation test, source links, public byline labels, and source-specific notes with anyone using Atlas. Bluesky, Mastodon, Lemmy, and added publisher/survey/issuer links are stored only as links plus minimal citation metadata; post text, headlines, report/article text, and bylines are not stored. A Stack Exchange question is rechecked at publication and is shared only when its current license is CC BY-SA 4.0, with its original title, author attribution/profile, and license; its body is not stored. These source records are public. The result is a researcher-reviewed prompt, not an independently verified finding or investment recommendation.
           </p>
           {!hasPublishableSources ? (
             <p className="mt-3 text-sm leading-6 text-muted">This checklist passes, but one or more citations is not an approved stored record or a supported public social permalink. Keep or export the local dossier; it cannot be published to the shared queue.</p>
@@ -458,8 +458,8 @@ export default function ResearchBrief({
         </div>
         <p className="mt-2 text-xs leading-5 text-muted">
           {authAvailable
-            ? <>Saving sends this topic and your notes to Signal Scout and Supabase, plus link-only citations from approved sources. {privateLinks.length} citation(s) will be kept; {excludedCount} other selected item(s) will be omitted. Titles, excerpts, contributor names, social posts, and search queries are not saved. You must be signed in; saved briefs are private and not public leads.</>
-            : <>Your draft is not sent to Signal Scout. Browser-local autosave is {localAutosaveStatus === "unavailable" ? "unavailable; download your draft before leaving this page." : localAutosaveStatus === "active" ? "active on this device; it is not synced and can be lost if browser data is cleared." : "being checked."} Account storage requires deployment authentication to be configured.</>}
+            ? <>Saving sends this topic and your notes to Atlas and Supabase, plus link-only citations from approved sources. {privateLinks.length} citation(s) will be kept; {excludedCount} other selected item(s) will be omitted. Titles, excerpts, contributor names, social posts, and search queries are not saved. You must be signed in; saved briefs are private and not public leads.</>
+            : <>Your draft is not sent to Atlas. Browser-local autosave is {localAutosaveStatus === "unavailable" ? "unavailable; download your draft before leaving this page." : localAutosaveStatus === "active" ? "active on this device; it is not synced and can be lost if browser data is cleared." : "being checked."} Account storage requires deployment authentication to be configured.</>}
         </p>
       </form>
       {notice && <p role="status" className="mt-3 text-xs text-muted">{notice}</p>}

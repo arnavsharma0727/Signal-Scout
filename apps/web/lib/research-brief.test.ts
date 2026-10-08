@@ -152,7 +152,7 @@ describe("createResearchBriefMarkdown", () => {
       evidence: completeEvidence,
       exportedAt: "2026-10-01T12:00:00Z",
     });
-    expect(markdown).toContain("# Signal Scout human-reviewed lead dossier");
+    expect(markdown).toContain("# Atlas human-reviewed lead dossier");
     expect(markdown).toContain("not independently verified or published");
     expect(markdown).toContain("original checked by researcher");
   });
@@ -172,7 +172,7 @@ describe("createResearchBriefMarkdown", () => {
     expect(markdown).toContain("At least three unique recent, relevant citations: 2 unique source link(s)");
     expect(markdown).toContain("Multiple conversation bylines; no single label over 60%: 1 distinct byline label(s)");
     expect(markdown).toContain("1 duplicate link(s) are counted only once");
-    expect(markdown).toContain("# Signal Scout research brief");
+    expect(markdown).toContain("# Atlas research brief");
   });
 
   it("includes the researcher's source-specific paraphrase in the exported evidence record", () => {

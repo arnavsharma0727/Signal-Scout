@@ -112,7 +112,7 @@ export default async function DivergenceDetail({
     <div className="min-h-screen">
       <header className="shell flex h-20 items-center justify-between border-b border-line">
         <Link href="/" className="font-extrabold">
-          SIGNAL SCOUT
+          ATLAS
         </Link>
         <Link href="/candidates" className="text-sm text-muted">
           ← Lead review
@@ -175,7 +175,7 @@ export default async function DivergenceDetail({
           <ListValue value={lead.validation_steps_json} />
         </section>
         <p className="mt-5 text-xs leading-5 text-muted">
-          A researcher selected these citations, assessed them, and attested to checking their originals. Social citations retain only a public permalink, minimal citation metadata, and the researcher&apos;s paraphrase; post text is not stored or republished. Signal Scout verifies the recorded source allowlist and linked evidence, not the interpretation or author identity. Original source context is authoritative. Translation is not shown unless a permitted, labeled translation exists. This is a research prompt, not financial advice or a buy/sell recommendation.
+          A researcher selected these citations, assessed them, and attested to checking their originals. Social citations retain only a public permalink, minimal citation metadata, and the researcher&apos;s paraphrase; post text is not stored or republished. Atlas verifies the recorded source allowlist and linked evidence, not the interpretation or author identity. Original source context is authoritative. Translation is not shown unless a permitted, labeled translation exists. This is a research prompt, not financial advice or a buy/sell recommendation.
         </p>
         {user?.id === lead.created_by && <form action={withdrawResearchLead} className="mt-6 border-t border-line pt-4">
           <input type="hidden" name="id" value={lead.id} />
@@ -294,7 +294,7 @@ function Unavailable() {
     <div className="min-h-screen">
       <header className="shell flex h-20 items-center justify-between border-b border-line">
         <Link href="/" className="font-extrabold">
-          SIGNAL SCOUT
+          ATLAS
         </Link>
         <Link href="/candidates" className="text-sm text-muted">
           ← Lead review

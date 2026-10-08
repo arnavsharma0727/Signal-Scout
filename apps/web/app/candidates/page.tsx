@@ -130,7 +130,7 @@ export default async function Candidates({ searchParams }: { searchParams: Promi
             <>
               <h2 className="text-xl font-semibold">No evidence-qualified leads yet.</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-muted">
-                Current evidence does not meet the full review bar. Signal Scout will not convert a small or repetitive sample into a lead. Run a live, topic-specific search, inspect the original sources, record supporting and contradicting evidence, and state what would disconfirm the thesis.
+                Current evidence does not meet the full review bar. Atlas will not convert a small or repetitive sample into a lead. Run a live, topic-specific search, inspect the original sources, record supporting and contradicting evidence, and state what would disconfirm the thesis.
               </p>
               <Link className="btn btn-primary mt-5" href="/">Start a research sweep</Link>
             </>

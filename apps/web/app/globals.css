@@ -33,8 +33,10 @@ summary{line-height:1.5}
 .research-shell{min-height:100vh;background:#232d4b;color:#f7f7fb}
 .site-masthead{border-bottom:1px solid #3a4668;background:#232d4b}
 .site-masthead-inner{display:flex;min-height:72px;align-items:center;justify-content:space-between;gap:16px}
+.site-brand-block{display:grid;gap:3px}
 .site-brand{display:flex;align-items:center;gap:10px;color:#f7f7fb;font-size:12px;font-weight:750;letter-spacing:.14em}
-.site-brand::before{content:"S";display:grid;width:28px;height:28px;place-items:center;border:1px solid #e57200;border-radius:7px;background:#e57200;color:#232d4b;font-size:13px;font-weight:750;letter-spacing:0}
+.site-brand::before{content:"A";display:grid;width:28px;height:28px;place-items:center;border:1px solid #e57200;border-radius:7px;background:#e57200;color:#232d4b;font-size:13px;font-weight:750;letter-spacing:0}
+.site-subheading{padding-left:38px;color:#c8cbd2;font-size:10px;letter-spacing:.025em}
 .site-tagline{color:#aab0c3;font-size:12px}
 .research-shell .market-search--landing{min-height:calc(100svh - 72px);display:flex;flex-direction:column;justify-content:center;padding:24px 0 72px}
 .market-search-form{display:flex;width:min(100%,820px);margin-inline:auto;border:1px solid #424a65;border-radius:9px;background:#111831;padding:6px;box-shadow:0 14px 42px rgb(0 0 0 / 20%);transition:border-color .16s ease,box-shadow .16s ease}

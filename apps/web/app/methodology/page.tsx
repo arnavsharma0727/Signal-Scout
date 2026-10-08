@@ -4,7 +4,7 @@ import SiteHeader from "../../components/site-header";
 const sections = [
   {
     title: "Start with one question",
-    body: "Search a concrete topic across selected public discussion and reporting sources. Each connector has its own query, language, date window, and result cap. Results are separate samples—not a census, market-wide measure, or proxy for a country. Enter equivalent phrases yourself; Signal Scout does not translate or infer stance.",
+    body: "Search a concrete topic across selected public discussion and reporting sources. Each connector has its own query, language, date window, and result cap. Results are separate samples—not a census, market-wide measure, or proxy for a country. Enter equivalent phrases yourself; Atlas does not translate or infer stance.",
   },
   {
     title: "Check original evidence",
@@ -31,7 +31,7 @@ export default function Methodology() {
             From conversation to a traceable research prompt
           </h1>
           <p className="mt-4 text-base leading-7 text-muted">
-            Signal Scout helps a researcher find a discussion, inspect its sources,
+            Atlas helps a researcher find a discussion, inspect its sources,
             and document a tentative thesis alongside counter-evidence. It does not
             generate buy/sell calls or automatically declare a market signal.
           </p>
@@ -52,7 +52,7 @@ export default function Methodology() {
           <p className="mt-2 max-w-4xl text-sm leading-6 text-muted">
             Source coverage depends on public access, operator terms, language,
             indexing, query choice, feed activity, and API limits. Counts describe
-            records Signal Scout actually received; they do not estimate public
+            records Atlas actually received; they do not estimate public
             opinion or investor attention. News, specialist Q&amp;A, and forums are
             different evidence classes and should not be pooled as if they had the
             same audience. No thesis should be treated as causal or actionable

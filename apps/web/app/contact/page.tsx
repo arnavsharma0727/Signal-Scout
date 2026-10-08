@@ -1,7 +1,7 @@
 import Link from "next/link";
 import SiteHeader from "../../components/site-header";
 
-export const metadata = { title: "Contact | Signal Scout" };
+export const metadata = { title: "Contact | Atlas" };
 
 export default function Contact() {
   return (
@@ -26,7 +26,7 @@ export default function Contact() {
         </p>
         <a
           className="btn mt-7"
-          href="https://github.com/arnavsharma0727/Signal-Scout/issues"
+          href="https://github.com/arnavsharma0727/atlas/issues"
           target="_blank"
           rel="noreferrer"
         >

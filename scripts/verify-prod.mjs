@@ -52,7 +52,7 @@ try {
 try {
   const response = await fetch(`${base}/sources`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Hacker News · public comment search') && page.includes('Hacker News Search API documentation') && page.includes('Signal Scout does not schedule collection or persist comment text')) pass('keyless Hacker News search is disclosed','on-demand only; no scheduled collection or saved comment text');
+  if (response.ok && page.includes('Hacker News · public comment search') && page.includes('Hacker News Search API documentation') && page.includes('Atlas does not schedule collection or persist comment text')) pass('keyless Hacker News search is disclosed','on-demand only; no scheduled collection or saved comment text');
   else fail('keyless Hacker News search is disclosed',`HTTP ${response.status}; current search-source description missing`);
   if (response.ok && page.includes('GDELT · retired from live search') && page.includes('HTTP 429') && page.includes('Mastodon · retired from live keyword search') && page.includes('Bluesky · retired from live search') && page.includes('HTTP 403') && page.includes('feddit.uk was removed')) pass('unavailable search providers are retired','GDELT, Mastodon keyword search, Bluesky, and private feddit.uk are not presented as active providers');
   else fail('unavailable search providers are retired',`HTTP ${response.status}; provider retirement state missing`);
@@ -61,7 +61,7 @@ try {
 try {
   const response = await fetch(`${base}/explore`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Search an industry, company, or market interest') && page.includes('SIGNAL SCOUT')) pass('international live search is public', `HTTP ${response.status}; minimal market-search input rendered`);
+  if (response.ok && page.includes('Search an industry, company, or market interest') && page.includes('ATLAS')) pass('international live search is public', `HTTP ${response.status}; minimal market-search input rendered`);
   else fail('international live search is public', `HTTP ${response.status}; focused search UI missing`);
   if (response.ok && page.includes('Search an industry, company, or market interest') && !page.includes('Build a research brief') && !page.includes('Specialized source views')) pass('search landing stays single-purpose','the initial screen contains only the market search, not a briefing workflow or secondary source dashboard');
   else fail('search landing stays single-purpose',`HTTP ${response.status}; unrelated workflow appeared on the initial screen`);
@@ -77,7 +77,7 @@ try {
 try {
   const response = await fetch(`${base}/`, {redirect:'follow',signal:AbortSignal.timeout(15000)});
   const page = await response.text();
-  if (response.ok && page.includes('Search an industry, company, or market interest') && page.includes('SIGNAL SCOUT') && !page.includes('Hacker News comment')) pass('public market search withholds uncleared source material','minimal live-query entry point is public and uncleared source material remains absent');
+  if (response.ok && page.includes('Search an industry, company, or market interest') && page.includes('ATLAS') && !page.includes('Hacker News comment')) pass('public market search withholds uncleared source material','minimal live-query entry point is public and uncleared source material remains absent');
   else fail('public market search withholds uncleared source material',`HTTP ${response.status}; focused live search missing or uncleared source material may be rendered`);
   if (response.ok && page.includes('Search an industry, company, or market interest') && !page.includes('Build a research brief') && !page.includes('Signal review')) pass('landing page contains only market search','the initial screen is a single focused search, without leads, watchlists, or saved briefs');
   else fail('landing page contains only market search',`HTTP ${response.status}; unrelated user-facing workflow is present on the landing page`);
@@ -225,7 +225,7 @@ if (!url || !key) {
   } catch (error) { fail('database-backed research checks', error.message); }
 }
 
-console.log(`Signal Scout production verification: ${base}`);
+console.log(`Atlas production verification: ${base}`);
 for (const gate of gates) console.log(`${gate.ok ? 'PASS' : 'FAIL'} ${gate.name}: ${gate.detail}`);
 const failed = gates.filter(g=>!g.ok).length;
 console.log(`\n${gates.length-failed}/${gates.length} checks passed; ${failed} release gates remain.`);

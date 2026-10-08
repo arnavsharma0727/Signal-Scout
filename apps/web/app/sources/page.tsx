@@ -107,7 +107,7 @@ export default async function Sources() {
       enabled: true,
       onDemand: true,
       detail:
-        "On-demand search uses the public Algolia Hacker News Search API, sorted by relevance and filtered to comments from the last 30 days. Matching excerpts are shown transiently in the search session only; Signal Scout does not schedule collection or persist comment text. This is a technology-oriented, English-language community, not an international or representative sample. Public API availability does not grant broader reuse rights; review provider terms before expanding retention or commercial use.",
+        "On-demand search uses the public Algolia Hacker News Search API, sorted by relevance and filtered to comments from the last 30 days. Matching excerpts are shown transiently in the search session only; Atlas does not schedule collection or persist comment text. This is a technology-oriented, English-language community, not an international or representative sample. Public API availability does not grant broader reuse rights; review provider terms before expanding retention or commercial use.",
       referenceUrl: "https://hn.algolia.com/api",
       referenceLabel: "Hacker News Search API documentation",
       secondaryReferenceUrl: "https://github.com/HackerNews/API",
@@ -152,7 +152,7 @@ export default async function Sources() {
       referenceUrl: "https://join-lemmy.org/docs/contributors/04-api.html",
       referenceLabel: "Official Lemmy API documentation",
       detail:
-        "Visitor-triggered, keyless search of up to 20 newest matching posts per selected instance: lemmy.world, discuss.tchncs.de, feddit.org, or the French-speaking jlai.lu instance. feddit.uk was removed after its API returned instance_is_private. Each instance can receive a visitor-supplied phrase; Signal Scout does not translate or persist search phrases. A short excerpt is transiently shown for manual relevance review; saved citations discard it. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Federation can duplicate posts; these are incomplete, non-independent views, not a global timeline, country proxy, representative population sample, or measure of attention. Posts remain their authors’ content; no blanket license is implied. Visitors must review selected-server terms and privacy information and affirm before searching.",
+        "Visitor-triggered, keyless search of up to 20 newest matching posts per selected instance: lemmy.world, discuss.tchncs.de, feddit.org, or the French-speaking jlai.lu instance. feddit.uk was removed after its API returned instance_is_private. Each instance can receive a visitor-supplied phrase; Atlas does not translate or persist search phrases. A short excerpt is transiently shown for manual relevance review; saved citations discard it. Bot-marked, NSFW, removed, stale, future-dated, and unlinked items are filtered. Federation can duplicate posts; these are incomplete, non-independent views, not a global timeline, country proxy, representative population sample, or measure of attention. Posts remain their authors’ content; no blanket license is implied. Visitors must review selected-server terms and privacy information and affirm before searching.",
     },
     {
       name: "Wikimedia · article talk pages",
@@ -169,7 +169,7 @@ export default async function Sources() {
       referenceUrl: "https://meta.wikimedia.org/w/index.php?oldid=30328679#Board_of_Trustees_Approves_Closure_of_Wikinews",
       referenceLabel: "Wikimedia Foundation closure notice",
       detail:
-        "The Wikimedia Foundation closed all Wikinews editions effective 2026-05-04; they are read-only archives. A live API search returned only 2024 English results, so Signal Scout removed Wikinews from current-source searches. Archived content is not used as current evidence. See the Wikimedia Foundation’s project-closure announcement and the current distribution list.",
+        "The Wikimedia Foundation closed all Wikinews editions effective 2026-05-04; they are read-only archives. A live API search returned only 2024 English results, so Atlas removed Wikinews from current-source searches. Archived content is not used as current evidence. See the Wikimedia Foundation’s project-closure announcement and the current distribution list.",
     },
     {
       name: "European Commission Presscorner · official context",
@@ -183,14 +183,14 @@ export default async function Sources() {
       key: "the-conversation",
       enabled: true,
       detail:
-        "Daily keyless Atom collection from the English Australia, U.S., U.K., Canada, Africa, and New Zealand editions. Each retained feed entry must explicitly carry a Creative Commons attribution/no-derivatives notice. Signal Scout keeps the unmodified headline, author byline, publication date, original link, edition, and rights notice; summaries and article bodies are discarded. These are editions within one publisher network, not independent outlets or proxies for audience location; this expert analysis is distinct from forum discussion and breaking-news coverage.",
+        "Daily keyless Atom collection from the English Australia, U.S., U.K., Canada, Africa, and New Zealand editions. Each retained feed entry must explicitly carry a Creative Commons attribution/no-derivatives notice. Atlas keeps the unmodified headline, author byline, publication date, original link, edition, and rights notice; summaries and article bodies are discarded. These are editions within one publisher network, not independent outlets or proxies for audience location; this expert analysis is distinct from forum discussion and breaking-news coverage.",
     },
     {
       name: "Global Voices · international community reporting",
       key: "global-voices",
       enabled: true,
       detail:
-        "Daily keyless RSS collection plus on-demand search through the public WordPress API across twelve localized editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. The provider may match article text while Signal Scout requests and displays only headline metadata and links through a first-party no-store route. Edition language does not establish author or audience geography. RSS-retained content follows item-level rights checks and attribution; descriptions and story bodies are discarded. Localized editions share one publisher and may include translations; this is reporting, not raw forum discussion, independent outlets, or a representative survey.",
+        "Daily keyless RSS collection plus on-demand search through the public WordPress API across twelve localized editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. The provider may match article text while Atlas requests and displays only headline metadata and links through a first-party no-store route. Edition language does not establish author or audience geography. RSS-retained content follows item-level rights checks and attribution; descriptions and story bodies are discarded. Localized editions share one publisher and may include translations; this is reporting, not raw forum discussion, independent outlets, or a representative survey.",
     },
     {
       name: "Bluesky · retired from live search",

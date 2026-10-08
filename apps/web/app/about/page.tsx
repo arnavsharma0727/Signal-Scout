@@ -3,13 +3,13 @@ import SiteHeader from "../../components/site-header";
 
 export default function About() {
   return (
-    <Page title="About Signal Scout" eyebrow="Purpose">
+    <Page title="About Atlas" eyebrow="Purpose">
       <div className="panel max-w-3xl p-8">
         <p className="text-2xl font-semibold leading-9">
           From public conversation to a question worth researching.
         </p>
         <p className="mt-5 leading-7 text-muted">
-          Signal Scout is a search tool for seeing how a market interest appears
+          Atlas is a search tool for seeing how a market interest appears
           across selected public communities and multilingual reporting. Search
           results link to their original sources and keep each source sample
           separate; news and discussion are not treated as interchangeable.
@@ -23,7 +23,7 @@ export default function About() {
           publisher location does not establish where a speaker or audience is.
         </p>
         <p className="mt-5 leading-7 text-muted">
-          Signal Scout is a market-interest search engine, not a stock analyzer.
+          Atlas is a market-interest search engine, not a stock analyzer.
           It does not produce buy/sell recommendations or measure what a country
           believes. Results are incomplete provider samples, not representative
           surveys; open the original sources to inspect context.

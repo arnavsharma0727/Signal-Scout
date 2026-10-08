@@ -69,7 +69,7 @@ export default function LemmySearch({
         and each selected instance’s linked legal and privacy information before use.
       </p>
       <p className="mt-2 text-xs leading-5 text-muted">
-        For cross-language comparison, enter your own equivalent phrase for each server. Signal Scout does not translate or merge results; each server receives only its own phrase.
+        For cross-language comparison, enter your own equivalent phrase for each server. Atlas does not translate or merge results; each server receives only its own phrase.
       </p>
       <fieldset className="mt-4 grid gap-2 border-y border-line py-4">
         <legend className="text-sm font-medium">Select server views</legend>
@@ -172,7 +172,7 @@ export default function LemmySearch({
                               attributionUrl: post.authorUrl ?? post.url,
                               sourceOperatorKey: "lemmy-federation",
                               sourceOperatorLabel: "Lemmy federated search",
-                              context: "Visitor-entered search; query and unselected results are not retained by Signal Scout",
+                              context: "Visitor-entered search; query and unselected results are not retained by Atlas",
                             })}
                           >
                             Add citation to brief

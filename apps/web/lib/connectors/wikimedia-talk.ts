@@ -6,7 +6,7 @@ import type { Connector, ConnectorResult } from "./types";
 const MAX_ITEMS_PER_EDITION = 500;
 const MAX_RESPONSE_BYTES = 1_000_000;
 const USER_AGENT =
-  "SignalScout/1.0 (https://signal-scout-xi-ruby.vercel.app)";
+  "Atlas/1.0 (https://signal-scout-xi-ruby.vercel.app)";
 const LICENSE_URL = "https://creativecommons.org/licenses/by-sa/4.0/";
 
 type RecentChange = {
