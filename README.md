@@ -1,6 +1,6 @@
 # Atlas
 
-**the engine for global markets**
+**The Engine for Global Markets**
 
 Atlas is an international conversation-to-research workspace, not a stock analyzer. It separates public discussion from reporting and official context, preserves links and source limitations, and lets a researcher build a private, citation-first thesis brief. It does not issue buy/sell recommendations or claim to represent a country's beliefs.
 

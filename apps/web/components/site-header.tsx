@@ -10,7 +10,7 @@ export default function SiteHeader({ action }: { action?: ReactNode } = {}) {
           <Link href="/" className="site-brand" aria-label="Atlas home">
             ATLAS
           </Link>
-          <span className="site-subheading">the engine for global markets</span>
+          <span className="site-subheading">The Engine for Global Markets</span>
         </div>
         {action && <span className="site-tagline">{action}</span>}
       </div>
