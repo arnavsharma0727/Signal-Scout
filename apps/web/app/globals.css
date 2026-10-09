@@ -90,13 +90,6 @@ summary{line-height:1.5}
 .perspective-card h4{margin:0;color:#f7f7fb;font-size:12px;line-height:1.45}
 .perspective-card>header>span{flex:none;color:#aab0c3;font-size:10px}
 .perspective-card ul{margin:8px 0 0;padding:0;list-style:none}
-.perspective-phrases{margin-top:9px;border-left:2px solid #e57200;padding-left:9px}
-.perspective-phrases>p{margin:0;color:#f0f1f6;font-size:10px;font-weight:600;line-height:1.5}
-.perspective-phrases>p span,.perspective-phrases li>span:not(.overview-citation-ref){color:#aab0c3;font-weight:400}
-.perspective-phrases ul{margin:4px 0 0;padding:0;list-style:none}
-.perspective-phrases li{color:#f7f7fb;font-size:11px;line-height:1.6}
-.perspective-phrases li+li{margin-top:2px}
-.perspective-phrases q{font-weight:650}
 .perspective-card li+li{margin-top:9px;border-top:1px solid #303750;padding-top:9px}
 .perspective-card li>p{margin:0;color:#e0e3ec;font-size:12px;line-height:1.65;overflow-wrap:anywhere}
 .overview-citation-ref,.source-citation-ref{display:inline-flex;align-items:center;margin-left:6px;border:1px solid #53607f;border-radius:999px;padding:1px 5px;color:#f2c69d;font-size:9px;font-weight:700;line-height:1.4;vertical-align:middle}

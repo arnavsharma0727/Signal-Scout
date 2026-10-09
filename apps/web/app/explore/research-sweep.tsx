@@ -5,7 +5,7 @@ import { DISCUSSION_COMMUNITIES } from "../../lib/live-topic-search";
 import { languageTag } from "../../lib/language-tag";
 import { LEMMY_INSTANCES, type LemmyInstance } from "../../lib/lemmy-public";
 import { runResearchSweep, ResearchSweepSourceResult } from "../../lib/research-sweep";
-import { buildCitationIds, buildPerspectiveSnapshot, citationKey, emptyInternationalOverviewMessage, findRepeatedPhrases } from "../../lib/perspective-snapshot";
+import { buildCitationIds, buildPerspectiveSnapshot, citationKey, emptyInternationalOverviewMessage } from "../../lib/perspective-snapshot";
 
 const DEFAULT_COMMUNITIES = ["economics", "quant", "money"];
 
@@ -248,7 +248,7 @@ function PerspectiveSnapshot({ results, citationIds }: { results: ResearchSweepS
           <p className="eyebrow">Overview</p>
           <h3 id="perspective-snapshot-title">Perspectives at a glance</h3>
         </div>
-        <p>Repeated wording and sample excerpts; reference IDs match citations below.</p>
+        <p>Recent source excerpts; reference IDs match citations below.</p>
       </header>
       <p className="perspective-snapshot-note">
         Highlights are short source excerpts or headlines, not a generated synthesis. English-language discussion is not a U.S. sample; source language and publisher edition do not establish contributor location. Discussion, expert Q&amp;A, and reporting are kept in separate groups.
@@ -261,29 +261,18 @@ function PerspectiveSnapshot({ results, citationIds }: { results: ResearchSweepS
           <PerspectiveGroup key={`${group.source}:${group.language}:${group.evidenceClass}`} title={`${group.source} · ${group.evidenceClass} · ${group.language}`} items={group.items} citationIds={citationIds} />
         ))}
         {!snapshot.otherPerspectives.length && (
-          <p className="perspective-no-global">{emptyInternationalOverviewMessage(results)} Try a researcher-supplied local-language equivalent in Refine search where supported.</p>
+          <p className="perspective-no-global">{emptyInternationalOverviewMessage(results)}</p>
         )}
       </div>
     </section>
   );
 }
 
-function PerspectiveGroup({ title, items, citationIds, empty }: { title: string; items: Array<{ id: string; resultKey: string; query: string; title: string; url: string; transientPreview?: string }>; citationIds: Map<string, string>; empty?: string }) {
-  const repeatedPhrases = findRepeatedPhrases(items);
+function PerspectiveGroup({ title, items, citationIds, empty }: { title: string; items: Array<{ id: string; resultKey: string; title: string; url: string; transientPreview?: string }>; citationIds: Map<string, string>; empty?: string }) {
   return (
     <article className="perspective-card">
       <header><h4>{title}</h4><span>{items.length} {items.length === 1 ? "result" : "results"}</span></header>
       {items.length ? (
-        <>
-        {repeatedPhrases.length > 0 && <div className="perspective-phrases">
-          <p>Repeated wording in these results <span>(normalized text matches, not a sentiment or independent-view measure)</span></p>
-          <ul>{repeatedPhrases.map(({ phrase, items: matches }) => (
-            <li key={phrase}>
-              <q>{phrase}</q> <span>in {matches.length} records</span>
-              {matches.map((item) => citationIds.has(citationKey(item.resultKey, item.id)) && <span className="overview-citation-ref" key={`${item.resultKey}:${item.id}`}>{citationIds.get(citationKey(item.resultKey, item.id))}</span>)}
-            </li>
-          ))}</ul>
-        </div>}
         <ul>{items.slice(0, 2).map((item) => (
           <li key={item.url}>
             <p>{item.transientPreview ? compactOverview(item.transientPreview) : item.title}
@@ -291,7 +280,6 @@ function PerspectiveGroup({ title, items, citationIds, empty }: { title: string;
             </p>
           </li>
         ))}</ul>
-        </>
       ) : <p className="perspective-empty">{empty}</p>}
     </article>
   );
