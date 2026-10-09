@@ -22,8 +22,8 @@ export default function Privacy() {
             <p>
               Search requests are sent to the relevant public search provider.
               The Global Voices request is routed through an Atlas server
-              endpoint; that endpoint applies a short-window rate limit using
-              request network information. Hacker News, Stack Exchange, Lemmy,
+              endpoint; that endpoint applies a short-window, IP-keyed,
+              best-effort rate limit. Hacker News, Stack Exchange, Lemmy,
               and optional Bluesky searches are sent from your browser to their
               providers. Bluesky excerpts are held transiently in the page and
               provider-labeled posts are shown without a text preview. Those

@@ -2,9 +2,10 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { DISCUSSION_COMMUNITIES } from "../../lib/live-topic-search";
+import { languageTag } from "../../lib/language-tag";
 import { LEMMY_INSTANCES, type LemmyInstance } from "../../lib/lemmy-public";
 import { runResearchSweep, ResearchSweepSourceResult } from "../../lib/research-sweep";
-import { buildCitationIds, buildPerspectiveSnapshot, citationKey, findRepeatedPhrases } from "../../lib/perspective-snapshot";
+import { buildCitationIds, buildPerspectiveSnapshot, citationKey, emptyInternationalOverviewMessage, findRepeatedPhrases } from "../../lib/perspective-snapshot";
 
 const DEFAULT_COMMUNITIES = ["economics", "quant", "money"];
 
@@ -260,7 +261,7 @@ function PerspectiveSnapshot({ results, citationIds }: { results: ResearchSweepS
           <PerspectiveGroup key={`${group.source}:${group.language}:${group.evidenceClass}`} title={`${group.source} · ${group.evidenceClass} · ${group.language}`} items={group.items} citationIds={citationIds} />
         ))}
         {!snapshot.otherPerspectives.length && (
-          <p className="perspective-no-global">No non-English source or language-labeled international reporting matched this phrase. Try a local-language equivalent in Refine community coverage; an empty result is not evidence that a view is absent.</p>
+          <p className="perspective-no-global">{emptyInternationalOverviewMessage(results)} Try a researcher-supplied local-language equivalent in Refine search where supported.</p>
         )}
       </div>
     </section>
@@ -321,7 +322,7 @@ function SourceResults({ result, citationIds }: { result: ResearchSweepSourceRes
               <span className="source-citation-ref">{citationIds.get(citationKey(result.key, item.id))}</span>
               <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
               {(item.context?.includes("Preview withheld") || item.context?.includes("Identical normalized text")) && <p className="source-context-note">{item.context}</p>}
-              {item.transientPreview && <p className="source-preview" lang={item.language === "not provided" ? undefined : item.language}>{compactPreview(item.transientPreview)}</p>}
+              {item.transientPreview && <p className="source-preview" lang={languageTag(item.language)}>{compactPreview(item.transientPreview)}</p>}
               <p className="source-meta">
                 {item.source} · {item.language} · {item.timeLabel.toLowerCase()} <time dateTime={item.timeValue}>{new Date(item.timeValue).toISOString().replace("T", " ").replace(".000Z", " UTC")}</time>
               </p>

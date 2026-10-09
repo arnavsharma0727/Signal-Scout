@@ -1,4 +1,5 @@
 import { searchBlueskyPosts } from "./bluesky-public";
+import { withFetchTimeout } from "./fetch-with-timeout";
 import { searchHackerNewsComments } from "./hacker-news-search";
 import type { GlobalVoicesEditionResult } from "./global-voices-search";
 import { DISCUSSION_COMMUNITIES, searchLiveDiscussion } from "./live-topic-search";
@@ -54,6 +55,7 @@ export async function runResearchSweep(
 ): Promise<ResearchSweepSourceResult[]> {
   const query = input.trim();
   const asOf = new Date(now).toISOString();
+  const boundedFetch = withFetchTimeout(fetcher);
   const additionalQueries = selection.additionalQueries ?? [];
   if (additionalQueries.length > 3 || additionalQueries.some((term) => term.trim().length < 2 || term.trim().length > 100)) {
     throw new Error("Add no more than three alternate phrases, each 2–100 characters.");
@@ -119,7 +121,7 @@ export async function runResearchSweep(
   if (selection.hackerNews) {
     for (const [index, term] of [query, ...additionalQueries.map((value) => value.trim())].entries()) {
       tasks.push(capture(index === 0 ? "hacker-news" : `hacker-news:alternate:${index}`, index === 0 ? "Hacker News · tech community" : `Hacker News · alternate phrase ${index}`, term, asOf, "Relevant comments from the last 30 days · up to 20", async () =>
-      (await searchHackerNewsComments(term, fetcher, now)).map((item) => ({
+      (await searchHackerNewsComments(term, boundedFetch, now)).map((item) => ({
         id: `hacker-news:${item.id}`,
         title: item.title,
         url: item.url,
@@ -143,7 +145,7 @@ export async function runResearchSweep(
       const key = index === 0 ? "global-voices" : `global-voices:alternate:${index}`;
       const label = index === 0 ? "Global Voices · multilingual reporting" : `Global Voices · alternate phrase ${index}`;
       try {
-        const response = await fetcher("/api/research/global-voices", {
+        const response = await boundedFetch("/api/research/global-voices", {
           method: "POST",
           headers: { accept: "application/json", "content-type": "application/json" },
           body: JSON.stringify({ query: term }),
@@ -205,7 +207,7 @@ export async function runResearchSweep(
       continue;
     }
     tasks.push(capture(`stack-exchange:${site}`, community.label, term, asOf, "Title matches within 30 days", async () =>
-      (await searchLiveDiscussion(term, site, fetcher, now)).map((item) => ({
+      (await searchLiveDiscussion(term, site, boundedFetch, now)).map((item) => ({
         id: `stackexchange:${item.url}`,
         title: item.title,
         url: item.url,
@@ -228,7 +230,7 @@ export async function runResearchSweep(
     for (const host of new Set(lemmyInstances)) {
       const term = selection.lemmyQueries?.find((item) => item.host === host)?.query.trim() ?? query;
       tasks.push(capture(`lemmy:${host}`, `Lemmy · ${host}`, term, asOf, "Recent posts within 7 days; up to 20 per server view", async () =>
-      (await searchLemmyPosts(term, host, fetcher, now)).map((post) => ({
+      (await searchLemmyPosts(term, host, boundedFetch, now)).map((post) => ({
         id: `lemmy:${post.url}`,
         title: post.title,
         url: post.url,
@@ -251,7 +253,7 @@ export async function runResearchSweep(
     const { hashtag, instance } = selection.mastodon;
     const server = MASTODON_INSTANCES.find(({ host }) => host === instance)!;
     tasks.push(capture("mastodon", `Mastodon · ${server.label}`, `#${hashtag}`, asOf, "Up to 20 newest public hashtag posts", async () =>
-      (await searchPublicHashtag(hashtag, fetcher, now, server.host)).map((post) => ({
+      (await searchPublicHashtag(hashtag, boundedFetch, now, server.host)).map((post) => ({
         id: `mastodon:${post.url}`,
         title: `Public post by @${post.authorHandle}`,
         url: post.url,
@@ -276,7 +278,7 @@ export async function runResearchSweep(
     const term = termInput.trim();
     let sourceNote: string | undefined;
     tasks.push(capture(`bluesky:${index}`, `Bluesky · search ${index + 1}`, term, asOf, "Up to 25 newest indexed posts within 7 days", async () => {
-      const posts = await searchBlueskyPosts(term, fetcher, now);
+      const posts = await searchBlueskyPosts(term, boundedFetch, now);
       sourceNote = concentratedBylineNote(posts.map(({ authorHandle }) => authorHandle));
       return posts.map((post) => ({
         id: `bluesky:${post.uri}`,
@@ -304,7 +306,7 @@ export async function runResearchSweep(
     const language = selection.wikimediaLanguage;
     const wiki = WIKIMEDIA_TALK_WIKIS.find(({ language: candidate }) => candidate === language)!;
     tasks.push(capture("wikimedia", wiki.wiki, query, asOf, "Talk pages edited within 90 days; up to 20", async () =>
-      (await searchWikimediaTalk(query, language, fetcher, now)).map((page) => ({
+      (await searchWikimediaTalk(query, language, boundedFetch, now)).map((page) => ({
         id: `wikimedia-talk:${page.url}`,
         title: page.title,
         url: page.url,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCitationIds, buildPerspectiveSnapshot, citationKey, findRepeatedPhrases } from "./perspective-snapshot";
+import { buildCitationIds, buildPerspectiveSnapshot, citationKey, emptyInternationalOverviewMessage, findRepeatedPhrases } from "./perspective-snapshot";
 import type { ResearchSweepSourceResult } from "./research-sweep";
 
 const result = (key: string, label: string, evidence: ResearchSweepSourceResult["evidence"]): ResearchSweepSourceResult => ({
@@ -13,6 +13,22 @@ const item = (id: string, source: string, language: string) => ({
 });
 
 describe("buildPerspectiveSnapshot", () => {
+  it("does not describe an unavailable reporting source as an empty international sample", () => {
+    const message = emptyInternationalOverviewMessage([
+      { ...result("global-voices", "Global Voices", []), status: "unavailable", error: "temporarily unavailable" },
+    ]);
+    expect(message).toContain("could not be checked");
+    expect(message).toContain("not evidence that a view is absent");
+  });
+
+  it("qualifies empty results when localized reporting coverage is partial", () => {
+    const message = emptyInternationalOverviewMessage([
+      { ...result("global-voices", "Global Voices", []), status: "partial", coverageNote: "2 editions unavailable" },
+    ]);
+    expect(message).toContain("coverage was partial");
+    expect(message).toContain("See source status below");
+  });
+
   it("keeps source classes and languages separate without inferring country views", () => {
     const snapshot = buildPerspectiveSnapshot([
       result("hacker-news", "Hacker News", [item("hn", "Hacker News", "English")]),

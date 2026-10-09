@@ -8,7 +8,7 @@ const WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 5;
 const requestWindows = new Map<string, { count: number; resetAt: number }>();
 
-/** Bounded, no-store bridge for Global Voices' public localized WordPress APIs. */
+/** Bounded, no-store bridge. The in-memory limit is best-effort per warm function instance, not a global quota. */
 export async function POST(request: NextRequest) {
   if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get("content-type") ?? ""))
     return reply({ error: "JSON required" }, 415);

@@ -66,6 +66,28 @@ export function buildPerspectiveSnapshot(results: ResearchSweepSourceResult[]) {
   };
 }
 
+/** State the limit of an empty international-language overview without treating failure as zero evidence. */
+export function emptyInternationalOverviewMessage(results: ResearchSweepSourceResult[]) {
+  const reporting = results.filter(({ key }) => key === "global-voices" || key.startsWith("global-voices:alternate:"));
+  const completed = reporting.filter(({ status }) => status === "complete" || status === "partial");
+  const unavailable = reporting.filter(({ status }) => status === "unavailable" || status === "not-searched");
+  const caveat = "An empty search is not evidence that a view is absent.";
+
+  if (reporting.length && !completed.length) {
+    return `International reporting could not be checked because the selected reporting source was unavailable. See its status below. ${caveat}`;
+  }
+  if (unavailable.length) {
+    return `No non-English or language-labeled reporting appeared in sources that completed; ${unavailable.length} selected reporting search${unavailable.length === 1 ? " was" : "es were"} unavailable or not searched. See source status below. ${caveat}`;
+  }
+  if (completed.some(({ status }) => status === "partial")) {
+    return `No non-English or language-labeled reporting matched in the available editions; coverage was partial. See source status below. ${caveat}`;
+  }
+  if (completed.length) {
+    return `No non-English or language-labeled reporting matched in the selected editions. Try an alternate phrase; this is not evidence that a view is absent.`;
+  }
+  return `No non-English results appeared in the sources selected for this search. Try an alternate phrase or select another source; this is not evidence that a view is absent.`;
+}
+
 const COMMON_WORDS = new Set([
   "a", "an", "and", "are", "as", "at", "be", "been", "but", "by", "for", "from", "has", "have", "in", "is", "it", "of", "on", "or", "that", "the", "this", "to", "was", "were", "with",
   "de", "del", "la", "las", "los", "el", "en", "por", "para", "con", "que", "y", "un", "una", "le", "les", "des", "du", "et", "un", "une", "der", "die", "das", "und", "von", "zu",
