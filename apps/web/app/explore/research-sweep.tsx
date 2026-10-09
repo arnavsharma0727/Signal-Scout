@@ -190,9 +190,18 @@ export default function ResearchSweep({
             <p>Discussion, specialist Q&amp;A, and reporting · shown separately</p>
           </div>
           <PerspectiveSnapshot results={results} />
-          <div className="market-results-grid">
-            {results.map((result) => <SourceResults key={result.key} result={result} />)}
-          </div>
+          <section className="source-citations" aria-labelledby="source-citations-title">
+            <header>
+              <div>
+                <p className="eyebrow">Evidence</p>
+                <h3 id="source-citations-title">Sources &amp; citations</h3>
+              </div>
+              <p>Original links and source details, collected in one place.</p>
+            </header>
+            <div className="market-results-grid">
+              {results.map((result) => <SourceResults key={result.key} result={result} />)}
+            </div>
+          </section>
           <p className="search-limits">These public results are incomplete source samples, not a poll or a measure of any country’s opinion. Open the original links for context. <a href="/sources">How sources work</a> · <a href="/privacy">Privacy</a>.</p>
         </div>
       )}
@@ -206,10 +215,10 @@ function PerspectiveSnapshot({ results }: { results: ResearchSweepSourceResult[]
     <section className="perspective-snapshot" aria-labelledby="perspective-snapshot-title">
       <header>
         <div>
-          <p className="eyebrow">Before the sources</p>
-          <h3 id="perspective-snapshot-title">A quick read across perspectives</h3>
+          <p className="eyebrow">Overview</p>
+          <h3 id="perspective-snapshot-title">Perspectives at a glance</h3>
         </div>
-        <p>Evidence-linked snapshots, not an AI-generated consensus.</p>
+        <p>Short overviews first; citations are collected below.</p>
       </header>
       <p className="perspective-snapshot-note">
         The English-language slice is a comparison point, not a verified U.S. view: these sources do not establish contributors’ location. Other views stay separate by source and language rather than being blended into one “global” take.
@@ -234,8 +243,11 @@ function PerspectiveGroup({ title, items, empty }: { title: string; items: Array
       {items.length ? (
         <ul>{items.slice(0, 2).map((item) => (
           <li key={item.url}>
-            <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
-            {item.transientPreview && <p>{compactPreview(item.transientPreview)}</p>}
+            {item.transientPreview ? (
+              <p>{compactPreview(item.transientPreview)}</p>
+            ) : (
+              <p className="perspective-empty">A matching discussion surfaced, but no readable excerpt was available for this overview.</p>
+            )}
           </li>
         ))}</ul>
       ) : <p className="perspective-empty">{empty}</p>}
