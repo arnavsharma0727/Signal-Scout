@@ -23,6 +23,8 @@ export type ResearchSweepSelection = {
   lemmyQueries?: readonly { host: LemmyInstance; query: string }[];
   lemmyTermsAccepted: boolean;
   mastodon?: { hashtag: string; instance: string };
+  /** Per-instance hashtag searches; instances remain independently labeled and bounded. */
+  mastodonQueries?: readonly { hashtag: string; instance: string }[];
   mastodonTermsAccepted?: boolean;
   bluesky?: boolean;
   /** Visitor-supplied language variants stay separate; no translation or pooling. */
@@ -104,16 +106,19 @@ export async function runResearchSweep(
       throw new Error("Provide one 2–100 character search phrase for every selected Lemmy instance.");
     }
   }
-  if (!selection.hackerNews && !selection.globalVoices && !stackExchangeQueries.length && !selection.lemmy && !selection.mastodon && !blueskyQueries.length && !selection.wikimediaLanguage) {
+  const mastodonQueries = selection.mastodonQueries ?? (selection.mastodon ? [selection.mastodon] : []);
+  if (!selection.hackerNews && !selection.globalVoices && !stackExchangeQueries.length && !selection.lemmy && !mastodonQueries.length && !blueskyQueries.length && !selection.wikimediaLanguage) {
     throw new Error("Select at least one source.");
   }
   if (selection.wikimediaLanguage && !WIKIMEDIA_TALK_WIKIS.some(({ language }) => language === selection.wikimediaLanguage)) {
     throw new Error("Choose a listed Wikimedia language edition.");
   }
-  if (selection.mastodon && !MASTODON_INSTANCES.some(({ host }) => host === selection.mastodon!.instance)) {
-    throw new Error("Choose a listed Mastodon server.");
+  if (mastodonQueries.length > MASTODON_INSTANCES.length || new Set(mastodonQueries.map(({ instance }) => instance)).size !== mastodonQueries.length || mastodonQueries.some(({ hashtag, instance }) =>
+    !MASTODON_INSTANCES.some(({ host }) => host === instance) || !/^[\p{L}\p{N}_-]{1,50}$/u.test(hashtag.trim().replace(/^#+/, "")),
+  )) {
+    throw new Error("Choose up to four listed Mastodon servers and valid hashtags.");
   }
-  if (selection.mastodon && !selection.mastodonTermsAccepted) {
+  if (mastodonQueries.length && !selection.mastodonTermsAccepted) {
     throw new Error("Review the selected Mastodon server's rules and privacy information before searching.");
   }
 
@@ -249,10 +254,9 @@ export async function runResearchSweep(
       ));
     }
   }
-  if (selection.mastodon) {
-    const { hashtag, instance } = selection.mastodon;
+  for (const { hashtag, instance } of mastodonQueries) {
     const server = MASTODON_INSTANCES.find(({ host }) => host === instance)!;
-    tasks.push(capture("mastodon", `Mastodon · ${server.label}`, `#${hashtag}`, asOf, "Up to 20 newest public hashtag posts", async () =>
+    tasks.push(capture(`mastodon:${instance}`, `Mastodon · ${server.label}`, `#${hashtag}`, asOf, "Up to 20 newest public hashtag posts", async () =>
       (await searchPublicHashtag(hashtag, boundedFetch, now, server.host)).map((post) => ({
         id: `mastodon:${post.url}`,
         title: `Public post by @${post.authorHandle}`,
@@ -272,7 +276,7 @@ export async function runResearchSweep(
         sourceOperatorLabel: "Mastodon public instances",
         transientPreview: post.contentWarning ? undefined : mastodonHtmlToTransientText(post.contentHtml),
       })),
-    ));
+      ));
   }
   for (const [index, termInput] of blueskyQueries.entries()) {
     const term = termInput.trim();

@@ -11,7 +11,7 @@ export default function Privacy() {
         <article className="max-w-3xl">
           <div className="eyebrow mb-4">Privacy</div>
           <h1 className="text-4xl font-extrabold">How Atlas search handles information</h1>
-          <p className="mt-3 text-sm text-muted">Last updated: October 8, 2026</p>
+          <p className="mt-3 text-sm text-muted">Last updated: October 9, 2026</p>
           <section className="mt-8 space-y-6 leading-7 text-muted">
             <p>
               Atlas is a public-conversation search tool. Search terms and
@@ -23,13 +23,27 @@ export default function Privacy() {
               Search requests are sent to the relevant public search provider.
               The Global Voices request is routed through an Atlas server
               endpoint; that endpoint applies a short-window, IP-keyed,
-              best-effort rate limit. Hacker News, Stack Exchange, Lemmy,
-              and optional Bluesky searches are sent from your browser to their
-              providers. Bluesky excerpts are held transiently in the page and
-              provider-labeled posts are shown without a text preview. Those
-              providers and Atlas&apos;s hosting infrastructure may process
-              technical request data under their own terms and operational
-              logging practices. Atlas does not control their retention.
+              best-effort rate limit. Hacker News, Bluesky, Lemmy, and Mastodon
+              searches are sent from your browser to their public APIs. Forum
+              excerpts are held transiently in the page; content-warning
+              Mastodon posts are shown without a text preview. Those providers
+              and Atlas&apos;s hosting infrastructure may process technical
+              request data under their own terms and operational logging
+              practices. Atlas does not control their retention.
+            </p>
+            <p>
+              Only when a visitor checks the optional AI box, Atlas sends the
+              topic and up to 16 short public-source excerpts (without source
+              URLs or author handles) to Groq for translation and summary.
+              This feature requires a server-side Groq API key and uses the
+              provider&apos;s Free tier; Atlas falls back to a local evidence
+              overview if AI is not enabled or available. Groq says inference
+              prompts are not retained by default but usage metadata is
+              collected; see its <a className="underline text-ink" href="https://console.groq.com/docs/your-data" target="_blank" rel="noreferrer">data handling documentation</a>.
+              Groq processes prompts under its own terms. Never configure a paid plan or add
+              payment details for this feature. Queries also go to the public
+              sources listed on the Sources page. Avoid entering personal,
+              confidential, or sensitive information.
             </p>
             <p>
               Atlas does not intentionally persist your on-demand search terms

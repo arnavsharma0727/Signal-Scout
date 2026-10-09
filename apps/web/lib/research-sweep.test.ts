@@ -161,6 +161,35 @@ describe("runResearchSweep", () => {
     expect(JSON.stringify(results)).not.toContain("Potentially sensitive post body");
   });
 
+  it("searches each approved Mastodon instance separately and preserves source identity", async () => {
+    const requested: string[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      requested.push(new URL(String(input)).hostname);
+      return new Response("[]");
+    });
+    const results = await runResearchSweep("markets", {
+      hackerNews: false,
+      globalVoices: false,
+      lemmy: false,
+      lemmyTermsAccepted: false,
+      mastodonQueries: [
+        { hashtag: "Markets", instance: "mastodon.social" },
+        { hashtag: "Markets", instance: "mastodon.online" },
+        { hashtag: "Markets", instance: "mstdn.jp" },
+        { hashtag: "Markets", instance: "mastodon.world" },
+      ],
+      mastodonTermsAccepted: true,
+    }, fetcher, NOW);
+
+    expect(requested.sort()).toEqual(["mastodon.online", "mastodon.social", "mastodon.world", "mstdn.jp"]);
+    expect(results.map(({ key, status }) => [key, status])).toEqual([
+      ["mastodon:mastodon.social", "complete"],
+      ["mastodon:mastodon.online", "complete"],
+      ["mastodon:mstdn.jp", "complete"],
+      ["mastodon:mastodon.world", "complete"],
+    ]);
+  });
+
   it("searches selected providers in parallel and preserves provider-specific labels and classes", async () => {
     const fetcher = vi.fn(async (input: RequestInfo | URL) => {
       const url = new URL(String(input));

@@ -1,13 +1,14 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { DISCUSSION_COMMUNITIES } from "../../lib/live-topic-search";
-import { languageTag } from "../../lib/language-tag";
-import { LEMMY_INSTANCES, type LemmyInstance } from "../../lib/lemmy-public";
+import { MARKET_COUNTRIES, marketCountry } from "../../lib/market-countries";
+import { LEMMY_INSTANCES } from "../../lib/lemmy-public";
+import { MASTODON_INSTANCES } from "../../lib/mastodon-public";
 import { runResearchSweep, ResearchSweepSourceResult } from "../../lib/research-sweep";
-import { buildCitationIds, buildPerspectiveSnapshot, citationKey, emptyInternationalOverviewMessage } from "../../lib/perspective-snapshot";
+import { buildCitationIds, citationKey } from "../../lib/perspective-snapshot";
+import { languageTag } from "../../lib/language-tag";
 
-const DEFAULT_COMMUNITIES = ["economics", "quant", "money"];
+type MarketSummary = { usSummary: string; localSummary: string; comparison: string; limitations: string[] };
 
 export default function ResearchSweep({
   initialTopic,
@@ -17,57 +18,123 @@ export default function ResearchSweep({
   onSearchTopic: (topic: string) => void;
 }) {
   const [query, setQuery] = useState("");
-  const [communities, setCommunities] = useState<string[]>(DEFAULT_COMMUNITIES);
-  const [localizedQueries, setLocalizedQueries] = useState<Record<string, string>>({});
-  const [alternateQueryText, setAlternateQueryText] = useState("");
-  const [blueskyEnabled, setBlueskyEnabled] = useState(false);
-  const [lemmyEnabled, setLemmyEnabled] = useState(false);
-  const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
-  const [lemmyQueries, setLemmyQueries] = useState<Record<string, string>>({});
-  const [lemmyTermsAccepted, setLemmyTermsAccepted] = useState(false);
+  const [countryCode, setCountryCode] = useState("KR");
   const [results, setResults] = useState<ResearchSweepSourceResult[]>([]);
+  const [summary, setSummary] = useState<MarketSummary | null>(null);
+  const [summaryMode, setSummaryMode] = useState<"ai" | "evidence">("evidence");
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [consentOpen, setConsentOpen] = useState(false);
+  const [termsReviewed, setTermsReviewed] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [aiConsent, setAiConsent] = useState(false);
+  const [pendingTopic, setPendingTopic] = useState("");
   const citationIds = buildCitationIds(results);
+  const country = marketCountry(countryCode);
+  const activeLemmyHosts = countryCode === "US"
+    ? ["lemmy.world" as const]
+    : [...new Set(["lemmy.world" as const, ...country.lemmyInstances, ...LEMMY_INSTANCES.map(({ host }) => host)])];
+  const activeMastodonHosts = countryCode === "US"
+    ? ["mastodon.social" as const]
+    : [...new Set(["mastodon.social" as const, ...country.mastodonInstances])];
 
   useEffect(() => {
     if (initialTopic) setQuery(initialTopic);
   }, [initialTopic]);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (loading) return;
     const topic = query.trim();
+    if (!consentAccepted) {
+      setPendingTopic(topic);
+      setTermsReviewed(false);
+      setConsentOpen(true);
+      return;
+    }
+    void search(topic, aiConsent);
+  }
+
+  async function search(topic: string, allowAi: boolean) {
+    setConsentOpen(false);
     setLoading(true);
     setSearched(true);
+    setSummary(null);
+    setResults([]);
     setError("");
     onSearchTopic(topic);
+
     try {
-      setResults(await runResearchSweep(topic, {
+      const preparation = allowAi
+        ? await requestMarketAssist({ action: "prepare", topic, country: countryCode, aiConsent: true })
+        : { query: topic, hashtags: [hashtagFromTopic(topic)], mode: "english-fallback", summary: null };
+      const localQuery = preparation.query || topic;
+      const localHashtags = (preparation.hashtags.length ? preparation.hashtags : [hashtagFromTopic(localQuery)]).filter(Boolean);
+      const allLemmy = LEMMY_INSTANCES.map(({ host }) => host);
+      const englishHashtag = hashtagFromTopic(topic);
+      const baseMastodon = englishHashtag ? [{ hashtag: englishHashtag, instance: "mastodon.social" as const }] : [];
+      const baseSearch = runResearchSweep(topic, {
         hackerNews: true,
-        globalVoices: true,
-        additionalQueries: alternateQueryText.split("\n").map((term) => term.trim()).filter(Boolean),
-        bluesky: blueskyEnabled,
-        blueskyQueries: blueskyEnabled
-          ? [topic, ...alternateQueryText.split("\n").map((term) => term.trim()).filter(Boolean)]
-          : [],
-        stackExchangeQueries: communities.map((site) => ({
-          site,
-          query: DISCUSSION_COMMUNITIES.find((community) => community.site === site)?.language === "English"
-            ? topic
-            : localizedQueries[site]?.trim() ?? "",
+        globalVoices: false,
+        bluesky: true,
+        blueskyQueries: [topic.length <= 92 ? `${topic} lang:en` : topic],
+        lemmy: true,
+        lemmyInstances: ["lemmy.world"],
+        lemmyQueries: [{ host: "lemmy.world", query: topic }],
+        lemmyTermsAccepted: true,
+        mastodonQueries: baseMastodon,
+        mastodonTermsAccepted: true,
+      });
+
+      const localSearch = countryCode !== "US" ? (() => {
+        const localLemmyInstances = [...new Set([...country.lemmyInstances, ...allLemmy])];
+        return runResearchSweep(localQuery, {
+          globalVoices: true,
+          bluesky: true,
+          blueskyQueries: [localQuery],
+          lemmy: true,
+          lemmyInstances: localLemmyInstances,
+          lemmyQueries: localLemmyInstances.map((host) => ({ host, query: localQuery })),
+          lemmyTermsAccepted: true,
+          mastodonQueries: country.mastodonInstances.flatMap((host, index) => {
+            const hashtag = localHashtags[index % localHashtags.length];
+            return hashtag ? [{ hashtag, instance: host }] : [];
+          }),
+          mastodonTermsAccepted: true,
+        });
+      })() : Promise.resolve([] as ResearchSweepSourceResult[]);
+      const [baseResults, localResults] = await Promise.all([baseSearch, localSearch]);
+
+      const merged = [
+        ...baseResults,
+        ...localResults.map((result) => ({
+          ...result,
+          key: `local:${result.key}`,
+          label: `${country.name} lens · ${result.label}`,
+          coverageNote: [result.coverageNote, preparation.mode === "english-fallback" && country.language !== "en"
+            ? `Automatic ${country.languageName} query translation was unavailable; this search used the original phrase.`
+            : undefined].filter(Boolean).join(" ") || undefined,
         })),
-        lemmy: lemmyEnabled,
-        lemmyInstances,
-        lemmyQueries: lemmyEnabled ? lemmyInstances.map((host) => ({
-          host,
-          query: lemmyQueries[host]?.trim() || topic,
-        })) : undefined,
-        lemmyTermsAccepted,
-      }));
+      ];
+      setResults(merged);
+      const baselineEvidence = merged.filter(({ key }) => !key.startsWith("local:")).flatMap(({ evidence }) => evidence);
+      const localEvidence = merged.filter(({ key }) => key.startsWith("local:") && key !== "local:global-voices").flatMap(({ evidence }) => evidence);
+      const evidenceForAi = {
+        us: baselineEvidence.slice(0, 8).map((item) => ({ source: item.source, title: item.title, excerpt: (item.transientPreview ?? item.title).slice(0, 300), language: item.language })),
+        local: localEvidence.slice(0, 8).map((item) => ({ source: item.source, title: item.title, excerpt: (item.transientPreview ?? item.title).slice(0, 300), language: item.language })),
+      };
+      const generated = allowAi
+        ? await requestMarketAssist({ action: "summarize", topic, country: countryCode, evidence: evidenceForAi, aiConsent: true })
+        : { mode: "unavailable", query: "", hashtags: [], summary: null };
+      if (generated.mode === "ai" && generated.summary) {
+        setSummary(generated.summary);
+        setSummaryMode("ai");
+      } else {
+        setSummary(buildEvidenceSummary(baselineEvidence, localEvidence, country.name, countryCode === "US"));
+        setSummaryMode("evidence");
+      }
     } catch (cause) {
-      setResults([]);
       setError(cause instanceof Error ? cause.message : "The search could not be completed.");
     } finally {
       setLoading(false);
@@ -91,198 +158,145 @@ export default function ResearchSweep({
           autoComplete="off"
           required
         />
+        <label className="sr-only" htmlFor="market-country">Country language lens</label>
+        <select id="market-country" className="market-country-select" value={countryCode} onChange={(event) => { setCountryCode(event.target.value); setConsentAccepted(false); }}>
+          {MARKET_COUNTRIES.map((item) => <option value={item.code} key={item.code}>{item.name}</option>)}
+        </select>
         <button className="btn btn-primary market-search-button" type="submit" disabled={loading}>
           {loading ? "Searching…" : "Search"}
         </button>
       </form>
 
-      <p className="market-attribution">By: Arnav Sharma UVA30'</p>
+      <p className="market-attribution">By: Arnav Sharma UVA30&apos;</p>
 
-      {searched && (
-        <details className="search-refine">
-          <summary>Refine search</summary>
-          <p>Search the phrase as entered. Atlas does not translate, infer synonyms, or treat specialist Q&amp;A as public opinion.</p>
-          <label className="search-refine-language">
-            Alternate phrases <span>(optional; one per line, up to 3)</span>
-            <textarea
-              className="search-alternate-queries"
-              form="market-query-form"
-              value={alternateQueryText}
-              onChange={(event) => setAlternateQueryText(event.target.value)}
-              placeholder={'Company or ticker alias\nLocal-language equivalent\nSpelling variant'}
-              rows={3}
-              maxLength={305}
-              aria-describedby="alternate-query-help"
-            />
-          </label>
-          <p id="alternate-query-help" className="search-refine-help">Each phrase is sent exactly as written to Hacker News and Global Voices as a separate search, and to Bluesky if selected. Results show the phrase searched; equivalent meaning is not assumed.</p>
-          <fieldset className="search-lemmy-options">
-            <legend>Public social search</legend>
-            <label className="search-lemmy-toggle">
-              <input type="checkbox" checked={blueskyEnabled} onChange={(event) => setBlueskyEnabled(event.target.checked)} />
-              Include Bluesky public posts
+      {consentOpen && (
+        <div className="source-consent-backdrop" role="presentation">
+          <section className="source-consent-dialog" role="dialog" aria-modal="true" aria-labelledby="source-consent-title">
+            <h2 id="source-consent-title">Review public-source terms</h2>
+            <p>Atlas will send your topic and its translated search phrase to public APIs. Selected Lemmy and Mastodon instances receive these searches directly; their results are transient and are not saved by Atlas.</p>
+            <div className="source-consent-links">
+              <strong>Lemmy instance terms and privacy</strong>
+              {LEMMY_INSTANCES.filter(({ host }) => activeLemmyHosts.includes(host)).map((instance) => <a key={instance.host} href={instance.legalUrl} target="_blank" rel="noreferrer">{instance.host} · Terms</a>)}
+              {LEMMY_INSTANCES.filter(({ host }) => activeLemmyHosts.includes(host)).map((instance) => <a key={`${instance.host}-privacy`} href={instance.privacyUrl} target="_blank" rel="noreferrer">{instance.host} · Privacy</a>)}
+              <strong>Mastodon instance information and rules</strong>
+              {MASTODON_INSTANCES.filter(({ host }) => activeMastodonHosts.includes(host)).map(({ host }) => <a key={host} href={`https://${host}/about`} target="_blank" rel="noreferrer">{host} · About and server rules</a>)}
+            <a href="https://docs.joinmastodon.org/client/public/" target="_blank" rel="noreferrer">Mastodon public-data API guidance</a>
+            </div>
+            <label className="source-consent-check source-ai-consent">
+              <input type="checkbox" checked={aiConsent} onChange={(event) => setAiConsent(event.target.checked)} />
+              Optional: send the topic and up to 16 short source excerpts to Groq’s AI service for translation and a summary. This requires a Groq API key on the server, uses Groq Free-tier limits, and sends excerpts to Groq. No URLs or author handles are sent. Groq says inference prompts are not retained by default, though usage metadata is retained. <a href="https://console.groq.com/docs/your-data" target="_blank" rel="noreferrer">Data handling</a> · <a href="https://console.groq.com/docs/billing-faqs" target="_blank" rel="noreferrer">Free vs paid plan details</a>.
             </label>
-            <p>Uses Bluesky&apos;s public search API without an account or key. Each entered phrase is searched separately. Exact repeated text is shown once with a duplicate note. Post excerpts are transient; author language may be unavailable. Posts and users are not a representative sample. Review the <a href="https://bsky.social/about/support/tos" target="_blank" rel="noreferrer">terms</a> and <a href="https://bsky.social/about/support/privacy-policy" target="_blank" rel="noreferrer">privacy notice</a>.</p>
-          </fieldset>
-          <fieldset className="search-community-options">
-            <legend>Expert communities · title search, latest 30 days</legend>
-            {DISCUSSION_COMMUNITIES.map((community) => {
-              const checked = communities.includes(community.site);
-              return (
-                <div className="search-community-option" key={community.site}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={!checked && communities.length >= 4}
-                      onChange={(event) => setCommunities((current) => event.target.checked
-                        ? [...current, community.site]
-                        : current.filter((site) => site !== community.site))}
-                    />
-                    {community.label} <span>{community.language}</span>
-                  </label>
-                  {checked && community.language !== "English" && (
-                    <input
-                      className="search-localized-query"
-                      aria-label={`Search phrase in ${community.language}`}
-                      placeholder={`Phrase in ${community.language}`}
-                      value={localizedQueries[community.site] ?? ""}
-                      minLength={3}
-                      maxLength={80}
-                      required
-                      onChange={(event) => setLocalizedQueries((current) => ({ ...current, [community.site]: event.target.value }))}
-                    />
-                  )}
-                </div>
-              );
-            })}
-          </fieldset>
-          <fieldset className="search-lemmy-options">
-            <legend>Public federated forums · Lemmy</legend>
-            <p>Each selected instance is searched separately. Use a local-language phrase for a broader cross-language view; results can overlap across federated servers.</p>
-            <label className="search-lemmy-toggle">
-              <input type="checkbox" checked={lemmyEnabled} onChange={(event) => { setLemmyEnabled(event.target.checked); setLemmyTermsAccepted(false); }} />
-              Include Lemmy public forum posts
+            <label className="source-consent-check">
+              <input type="checkbox" checked={termsReviewed} onChange={(event) => setTermsReviewed(event.target.checked)} />
+              I reviewed the listed Lemmy terms/privacy and Mastodon instance information/rules and understand these public posts are incomplete samples, not country-wide opinion.
             </label>
-            {lemmyEnabled && <>
-              <div className="search-lemmy-instances">
-                {LEMMY_INSTANCES.map((instance) => (
-                  <div className="search-lemmy-instance" key={instance.host}>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={lemmyInstances.includes(instance.host)}
-                        disabled={lemmyInstances.includes(instance.host) && lemmyInstances.length === 1 || !lemmyInstances.includes(instance.host) && lemmyInstances.length >= 4}
-                        onChange={(event) => {
-                          setLemmyInstances((current) => event.target.checked
-                            ? [...current, instance.host]
-                            : current.filter((host) => host !== instance.host));
-                          setLemmyTermsAccepted(false);
-                        }}
-                      />
-                      {instance.label}
-                      <span>{instance.languages} · <a href={instance.legalUrl} target="_blank" rel="noreferrer">Terms</a> · <a href={instance.privacyUrl} target="_blank" rel="noreferrer">Privacy</a></span>
-                    </label>
-                    {lemmyInstances.includes(instance.host) && instance.languages !== "Mixed / English" && (
-                      <input
-                        className="search-localized-query"
-                        aria-label={`Lemmy search phrase for ${instance.label}`}
-                        placeholder={`Phrase for ${instance.languages} communities`}
-                        value={lemmyQueries[instance.host] ?? ""}
-                        minLength={2}
-                        maxLength={100}
-                        required
-                        onChange={(event) => setLemmyQueries((current) => ({ ...current, [instance.host]: event.target.value }))}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-              <label className="search-lemmy-consent">
-                <input form="market-query-form" type="checkbox" checked={lemmyTermsAccepted} onChange={(event) => setLemmyTermsAccepted(event.target.checked)} required />
-                I reviewed each selected server’s terms and privacy information and meet its applicable age rules.
-              </label>
-            </>}
-          </fieldset>
-          <button className="search-refine-submit" type="submit" form="market-query-form">Apply and search</button>
-        </details>
+            <div className="source-consent-actions">
+              <button type="button" onClick={() => setConsentOpen(false)}>Cancel</button>
+              <button type="button" disabled={!termsReviewed} onClick={() => { setConsentAccepted(true); void search(pendingTopic, aiConsent); }}>Continue search</button>
+            </div>
+          </section>
+        </div>
       )}
 
+      {searched && !loading && <p className="country-lens-note">Country lens: {country.name} · {country.languageName} communities, using the phrase as entered. Enter it in {country.languageName} for better local-language matches. Server or language does not verify a poster&apos;s location.</p>}
+      {searched && loading && <div className="search-loading" role="status"><span className="search-spinner" aria-hidden="true" /> Searching live public sources and preparing the {country.name} comparison for <strong>“{query}”</strong>…</div>}
       {error && <p role="alert" className="search-error">{error}</p>}
-      {searched && loading && <div className="search-loading" role="status"><span className="search-spinner" aria-hidden="true" /> Searching recent conversations for <strong>“{query}”</strong> across live sources…</div>}
-      {searched && !loading && !error && (
+      {searched && !loading && !error && summary && (
         <div className="market-results">
           <div className="market-results-heading">
             <div>
-              <p className="eyebrow">Search results</p>
-              <h2>Recent perspectives on “{query}”</h2>
+              <p className="eyebrow">Live conversation search</p>
+              <h2>“{query}” · United States and {country.name}</h2>
             </div>
-            <p>Discussion, specialist Q&amp;A, and reporting · shown separately</p>
+            <p>{results.reduce((count, item) => count + item.evidence.length, 0)} matching records · sources listed below</p>
           </div>
-          <PerspectiveSnapshot results={results} citationIds={citationIds} />
+
+          <section className="market-summary" aria-labelledby="market-summary-title">
+            <header>
+              <div>
+                <p className="eyebrow">{summaryMode === "ai" ? "AI-generated from retrieved evidence" : "Evidence overview"}</p>
+                <h3 id="market-summary-title">What the sampled conversations say</h3>
+              </div>
+                <span>{summaryMode === "ai" ? "AI summary" : "Local fallback"}</span>
+            </header>
+            <div className="market-summary-columns">
+              <article>
+                <h4>United States · English-language baseline</h4>
+                <p>{summary.usSummary}</p>
+              </article>
+              <article>
+                <h4>{country.name} · {country.languageName} search lens</h4>
+                <p>{summary.localSummary}</p>
+              </article>
+            </div>
+            <article className="market-summary-comparison">
+              <h4>Comparison</h4>
+              <p>{summary.comparison}</p>
+            </article>
+            <p className="market-summary-caveat">English-language results are not verified U.S. residents. The selected country is a language/community search lens, not verified poster nationality or a representative national sample. Counts reflect API returns, not attention, prevalence, or investor positioning.</p>
+            {!!summary.limitations.length && <ul className="market-summary-limitations">{summary.limitations.map((item, index) => <li key={`${index}-${item}`}>{item}</li>)}</ul>}
+          </section>
+
           <section className="source-citations" aria-labelledby="source-citations-title">
             <header>
               <div>
                 <p className="eyebrow">Evidence</p>
                 <h3 id="source-citations-title">Sources &amp; citations</h3>
               </div>
-              <p>Original links and source details, collected in one place.</p>
+              <p>Original links and provider-specific coverage, collected below the summary.</p>
             </header>
             <div className="market-results-grid">
               {results.map((result) => <SourceResults key={result.key} result={result} citationIds={citationIds} />)}
             </div>
           </section>
-          <p className="search-limits">These public results are incomplete source samples, not a poll or a measure of any country’s opinion. Open the original links for context. <a href="/sources">How sources work</a> · <a href="/privacy">Privacy</a>.</p>
+          <p className="search-limits">Public API results are incomplete samples. They can omit content, overlap across federated servers, and reflect platform/language selection. An AI summary describes only the retrieved sample; inspect original sources before drawing conclusions. <a href="/sources">How sources work</a> · <a href="/privacy">Privacy</a>.</p>
         </div>
       )}
     </section>
   );
 }
 
-function PerspectiveSnapshot({ results, citationIds }: { results: ResearchSweepSourceResult[]; citationIds: Map<string, string> }) {
-  const snapshot = buildPerspectiveSnapshot(results);
-  return (
-    <section className="perspective-snapshot" aria-labelledby="perspective-snapshot-title">
-      <header>
-        <div>
-          <p className="eyebrow">Overview</p>
-          <h3 id="perspective-snapshot-title">Perspectives at a glance</h3>
-        </div>
-        <p>Recent source excerpts; reference IDs match citations below.</p>
-      </header>
-      <p className="perspective-snapshot-note">
-        Highlights are short source excerpts or headlines, not a generated synthesis. English-language discussion is not a U.S. sample; source language and publisher edition do not establish contributor location. Discussion, expert Q&amp;A, and reporting are kept in separate groups.
-      </p>
-      <div className="perspective-snapshot-grid">
-        {snapshot.englishPerspectives.map((group) => (
-          <PerspectiveGroup key={`${group.source}:${group.language}:${group.evidenceClass}`} title={`${group.source} · ${group.evidenceClass} · English (not a U.S. sample)`} items={group.items} citationIds={citationIds} />
-        ))}
-        {snapshot.otherPerspectives.map((group) => (
-          <PerspectiveGroup key={`${group.source}:${group.language}:${group.evidenceClass}`} title={`${group.source} · ${group.evidenceClass} · ${group.language}`} items={group.items} citationIds={citationIds} />
-        ))}
-        {!snapshot.otherPerspectives.length && (
-          <p className="perspective-no-global">{emptyInternationalOverviewMessage(results)}</p>
-        )}
-      </div>
-    </section>
-  );
+async function requestMarketAssist(input: { action: "prepare"; topic: string; country: string; aiConsent: true } | { action: "summarize"; topic: string; country: string; aiConsent: true; evidence: { us: Array<{ source: string; title: string; excerpt: string; language: string }>; local: Array<{ source: string; title: string; excerpt: string; language: string }> } }) {
+  try {
+    const response = await fetch("/api/research/market-assist", {
+      method: "POST",
+      headers: { accept: "application/json", "content-type": "application/json" },
+      body: JSON.stringify(input),
+      cache: "no-store",
+    });
+    const body = await response.json() as { mode?: string; query?: string; hashtags?: string[]; summary?: MarketSummary };
+    if (!response.ok) throw new Error("AI summary unavailable");
+    return { mode: body.mode, query: body.query ?? "", hashtags: body.hashtags ?? [], summary: body.summary ?? null };
+  } catch {
+    return { mode: "unavailable", query: input.action === "prepare" ? input.topic : "", hashtags: input.action === "prepare" ? [hashtagFromTopic(input.topic)] : [], summary: null };
+  }
 }
 
-function PerspectiveGroup({ title, items, citationIds, empty }: { title: string; items: Array<{ id: string; resultKey: string; title: string; url: string; transientPreview?: string }>; citationIds: Map<string, string>; empty?: string }) {
-  return (
-    <article className="perspective-card">
-      <header><h4>{title}</h4><span>{items.length} {items.length === 1 ? "result" : "results"}</span></header>
-      {items.length ? (
-        <ul>{items.slice(0, 2).map((item) => (
-          <li key={item.url}>
-            <p>{item.transientPreview ? compactOverview(item.transientPreview) : item.title}
-              {citationIds.has(citationKey(item.resultKey, item.id)) && <span className="overview-citation-ref">{citationIds.get(citationKey(item.resultKey, item.id))}</span>}
-            </p>
-          </li>
-        ))}</ul>
-      ) : <p className="perspective-empty">{empty}</p>}
-    </article>
-  );
+function buildEvidenceSummary(us: ResearchSweepSourceResult["evidence"], local: ResearchSweepSourceResult["evidence"], country: string, sameCountry: boolean): MarketSummary {
+  const summarize = (items: ResearchSweepSourceResult["evidence"], label: string) => {
+    if (!items.length) return `No matching records were returned from the completed ${label} searches. An empty sample does not establish that the topic is absent.`;
+    const sourceCounts = new Map<string, number>();
+    for (const item of items) sourceCounts.set(item.source, (sourceCounts.get(item.source) ?? 0) + 1);
+    const sources = [...sourceCounts.entries()].slice(0, 4).map(([source, count]) => `${source} (${count})`).join(", ");
+    const excerpts = items.filter(({ transientPreview }) => transientPreview).slice(0, 2).map(({ transientPreview }) => `“${compactOverview(transientPreview!)}”`);
+    return `${items.length} matching records were returned from ${sources || "the selected sources"}.${excerpts.length ? ` Sample excerpts: ${excerpts.join("; ")}` : " The returned records do not include usable text excerpts for a content synthesis."}`;
+  };
+  return {
+    usSummary: summarize(us, "English-language baseline"),
+    localSummary: sameCountry ? "The United States is selected. This search provides one English-language baseline; it does not represent a separate international view." : summarize(local, `${country} language/community lens`),
+    comparison: sameCountry
+      ? "No cross-country comparison was run because the selected country is the United States."
+      : us.length && local.length
+        ? "Both groups returned evidence, but different providers, languages, and server communities are sampled. Treat any contrast as a research lead to inspect—not a measured difference between national populations."
+        : "One or both samples are empty or unavailable, so a substantive comparison cannot be made. An empty search is not evidence of absent discussion.",
+    limitations: ["This is a free, rule-based evidence overview—not an AI-generated synthesis or representative opinion poll."],
+  };
+}
+
+function hashtagFromTopic(topic: string) {
+  const hashtag = topic.trim().split(/\s+/).map((part) => part.replace(/[^\p{L}\p{N}_-]/gu, ""))
+    .filter(Boolean).map((part) => part.charAt(0).toLocaleUpperCase() + part.slice(1)).join("").slice(0, 50);
+  return /^[\p{L}\p{N}_-]{1,50}$/u.test(hashtag) ? hashtag : "";
 }
 
 function SourceResults({ result, citationIds }: { result: ResearchSweepSourceResult; citationIds: Map<string, string> }) {
@@ -295,39 +309,25 @@ function SourceResults({ result, citationIds }: { result: ResearchSweepSourceRes
         <span className={result.status === "unavailable" ? "source-count source-count--error" : result.status === "not-searched" ? "source-count source-count--muted" : "source-count"}>{result.status === "unavailable" ? "Unavailable" : result.status === "not-searched" ? "Not searched" : result.status === "partial" ? "Partial coverage" : `${result.evidence.length} ${result.evidence.length === 1 ? "result" : "results"}`}</span>
       </header>
       <p className="source-window">{result.window}</p>
-      <p className="source-query-meta">
-        Query: <q>{result.query}</q> · Search started {new Date(result.asOf).toISOString().replace("T", " ").replace(".000Z", " UTC")}
-      </p>
-      {result.sourceNote && <p className="source-coverage-warning" role="status">{result.sourceNote}</p>}
-      {result.coverageNote && <p className="source-coverage-warning" role="status">Partial coverage: {result.coverageNote}</p>}
+      <p className="source-query-meta">Query: <q>{result.query}</q> · Search started {new Date(result.asOf).toISOString().replace("T", " ").replace(".000Z", " UTC")}</p>
+      {result.coverageNote && <p className="source-coverage-warning" role="status">{result.coverageNote}</p>}
       {result.error ? (
-        <p className="source-empty">{result.status === "not-searched" ? result.error : "This source is temporarily unavailable. Other sources can still return results."}</p>
+        <p className="source-empty">This source is temporarily unavailable. Other sources can still return results.</p>
       ) : result.evidence.length ? (
         <>
-        <ul>
-          {items.map((item) => (
+          <ul>{items.map((item) => (
             <li key={item.id} id={`citation-${citationIds.get(citationKey(result.key, item.id))}`}>
               <span className="source-citation-ref">{citationIds.get(citationKey(result.key, item.id))}</span>
               <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
               {(item.context?.includes("Preview withheld") || item.context?.includes("Identical normalized text")) && <p className="source-context-note">{item.context}</p>}
               {item.transientPreview && <p className="source-preview" lang={languageTag(item.language)}>{compactPreview(item.transientPreview)}</p>}
-              <p className="source-meta">
-                {item.source} · {item.language} · {item.timeLabel.toLowerCase()} <time dateTime={item.timeValue}>{new Date(item.timeValue).toISOString().replace("T", " ").replace(".000Z", " UTC")}</time>
-              </p>
+              <p className="source-meta">{item.source} · {item.language} · {item.timeLabel.toLowerCase()} <time dateTime={item.timeValue}>{new Date(item.timeValue).toISOString().replace("T", " ").replace(".000Z", " UTC")}</time></p>
             </li>
-          ))}
-        </ul>
-        {result.evidence.length > items.length && (
-          <button className="show-more-results" type="button" onClick={() => setShowAll(true)}>
-            Show all {result.evidence.length} results
-          </button>
-        )}
+          ))}</ul>
+          {result.evidence.length > items.length && <button className="show-more-results" type="button" onClick={() => setShowAll(true)}>Show all {result.evidence.length} results</button>}
         </>
       ) : (
-        <div className="source-empty">
-          <span className="source-empty-mark" aria-hidden="true">↗</span>
-          <div><strong>No matches this time</strong><p>Try a broader or alternate phrase. For Stack Exchange, you can also change the selected communities above. No matches here doesn’t mean the topic is absent.</p></div>
-        </div>
+        <div className="source-empty"><span className="source-empty-mark" aria-hidden="true">↗</span><div><strong>No matches this time</strong><p>Try another phrase or country language lens. No matches here does not mean the topic is absent.</p></div></div>
       )}
     </section>
   );
