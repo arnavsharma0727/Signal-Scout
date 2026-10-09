@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildCitationIds, buildPerspectiveSnapshot, citationKey } from "./perspective-snapshot";
+import { buildCitationIds, buildPerspectiveSnapshot, citationKey, findRepeatedPhrases } from "./perspective-snapshot";
 import type { ResearchSweepSourceResult } from "./research-sweep";
 
 const result = (key: string, label: string, evidence: ResearchSweepSourceResult["evidence"]): ResearchSweepSourceResult => ({
@@ -57,5 +57,18 @@ describe("buildPerspectiveSnapshot", () => {
     const ids = buildCitationIds(results);
     expect(ids.get(citationKey("hacker-news", "42"))).toBe("C1");
     expect(ids.get(citationKey("lemmy:lemmy.world", "42"))).toBe("C2");
+  });
+
+  it("extracts only exact repeated phrases across distinct source items and excludes query wording", () => {
+    const matches = findRepeatedPhrases([
+      { ...item("a", "Hacker News", "English"), resultKey: "hacker-news", query: "electric vehicle", title: "Electric vehicle battery recycling program" },
+      { ...item("b", "Hacker News", "English"), resultKey: "hacker-news", query: "electric vehicle", title: "Electric vehicle battery recycling costs", url: "https://example.com/other" },
+      { ...item("b-copy", "Hacker News", "English"), resultKey: "hacker-news", query: "electric vehicle", title: "Electric vehicle battery recycling costs", url: "https://example.com/other" },
+    ]);
+    expect(matches).toEqual([
+      expect.objectContaining({ phrase: "battery recycling", items: expect.arrayContaining([expect.objectContaining({ id: "a" }), expect.objectContaining({ id: "b-copy" })]) }),
+    ]);
+    expect(matches[0].items).toHaveLength(2);
+    expect(matches.some(({ phrase }) => phrase.includes("electric vehicle"))).toBe(false);
   });
 });

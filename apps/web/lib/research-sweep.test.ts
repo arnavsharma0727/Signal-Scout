@@ -103,6 +103,22 @@ describe("runResearchSweep", () => {
     ]);
   });
 
+  it("flags a Bluesky sample dominated by one displayed handle", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ posts: [
+      { uri: "at://did:plc:abc/app.bsky.feed.post/a", record: { text: "First distinct view", createdAt: new Date(NOW - 1000).toISOString() }, author: { handle: "one.example" } },
+      { uri: "at://did:plc:abc/app.bsky.feed.post/b", record: { text: "Second distinct view", createdAt: new Date(NOW - 2000).toISOString() }, author: { handle: "one.example" } },
+      { uri: "at://did:plc:abc/app.bsky.feed.post/c", record: { text: "Third distinct view", createdAt: new Date(NOW - 3000).toISOString() }, author: { handle: "one.example" } },
+    ] })));
+    const [result] = await runResearchSweep("markets", {
+      hackerNews: false,
+      globalVoices: false,
+      bluesky: true,
+      lemmy: false,
+      lemmyTermsAccepted: false,
+    }, fetcher, NOW);
+    expect(result.sourceNote).toContain("one displayed handle appears in 3 of 3");
+  });
+
   it("rejects duplicate and excessive alternate phrases before any provider call", async () => {
     const fetcher = vi.fn();
     await expect(runResearchSweep("topic", {

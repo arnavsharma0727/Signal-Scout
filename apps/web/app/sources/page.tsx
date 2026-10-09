@@ -202,7 +202,7 @@ export default async function Sources() {
       secondaryReferenceUrl: "https://bsky.social/about/support/tos",
       secondaryReferenceLabel: "Bluesky Terms of Service",
       detail:
-        "Optional, visitor-triggered search through the public AppView with no API key or account. Up to 25 indexed posts from the last 7 days per researcher-entered phrase. Alternate phrases are submitted separately and labeled; Atlas does not infer translations. Post excerpts are transient and provider-labeled posts have their preview withheld. Language may be absent, and a query in one language does not establish the post's language, author location, or audience. This is an incomplete platform index, not a representative sample or a complete firehose; provider access and rate limits may vary.",
+        "Optional, visitor-triggered search through the public AppView with no API key or account. Up to 25 indexed posts from the last 7 days per researcher-entered phrase. Alternate phrases are submitted separately and labeled; Atlas does not infer translations. Exact normalized text is collapsed within a query with its repeat count disclosed, and samples concentrated in one displayed handle receive a concentration note. These checks do not verify identity or independence. Post excerpts are transient and provider-labeled posts have their preview withheld. Language may be absent, and a query in one language does not establish the post's language, author location, or audience. This is an incomplete platform index, not a representative sample or a complete firehose; provider access and rate limits may vary.",
     },
     {
       name: "YouTube public comments (candidate)",

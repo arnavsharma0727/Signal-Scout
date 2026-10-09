@@ -38,6 +38,7 @@ export type ResearchSweepSourceResult = {
   evidence: ResearchEvidence[];
   error: string | null;
   coverageNote?: string;
+  sourceNote?: string;
   status: "complete" | "partial" | "unavailable" | "not-searched";
 };
 
@@ -273,8 +274,11 @@ export async function runResearchSweep(
   }
   for (const [index, termInput] of blueskyQueries.entries()) {
     const term = termInput.trim();
-    tasks.push(capture(`bluesky:${index}`, `Bluesky · search ${index + 1}`, term, asOf, "Up to 25 newest indexed posts within 7 days", async () =>
-      (await searchBlueskyPosts(term, fetcher, now)).map((post) => ({
+    let sourceNote: string | undefined;
+    tasks.push(capture(`bluesky:${index}`, `Bluesky · search ${index + 1}`, term, asOf, "Up to 25 newest indexed posts within 7 days", async () => {
+      const posts = await searchBlueskyPosts(term, fetcher, now);
+      sourceNote = concentratedBylineNote(posts.map(({ authorHandle }) => authorHandle));
+      return posts.map((post) => ({
         id: `bluesky:${post.uri}`,
         title: post.title,
         url: post.url,
@@ -293,8 +297,8 @@ export async function runResearchSweep(
           post.contentWarning,
         ].filter(Boolean).join(" ") || "Visitor-entered language variants are kept as separate searches and are not translated or pooled; indexed subset, not a complete or representative feed",
         attribution: `Author: @${post.authorHandle}`,
-      })),
-    ));
+      }));
+    }, () => sourceNote));
   }
   if (selection.wikimediaLanguage) {
     const language = selection.wikimediaLanguage;
@@ -327,9 +331,12 @@ async function capture(
   asOf: string,
   window: string,
   search: () => Promise<ResearchEvidence[]>,
+  getSourceNote?: () => string | undefined,
 ): Promise<ResearchSweepSourceResult> {
   try {
-    return { key, label, query, asOf, window, evidence: await search(), error: null, status: "complete" };
+    const evidence = await search();
+    const sourceNote = getSourceNote?.();
+    return { key, label, query, asOf, window, evidence, error: null, status: "complete", ...(sourceNote ? { sourceNote } : {}) };
   } catch (cause) {
     return {
       key,
@@ -342,4 +349,14 @@ async function capture(
       status: "unavailable",
     };
   }
+}
+
+function concentratedBylineNote(bylines: string[]) {
+  if (bylines.length < 3) return undefined;
+  const counts = new Map<string, number>();
+  for (const byline of bylines) counts.set(byline, (counts.get(byline) ?? 0) + 1);
+  const maximum = Math.max(...counts.values());
+  if (maximum / bylines.length < 0.6) return undefined;
+  const share = Math.round((maximum / bylines.length) * 100);
+  return `Sample composition: one displayed handle appears in ${maximum} of ${bylines.length} unique-text results (${share}%). This flags byline concentration; it does not verify identity or independence.`;
 }

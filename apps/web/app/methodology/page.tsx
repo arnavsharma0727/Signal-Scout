@@ -12,7 +12,7 @@ const sections = [
   },
   {
     title: "Read the original before drawing a conclusion",
-    body: "Overview cards show short source excerpts or headlines, not a generated account of what a country thinks. Citation labels map to the source list below; open the original record to inspect its date, context, author attribution, and surrounding discussion. A displayed name or community label is not identity verification or proof of location.",
+    body: "Overview cards show short source excerpts or headlines, not a generated account of what a country thinks. When wording repeats across distinct records, Atlas may show exact normalized phrase matches with citation labels; this is not a theme, sentiment, or independent-view measure. Citation labels map to the source list below; open the original record to inspect its date, context, author attribution, and surrounding discussion. A displayed name or community label is not identity verification or proof of location.",
   },
   {
     title: "Compare like with like",
