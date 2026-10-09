@@ -28,6 +28,8 @@ export async function searchHackerNewsComments(
 ): Promise<HackerNewsDiscussion[]> {
   const query = input.trim();
   if (query.length < 2 || query.length > 100) throw new Error("Enter a search phrase with 2–100 characters.");
+  const queryTerms = meaningfulTerms(query);
+  if (!queryTerms.length) return [];
 
   const endpoint = new URL(API);
   endpoint.search = new URLSearchParams({
@@ -48,7 +50,8 @@ export async function searchHackerNewsComments(
     const author = hit.author?.trim();
     const createdAt = hit.created_at ? Date.parse(hit.created_at) : NaN;
     const preview = plainText(hit.comment_text ?? "");
-    if (!id || !/^\d+$/.test(id) || !author || !preview || !Number.isFinite(createdAt) || createdAt < oldest || createdAt > now) return [];
+    const searchableText = `${hit.story_title ?? ""} ${preview}`;
+    if (!id || !/^\d+$/.test(id) || !author || !preview || !Number.isFinite(createdAt) || createdAt < oldest || createdAt > now || !containsQueryTerms(searchableText, queryTerms)) return [];
     return [{
       id,
       url: `https://news.ycombinator.com/item?id=${id}`,
@@ -58,6 +61,19 @@ export async function searchHackerNewsComments(
       transientPreview: preview.slice(0, 900),
     }];
   });
+}
+
+const STOP_WORDS = new Set(["a", "an", "and", "are", "for", "from", "in", "is", "of", "on", "or", "the", "to", "with"]);
+
+function meaningfulTerms(value: string) {
+  return [...new Set(value.normalize("NFKC").toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) ?? [])]
+    .filter((term) => term.length > 1 && !STOP_WORDS.has(term));
+}
+
+function containsQueryTerms(value: string, terms: string[]) {
+  if (!terms.length) return true;
+  const contentTerms = new Set(meaningfulTerms(value));
+  return terms.every((term) => contentTerms.has(term));
 }
 
 function plainText(value: string) {

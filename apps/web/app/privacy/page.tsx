@@ -6,182 +6,72 @@ export const metadata = { title: "Privacy | Atlas" };
 export default function Privacy() {
   return (
     <div className="min-h-screen">
-      <SiteHeader action={<Link href="/">← Research desk</Link>} />
+      <SiteHeader action={<Link href="/">← Search Atlas</Link>} />
       <main className="shell py-16">
-      <article className="max-w-3xl">
-        <div className="eyebrow mb-4">Privacy</div>
-        <h1 className="text-4xl font-extrabold">
-          How this prototype handles data
-        </h1>
-        <p className="mt-3 text-sm text-muted">
-          Last updated: October 6, 2026
-        </p>
-        <section className="mt-8 space-y-6 leading-7 text-muted">
-          <p>
-            Atlas has no advertising pixels or product analytics. If
-            account sign-in is enabled, authenticated users can choose to save
-            private research briefs. The site may receive ordinary server and
-            hosting logs when you visit.
-          </p>
-          <p>
-            The current discussion connector stores selected Stack Exchange
-            question titles, links, publication times, community/language, tags,
-            and the public author name/profile needed for attribution. It does
-            not retain question or answer bodies. Other configured source types
-            may have different fields, so check the source registry for current
-            collection details.
-          </p>
-          <p>
-            The live Explore search sends the topic and selected community
-            directly from your browser to the Stack Exchange public API. Signal
-            Scout's server does not receive or store that query or those search
-            results. Stack Exchange receives the API request and may process its
-            associated technical data under its own policies. The browser
-            temporarily displays only results marked CC BY-SA 4.0, with links
-            and attribution.
-          </p>
-          <p>
-            The research brief autosaves your notes and deliberately selected
-            citation metadata in this browser&apos;s local storage. This can
-            include your topic, working thesis, alternative explanations,
-            disconfirmation test, source title and link, publication time,
-            source/language labels, attribution, license, and your assessment.
-            The app strips transient social-post previews before storing a
-            citation; a limited content-warning label may remain when needed
-            to explain why a preview was withheld. The app does not save an
-            unselected search result or maintain a search-history list. This
-            local draft is not sent to Atlas, synced to an account, or
-            backed up by the app. It remains in
-            the browser until you use “Clear page draft” or clear this site&apos;s
-            browser data. Anyone with access to the same browser profile may be
-            able to access it.
-          </p>
-          <p>
-            If you explicitly publish a reviewed lead, selected Bluesky,
-            Mastodon, or Lemmy citations are stored in the shared evidence
-            registry as a permalink, public byline, date/language, and your
-            paraphrase; their post text is not stored. A Stack Exchange
-            citation is rechecked against the public API before publication.
-            If its current record is CC BY-SA 4.0, the shared registry stores
-            its unmodified question title, link, date/language, author name and
-            profile link, and license for attribution; question and answer
-            bodies are not stored. These shared source records are publicly
-            readable and are not deleted when a lead is withdrawn. Manually
-            added links from reviewed news publishers, survey research, or the
-            allowlisted issuer
-            are stored with a generated source label and researcher-entered
-            publication date; article headlines, text, and bylines are not
-            copied. Issuer material is labeled as company disclosure, not
-            independent verification. Original providers receive revalidation
-            requests and may process them under their own policies.
-          </p>
-          <p>
-            Lead review can pass an observed topic to Explore in the URL
-            fragment so the phrase fields are prefilled. Fragments are not part
-            of the HTTP request, and Explore clears the fragment after reading
-            it; the phrase is then sent directly to a source only if the
-            visitor submits that source's search form.
-          </p>
-          <p>
-            Explore can also request a public hashtag timeline directly from
-            mastodon.social. That provider receives the hashtag and the
-            visitor's network request; Atlas's server does not receive
-            or persist the query, returned posts, author handles, or post text.
-            Public posts are temporarily displayed in the browser with author
-            and original-post links. Content warnings are respected; a warned
-            post's body is not shown in the app.
-          </p>
-          <p>
-            Explore can search one selected Wikipedia language edition for
-            namespace-1 article talk pages. The topic goes directly from your
-            browser to that wiki's public API; Atlas does not receive
-            or store the query or returned snippets. The wiki receives the
-            request and associated network data under its own policies. Only
-            matching pages edited in the previous 90 days are displayed, with
-            links to the page history for contributor attribution. Search
-            snippets may contain older text from a recently edited page.
-          </p>
-          <p>
-            Explore can search selected public Lemmy instances for up to 20
-            newest matching posts per instance. Each server receives its own
-            phrase directly from your browser; the French-speaking jlai.lu
-            instance is available as an optional view.
-            Atlas does not receive the query or store the results.
-            Results are limited to post title,
-            original link, author attribution, community, date, and an optional
-            language identifier; post bodies are discarded from the app result
-            model. This is an incomplete federated index, not a global,
-            country, or population sample. The instance operator may process
-            request metadata under their own terms and privacy policies.
-          </p>
-          <p>
-            Market searches use the public Hacker News Search API, selected
-            Stack Exchange communities, and (when explicitly enabled) selected
-            Lemmy instances. Their providers receive the search phrase directly
-            or through the Global Voices first-party search route. Results are
-            transient and are not stored as search history. Global Voices
-            requests headline metadata from its public localized WordPress APIs;
-            only headline links and edition labels are returned to the browser.
-            Language and edition do not establish a speaker&apos;s location.
-            GDELT, Bluesky, and Mastodon keyword search are currently retired
-            from active search after live availability checks failed; queries
-            are not sent to those services by the current search flow.
-          </p>
-          <p>
-            On account save, Atlas
-            receives the visitor-written topic, thesis, alternatives,
-            disconfirmation notes, source-specific paraphrase notes, plus
-            link-only citations from a narrow reviewed source allowlist. The
-            server independently checks every URL and strips tracking
-            parameters; it does not save source titles, excerpts, social post
-            links, post text, author handles, or search queries. The account
-            owner can view and delete their saved briefs;
-            row-level database policies prevent other users from reading them.
-            The brief is not publicly shareable and is not an automated lead.
-            Copying or downloading Markdown remains a visitor-initiated action
-            to the local clipboard or device.
-          </p>
-          <p>
-            Publishing a lead is a separate, explicit public action. For
-            selected Bluesky, Mastodon, or Lemmy citations, Atlas stores
-            and displays the public permalink, provider/host, displayed public
-            byline, date, language, a generated citation label, and your own source-specific
-            paraphrase. The post body and transient preview are discarded and
-            are not stored or republished. These citation records are public
-            in the public source registry as well as through the shared lead
-            and remain under the source-record retention policy; withdrawing a lead hides it from the active
-            queue but does not itself erase its source records. Other visitors
-            can see the thesis, alternatives, disconfirmation test, links,
-            attribution labels, and your review notes. Do not publish sensitive
-            or private information.
-          </p>
-          <p>
-            The app is hosted by Vercel and uses Supabase for server-side data
-            storage. These providers process requests and stored data to operate
-            the service under their own terms and privacy policies. Server
-            credentials are not sent to your browser.
-          </p>
-          <p>
-            There is no automatic expiration schedule; source records otherwise
-            remain until an operator removes them. An operator-only takedown
-            mechanism can delete an item and directly linked evidence after
-            review. It retains SHA-256 content/URL fingerprints to prevent
-            recollection and a content-free audit entry; those fingerprints do
-            not reveal the source text but remain subject to a future retention
-            decision. Source providers may separately change or remove their
-            content.
-          </p>
-          <p>
-            This prototype is informational and may change. Do not submit
-            private, sensitive, or personal information to a public GitHub
-            issue. To report a concern about a collected public item, see the{" "}
-            <Link className="underline text-ink" href="/contact">
-              contact page
-            </Link>
-            ; that page is not a private intake channel.
-          </p>
-        </section>
-      </article>
+        <article className="max-w-3xl">
+          <div className="eyebrow mb-4">Privacy</div>
+          <h1 className="text-4xl font-extrabold">How Atlas search handles information</h1>
+          <p className="mt-3 text-sm text-muted">Last updated: October 8, 2026</p>
+          <section className="mt-8 space-y-6 leading-7 text-muted">
+            <p>
+              Atlas is a public-conversation search tool. Search terms and
+              results are held in the page while you use it; the current search
+              interface does not create an account, save a personal search
+              history, or save research briefs.
+            </p>
+            <p>
+              Search requests are sent to the relevant public search provider.
+              The Global Voices request is routed through an Atlas server
+              endpoint; that endpoint applies a short-window rate limit using
+              request network information. The other active search connectors
+              make requests from your browser to their providers. Those
+              providers and Atlas&apos;s hosting infrastructure may process
+              technical request data under their own terms and operational
+              logging practices. Atlas does not control their retention.
+            </p>
+            <p>
+              Atlas does not intentionally persist your on-demand search terms
+              or returned search results as a user search history. Search
+              results are displayed temporarily and link back to their
+              providers. Avoid entering personal, confidential, or sensitive
+              information as a search query.
+            </p>
+            <p>
+              Atlas also has server-side operational data services for
+              scheduled collection and source monitoring. These are separate
+              from the on-demand search page. Historical records may remain in
+              the service database under its operational retention practices;
+              the search UI does not let visitors create or manage those
+              records. Current source and collection limitations are described
+              in the <Link className="underline text-ink" href="/sources">source register</Link>.
+            </p>
+            <p>
+              Atlas is hosted by Vercel and may use Supabase for server-side
+              operational storage. Those services process information needed
+              to deliver and secure the application. Server credentials are
+              kept on the server and are not intentionally sent to the
+              browser.
+            </p>
+            <p>
+              Atlas does not claim that public posts represent a country,
+              population, or market. Language and publication edition do not
+              establish a contributor&apos;s location. See the{" "}
+              <Link className="underline text-ink" href="/methodology">methodology</Link> for
+              interpretation limits.
+            </p>
+            <p>
+              To report a privacy or source concern, use the{" "}
+              <Link className="underline text-ink" href="/contact">contact page</Link>.
+              Do not submit private or sensitive information through a public
+              issue tracker.
+            </p>
+            <p>
+              This notice describes the current prototype and may change as
+              Atlas changes. It is an operational description, not legal
+              advice.
+            </p>
+          </section>
+        </article>
       </main>
     </div>
   );

@@ -39,6 +39,29 @@ describe("searchHackerNewsComments", () => {
     expect(await searchHackerNewsComments("inflation", fetcher, NOW)).toEqual([]);
   });
 
+  it("filters comments that match only part of a multiword market query", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ hits: [
+      { objectID: "1", author: "relevant", comment_text: "Semiconductor capacity is constrained across the supply chain.", story_title: "Chip manufacturing", created_at: new Date(NOW - 60_000).toISOString() },
+      { objectID: "2", author: "noise", comment_text: "Technology is changing quickly.", story_title: "Don't be an out of touch kung fu master", created_at: new Date(NOW - 60_000).toISOString() },
+    ] })));
+
+    const results = await searchHackerNewsComments("semiconductor supply chain", fetcher, NOW);
+    expect(results.map(({ id }) => id)).toEqual(["1"]);
+  });
+
+  it("keeps short acronym queries usable", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ hits: [{
+      objectID: "3", author: "reader", comment_text: "EV adoption is growing.", story_title: "EV market", created_at: new Date(NOW - 60_000).toISOString(),
+    }] })));
+    expect((await searchHackerNewsComments("EV", fetcher, NOW)).map(({ id }) => id)).toEqual(["3"]);
+  });
+
+  it("does not turn stop-word-only searches into broad result lists", async () => {
+    const fetcher = vi.fn();
+    expect(await searchHackerNewsComments("of the", fetcher, NOW)).toEqual([]);
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it("surfaces rate limits and rejects invalid queries before fetching", async () => {
     const fetcher = vi.fn(async () => new Response("limited", { status: 429 }));
     await expect(searchHackerNewsComments("x", fetcher, NOW)).rejects.toThrow("2–100");

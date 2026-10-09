@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildPerspectiveSnapshot } from "./perspective-snapshot";
+import { buildCitationIds, buildPerspectiveSnapshot, citationKey } from "./perspective-snapshot";
 import type { ResearchSweepSourceResult } from "./research-sweep";
 
 const result = (key: string, label: string, evidence: ResearchSweepSourceResult["evidence"]): ResearchSweepSourceResult => ({
@@ -13,7 +13,7 @@ const item = (id: string, source: string, language: string) => ({
 });
 
 describe("buildPerspectiveSnapshot", () => {
-  it("keeps the English/U.S.-market-facing sample separate from language and edition perspectives", () => {
+  it("keeps source classes and languages separate without inferring country views", () => {
     const snapshot = buildPerspectiveSnapshot([
       result("hacker-news", "Hacker News", [item("hn", "Hacker News", "English")]),
       result("stack-exchange:economics", "Economics", [item("en-se", "Economics Stack Exchange", "English")]),
@@ -21,13 +21,18 @@ describe("buildPerspectiveSnapshot", () => {
       result("global-voices", "Global Voices", [item("gv-es", "Global Voices · Spanish edition", "Spanish"), item("gv-ar", "Global Voices · Arabic edition", "Arabic")]),
     ]);
 
-    expect(snapshot.englishMarketAngle.map(({ title }) => title)).toEqual(["Evidence hn", "Evidence en-se"]);
+    expect(snapshot.englishPerspectives.map(({ source, evidenceClass }) => [source, evidenceClass])).toEqual([
+      ["Hacker News", "social discussion"],
+      ["Economics Stack Exchange", "expert Q&A"],
+    ]);
+    expect(snapshot.englishPerspectives[0].items[0]).toMatchObject({ id: "hn", resultKey: "hacker-news" });
     expect(snapshot.otherPerspectives.map(({ source, language }) => [source, language])).toEqual([
       ["Stack Overflow en español", "Spanish"],
       ["Global Voices · Spanish edition", "Spanish"],
       ["Global Voices · Arabic edition", "Arabic"],
     ]);
     expect(snapshot.otherPerspectives.flatMap(({ items }) => items).map(({ title }) => title)).not.toContain("Evidence hn");
+    expect(snapshot.otherPerspectives[0].evidenceClass).toBe("expert Q&A");
   });
 
   it("does not infer country from English language or duplicate repeated links", () => {
@@ -38,9 +43,19 @@ describe("buildPerspectiveSnapshot", () => {
       ]),
       result("lemmy:lemmy.world", "Lemmy", [item("lemmy", "Lemmy · lemmy.world / c/economy", "English")]),
     ]);
-    expect(snapshot.englishMarketAngle).toHaveLength(1);
+    expect(snapshot.englishPerspectives).toHaveLength(1);
     expect(snapshot.otherPerspectives).toEqual([
       expect.objectContaining({ source: "Lemmy · lemmy.world / c/economy", language: "English" }),
     ]);
+  });
+
+  it("assigns citation IDs that resolve to the exact result entry without provider ID collisions", () => {
+    const results = [
+      result("hacker-news", "Hacker News", [item("42", "Hacker News", "English")]),
+      result("lemmy:lemmy.world", "Lemmy", [item("42", "Lemmy", "English")]),
+    ];
+    const ids = buildCitationIds(results);
+    expect(ids.get(citationKey("hacker-news", "42"))).toBe("C1");
+    expect(ids.get(citationKey("lemmy:lemmy.world", "42"))).toBe("C2");
   });
 });

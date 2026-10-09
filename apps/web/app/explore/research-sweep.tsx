@@ -4,7 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { DISCUSSION_COMMUNITIES } from "../../lib/live-topic-search";
 import { LEMMY_INSTANCES, type LemmyInstance } from "../../lib/lemmy-public";
 import { runResearchSweep, ResearchSweepSourceResult } from "../../lib/research-sweep";
-import { buildPerspectiveSnapshot } from "../../lib/perspective-snapshot";
+import { buildCitationIds, buildPerspectiveSnapshot, citationKey } from "../../lib/perspective-snapshot";
 
 const DEFAULT_COMMUNITIES = ["economics", "quant", "money"];
 
@@ -26,6 +26,7 @@ export default function ResearchSweep({
   const [searched, setSearched] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const citationIds = buildCitationIds(results);
 
   useEffect(() => {
     if (initialTopic) setQuery(initialTopic);
@@ -189,7 +190,7 @@ export default function ResearchSweep({
             </div>
             <p>Discussion, specialist Q&amp;A, and reporting · shown separately</p>
           </div>
-          <PerspectiveSnapshot results={results} />
+          <PerspectiveSnapshot results={results} citationIds={citationIds} />
           <section className="source-citations" aria-labelledby="source-citations-title">
             <header>
               <div>
@@ -199,7 +200,7 @@ export default function ResearchSweep({
               <p>Original links and source details, collected in one place.</p>
             </header>
             <div className="market-results-grid">
-              {results.map((result) => <SourceResults key={result.key} result={result} />)}
+              {results.map((result) => <SourceResults key={result.key} result={result} citationIds={citationIds} />)}
             </div>
           </section>
           <p className="search-limits">These public results are incomplete source samples, not a poll or a measure of any country’s opinion. Open the original links for context. <a href="/sources">How sources work</a> · <a href="/privacy">Privacy</a>.</p>
@@ -209,7 +210,7 @@ export default function ResearchSweep({
   );
 }
 
-function PerspectiveSnapshot({ results }: { results: ResearchSweepSourceResult[] }) {
+function PerspectiveSnapshot({ results, citationIds }: { results: ResearchSweepSourceResult[]; citationIds: Map<string, string> }) {
   const snapshot = buildPerspectiveSnapshot(results);
   return (
     <section className="perspective-snapshot" aria-labelledby="perspective-snapshot-title">
@@ -218,36 +219,36 @@ function PerspectiveSnapshot({ results }: { results: ResearchSweepSourceResult[]
           <p className="eyebrow">Overview</p>
           <h3 id="perspective-snapshot-title">Perspectives at a glance</h3>
         </div>
-        <p>Short overviews first; citations are collected below.</p>
+        <p>Up to two result highlights per view; reference IDs match citations below.</p>
       </header>
       <p className="perspective-snapshot-note">
-        The English-language slice is a comparison point, not a verified U.S. view: these sources do not establish contributors’ location. Other views stay separate by source and language rather than being blended into one “global” take.
+        Highlights are short source excerpts or headlines, not a generated synthesis. English-language discussion is not a U.S. sample; source language and publisher edition do not establish contributor location. Discussion, expert Q&amp;A, and reporting are kept in separate groups.
       </p>
       <div className="perspective-snapshot-grid">
-        <PerspectiveGroup title="English-language baseline · not a U.S. sample" items={snapshot.englishMarketAngle} empty="No matching English-language discussion surfaced in this search." />
+        {snapshot.englishPerspectives.map((group) => (
+          <PerspectiveGroup key={`${group.source}:${group.language}:${group.evidenceClass}`} title={`${group.source} · ${group.evidenceClass} · English (not a U.S. sample)`} items={group.items} citationIds={citationIds} />
+        ))}
         {snapshot.otherPerspectives.map((group) => (
-          <PerspectiveGroup key={`${group.source}:${group.language}`} title={`${group.source} · ${group.language}`} items={group.items} />
+          <PerspectiveGroup key={`${group.source}:${group.language}:${group.evidenceClass}`} title={`${group.source} · ${group.evidenceClass} · ${group.language}`} items={group.items} citationIds={citationIds} />
         ))}
         {!snapshot.otherPerspectives.length && (
-          <p className="perspective-no-global">No separate international-language perspectives matched this phrase. Try a local-language equivalent in Refine community coverage; an empty result is not evidence that a view is absent.</p>
+          <p className="perspective-no-global">No non-English source or language-labeled international reporting matched this phrase. Try a local-language equivalent in Refine community coverage; an empty result is not evidence that a view is absent.</p>
         )}
       </div>
     </section>
   );
 }
 
-function PerspectiveGroup({ title, items, empty }: { title: string; items: Array<{ title: string; url: string; transientPreview?: string }>; empty?: string }) {
+function PerspectiveGroup({ title, items, citationIds, empty }: { title: string; items: Array<{ id: string; resultKey: string; title: string; url: string; transientPreview?: string }>; citationIds: Map<string, string>; empty?: string }) {
   return (
     <article className="perspective-card">
-      <header><h4>{title}</h4><span>{items.length} {items.length === 1 ? "match" : "matches"}</span></header>
+      <header><h4>{title}</h4><span>{items.length} {items.length === 1 ? "result" : "results"}</span></header>
       {items.length ? (
         <ul>{items.slice(0, 2).map((item) => (
           <li key={item.url}>
-            {item.transientPreview ? (
-              <p>{compactPreview(item.transientPreview)}</p>
-            ) : (
-              <p className="perspective-empty">A matching discussion surfaced, but no readable excerpt was available for this overview.</p>
-            )}
+            <p>{item.transientPreview ? compactOverview(item.transientPreview) : item.title}
+              {citationIds.has(citationKey(item.resultKey, item.id)) && <span className="overview-citation-ref">{citationIds.get(citationKey(item.resultKey, item.id))}</span>}
+            </p>
           </li>
         ))}</ul>
       ) : <p className="perspective-empty">{empty}</p>}
@@ -255,7 +256,7 @@ function PerspectiveGroup({ title, items, empty }: { title: string; items: Array
   );
 }
 
-function SourceResults({ result }: { result: ResearchSweepSourceResult }) {
+function SourceResults({ result, citationIds }: { result: ResearchSweepSourceResult; citationIds: Map<string, string> }) {
   const [showAll, setShowAll] = useState(false);
   const items = showAll ? result.evidence : result.evidence.slice(0, 8);
   return (
@@ -271,7 +272,8 @@ function SourceResults({ result }: { result: ResearchSweepSourceResult }) {
         <>
         <ul>
           {items.map((item) => (
-            <li key={item.id}>
+            <li key={item.id} id={`citation-${citationIds.get(citationKey(result.key, item.id))}`}>
+              <span className="source-citation-ref">{citationIds.get(citationKey(result.key, item.id))}</span>
               <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
               {item.transientPreview && <p className="source-preview" lang={item.language === "not provided" ? undefined : item.language}>{compactPreview(item.transientPreview)}</p>}
               <p className="source-meta">
@@ -301,4 +303,11 @@ function compactPreview(value: string) {
   if (value.length <= limit) return value;
   const boundary = value.lastIndexOf(" ", limit);
   return `${value.slice(0, boundary > 280 ? boundary : limit).trimEnd()}…`;
+}
+
+function compactOverview(value: string) {
+  const limit = 210;
+  if (value.length <= limit) return value;
+  const boundary = value.lastIndexOf(" ", limit);
+  return `${value.slice(0, boundary > 140 ? boundary : limit).trimEnd()}…`;
 }
