@@ -18,6 +18,8 @@ export default function ResearchSweep({
   const [query, setQuery] = useState("");
   const [communities, setCommunities] = useState<string[]>(DEFAULT_COMMUNITIES);
   const [localizedQueries, setLocalizedQueries] = useState<Record<string, string>>({});
+  const [alternateQueryText, setAlternateQueryText] = useState("");
+  const [blueskyEnabled, setBlueskyEnabled] = useState(false);
   const [lemmyEnabled, setLemmyEnabled] = useState(false);
   const [lemmyInstances, setLemmyInstances] = useState<LemmyInstance[]>([LEMMY_INSTANCES[0].host]);
   const [lemmyQueries, setLemmyQueries] = useState<Record<string, string>>({});
@@ -44,7 +46,11 @@ export default function ResearchSweep({
       setResults(await runResearchSweep(topic, {
         hackerNews: true,
         globalVoices: true,
-        bluesky: false,
+        additionalQueries: alternateQueryText.split("\n").map((term) => term.trim()).filter(Boolean),
+        bluesky: blueskyEnabled,
+        blueskyQueries: blueskyEnabled
+          ? [topic, ...alternateQueryText.split("\n").map((term) => term.trim()).filter(Boolean)]
+          : [],
         stackExchangeQueries: communities.map((site) => ({
           site,
           query: DISCUSSION_COMMUNITIES.find((community) => community.site === site)?.language === "English"
@@ -93,8 +99,30 @@ export default function ResearchSweep({
 
       {searched && (
         <details className="search-refine">
-          <summary>Refine community coverage</summary>
-          <p>Choose up to four Stack Exchange communities. Enter a phrase in each selected language; the app does not silently translate or treat specialist Q&amp;A as public opinion.</p>
+          <summary>Refine search</summary>
+          <p>Search the phrase as entered. Atlas does not translate, infer synonyms, or treat specialist Q&amp;A as public opinion.</p>
+          <label className="search-refine-language">
+            Alternate phrases <span>(optional; one per line, up to 3)</span>
+            <textarea
+              className="search-alternate-queries"
+              form="market-query-form"
+              value={alternateQueryText}
+              onChange={(event) => setAlternateQueryText(event.target.value)}
+              placeholder={'Company or ticker alias\nLocal-language equivalent\nSpelling variant'}
+              rows={3}
+              maxLength={305}
+              aria-describedby="alternate-query-help"
+            />
+          </label>
+          <p id="alternate-query-help" className="search-refine-help">Each phrase is sent exactly as written to Hacker News and Global Voices as a separate search, and to Bluesky if selected. Results show the phrase searched; equivalent meaning is not assumed.</p>
+          <fieldset className="search-lemmy-options">
+            <legend>Public social search</legend>
+            <label className="search-lemmy-toggle">
+              <input type="checkbox" checked={blueskyEnabled} onChange={(event) => setBlueskyEnabled(event.target.checked)} />
+              Include Bluesky public posts
+            </label>
+            <p>Uses Bluesky&apos;s public search API without an account or key. Each entered phrase is searched separately. Exact repeated text is shown once with a duplicate note. Post excerpts are transient; author language may be unavailable. Posts and users are not a representative sample. Review the <a href="https://bsky.social/about/support/tos" target="_blank" rel="noreferrer">terms</a> and <a href="https://bsky.social/about/support/privacy-policy" target="_blank" rel="noreferrer">privacy notice</a>.</p>
+          </fieldset>
           <fieldset className="search-community-options">
             <legend>Expert communities · title search, latest 30 days</legend>
             {DISCUSSION_COMMUNITIES.map((community) => {
@@ -263,11 +291,15 @@ function SourceResults({ result, citationIds }: { result: ResearchSweepSourceRes
     <section className="source-results" aria-label={result.label}>
       <header>
         <h3>{result.label}</h3>
-        <span className={result.error ? "source-count source-count--error" : "source-count"}>{result.error ? "Unavailable" : `${result.evidence.length} ${result.evidence.length === 1 ? "result" : "results"}`}</span>
+        <span className={result.status === "unavailable" ? "source-count source-count--error" : result.status === "not-searched" ? "source-count source-count--muted" : "source-count"}>{result.status === "unavailable" ? "Unavailable" : result.status === "not-searched" ? "Not searched" : result.status === "partial" ? "Partial coverage" : `${result.evidence.length} ${result.evidence.length === 1 ? "result" : "results"}`}</span>
       </header>
       <p className="source-window">{result.window}</p>
+      <p className="source-query-meta">
+        Query: <q>{result.query}</q> · Search started {new Date(result.asOf).toISOString().replace("T", " ").replace(".000Z", " UTC")}
+      </p>
+      {result.coverageNote && <p className="source-coverage-warning" role="status">Partial coverage: {result.coverageNote}</p>}
       {result.error ? (
-        <p className="source-empty">This source is temporarily unavailable. Other sources can still return results.</p>
+        <p className="source-empty">{result.status === "not-searched" ? result.error : "This source is temporarily unavailable. Other sources can still return results."}</p>
       ) : result.evidence.length ? (
         <>
         <ul>
@@ -275,9 +307,10 @@ function SourceResults({ result, citationIds }: { result: ResearchSweepSourceRes
             <li key={item.id} id={`citation-${citationIds.get(citationKey(result.key, item.id))}`}>
               <span className="source-citation-ref">{citationIds.get(citationKey(result.key, item.id))}</span>
               <a href={item.url} target="_blank" rel="noreferrer">{item.title}</a>
+              {(item.context?.includes("Preview withheld") || item.context?.includes("Identical normalized text")) && <p className="source-context-note">{item.context}</p>}
               {item.transientPreview && <p className="source-preview" lang={item.language === "not provided" ? undefined : item.language}>{compactPreview(item.transientPreview)}</p>}
               <p className="source-meta">
-                {item.source} · {item.language} · {item.timeLabel.toLowerCase()} {new Date(item.timeValue).toLocaleString()}
+                {item.source} · {item.language} · {item.timeLabel.toLowerCase()} <time dateTime={item.timeValue}>{new Date(item.timeValue).toISOString().replace("T", " ").replace(".000Z", " UTC")}</time>
               </p>
             </li>
           ))}

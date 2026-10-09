@@ -51,7 +51,7 @@ export async function searchHackerNewsComments(
     const createdAt = hit.created_at ? Date.parse(hit.created_at) : NaN;
     const preview = plainText(hit.comment_text ?? "");
     const searchableText = `${hit.story_title ?? ""} ${preview}`;
-    if (!id || !/^\d+$/.test(id) || !author || !preview || !Number.isFinite(createdAt) || createdAt < oldest || createdAt > now || !containsQueryTerms(searchableText, queryTerms)) return [];
+    if (!id || !/^\d+$/.test(id) || !author || !preview || !Number.isFinite(createdAt) || createdAt < oldest || createdAt > now || !containsQueryTerms(searchableText, queryTerms, query)) return [];
     return [{
       id,
       url: `https://news.ycombinator.com/item?id=${id}`,
@@ -70,8 +70,11 @@ function meaningfulTerms(value: string) {
     .filter((term) => term.length > 1 && !STOP_WORDS.has(term));
 }
 
-function containsQueryTerms(value: string, terms: string[]) {
+function containsQueryTerms(value: string, terms: string[], query: string) {
   if (!terms.length) return true;
+  const normalize = (text: string) => text.normalize("NFKC").toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu)?.join(" ") ?? "";
+  const quoted = query.trim().match(/^"(.+)"$/u)?.[1];
+  if (quoted) return normalize(value).includes(normalize(quoted));
   const contentTerms = new Set(meaningfulTerms(value));
   return terms.every((term) => contentTerms.has(term));
 }

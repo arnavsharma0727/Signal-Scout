@@ -23,8 +23,10 @@ export default function Privacy() {
               Search requests are sent to the relevant public search provider.
               The Global Voices request is routed through an Atlas server
               endpoint; that endpoint applies a short-window rate limit using
-              request network information. The other active search connectors
-              make requests from your browser to their providers. Those
+              request network information. Hacker News, Stack Exchange, Lemmy,
+              and optional Bluesky searches are sent from your browser to their
+              providers. Bluesky excerpts are held transiently in the page and
+              provider-labeled posts are shown without a text preview. Those
               providers and Atlas&apos;s hosting infrastructure may process
               technical request data under their own terms and operational
               logging practices. Atlas does not control their retention.

@@ -16,7 +16,7 @@ const sections = [
   },
   {
     title: "Compare like with like",
-    body: "For a useful cross-region comparison, search equivalent phrases and relevant local-language terms, then compare the same source type and time period. Language, publication edition, hosting country, and community are not reliable substitutes for a contributor's location. Atlas does not infer nationality or translate a query into a complete set of equivalent searches.",
+    body: "For a useful cross-region comparison, enter equivalent phrases and relevant local-language terms in the optional alternate-phrase field, then compare the same source type and time period. Atlas submits those phrases separately and labels each one; it does not invent aliases or silently translate a query. Language, publication edition, hosting country, and community are not reliable substitutes for a contributor's location.",
   },
 ];
 

@@ -53,6 +53,9 @@ summary{line-height:1.5}
 .search-refine>p{max-width:700px;margin:7px 0;line-height:1.6}
 .search-refine-language{display:grid;max-width:520px;gap:5px;margin:10px 0}
 .search-refine-language input{border:1px solid #ccc;border-radius:3px;padding:8px}
+.search-alternate-queries{min-width:0;resize:vertical;border:1px solid #424a65;border-radius:4px;background:#111831;padding:9px;color:#fff;line-height:1.5}
+.search-alternate-queries::placeholder{color:#aab0c3}
+.search-refine-help{font-size:11px;color:#aab0c3}
 .search-community-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px;border:0;border-top:1px solid #303750;padding:10px 0}
 .search-community-options legend{padding:8px 0;color:#f0f1f6;font-weight:600}
 .search-community-option{display:grid;align-content:start;gap:7px}
@@ -106,13 +109,17 @@ summary{line-height:1.5}
 .source-results h3{margin:0;color:#f5f5f8;font-size:14px;font-weight:650;letter-spacing:-.01em}
 .source-count{flex:none;border:1px solid #3a425c;border-radius:999px;background:#171f3a;padding:4px 8px;color:#d0d4e0;font-size:10px;font-weight:600}
 .source-count--error{border-color:#75404e;background:#2b1b2d;color:#ffb4c0}
+.source-count--muted{border-color:#59617a;background:#1b2340;color:#c0c5d5}
 .source-window{color:#aab0c3;font-size:11px}
 .source-window{margin:4px 0 0}
+.source-query-meta{margin:3px 0 0;color:#858b9b;font-size:10px;overflow-wrap:anywhere}
+.source-coverage-warning{margin:7px 0 0;border-left:2px solid #b88b36;padding-left:8px;color:#f0c776;font-size:11px;line-height:1.5}
 .source-results ul{margin:13px 0 0;border-top:1px solid #303750;list-style:none;padding:0}
 .source-results li{border-bottom:1px solid #303750;padding:13px 0}
 .source-results li>a{color:#f7f7fb;font-size:13px;font-weight:600;line-height:1.5;text-decoration:underline;text-decoration-color:#69718a;text-underline-offset:3px}
 .source-results li>a:hover{color:#f9dcbf;text-decoration-color:#f9dcbf}
 .source-preview{margin:6px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;line-height:1.55}
+.source-context-note{margin:6px 0 0;color:#f0c776;font-size:10px;line-height:1.5}
 .source-meta{margin:6px 0 0;color:#aab0c3;font-size:10px;line-height:1.5}
 .source-empty{display:flex;align-items:flex-start;gap:11px;margin:18px 0 3px;color:#c0c5d5;font-size:12px;line-height:1.6}
 .source-empty-mark{display:grid;width:25px;height:25px;flex:none;place-items:center;border:1px solid #3a425c;border-radius:50%;color:#e57200;font-size:13px}

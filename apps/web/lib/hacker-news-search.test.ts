@@ -49,6 +49,14 @@ describe("searchHackerNewsComments", () => {
     expect(results.map(({ id }) => id)).toEqual(["1"]);
   });
 
+  it("requires adjacency when a researcher explicitly quotes an exact phrase", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ hits: [
+      { objectID: "1", author: "phrase", comment_text: "The market may slow.", story_title: "Electric vehicle supply chain", created_at: new Date(NOW - 60_000).toISOString() },
+      { objectID: "2", author: "separate", comment_text: "The electric grid changes.", story_title: "Vehicle supply chain outlook", created_at: new Date(NOW - 60_000).toISOString() },
+    ] })));
+    expect((await searchHackerNewsComments('"electric vehicle"', fetcher, NOW)).map(({ id }) => id)).toEqual(["1"]);
+  });
+
   it("keeps short acronym queries usable", async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify({ hits: [{
       objectID: "3", author: "reader", comment_text: "EV adoption is growing.", story_title: "EV market", created_at: new Date(NOW - 60_000).toISOString(),

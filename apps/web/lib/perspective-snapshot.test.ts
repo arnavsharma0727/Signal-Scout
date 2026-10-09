@@ -3,7 +3,7 @@ import { buildCitationIds, buildPerspectiveSnapshot, citationKey } from "./persp
 import type { ResearchSweepSourceResult } from "./research-sweep";
 
 const result = (key: string, label: string, evidence: ResearchSweepSourceResult["evidence"]): ResearchSweepSourceResult => ({
-  key, label, window: "recent", evidence, error: null,
+  key, label, query: "topic", asOf: "2026-10-01T00:00:00.000Z", window: "recent", evidence, error: null, status: "complete",
 });
 
 const item = (id: string, source: string, language: string) => ({

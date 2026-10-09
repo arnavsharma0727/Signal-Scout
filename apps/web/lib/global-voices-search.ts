@@ -79,7 +79,7 @@ export async function searchGlobalVoices(
         const url = safeEditionUrl(post.link, edition.host);
         const rawDate = typeof post.date_gmt === "string" ? post.date_gmt : "";
         const publishedAt = Date.parse(rawDate && !/[zZ]|[+-]\d{2}:?\d{2}$/.test(rawDate) ? `${rawDate}Z` : rawDate);
-        if (!id || !title || !url || !Number.isFinite(publishedAt) || publishedAt < oldest || publishedAt > now) return [];
+        if (!id || !title || !url || !Number.isFinite(publishedAt) || publishedAt < oldest || publishedAt > now || !headlineMatchesQuery(title, query)) return [];
         return [{ id: `${edition.language}:${id}`, title, url, publishedAt: new Date(publishedAt).toISOString(), language: edition.language, edition: edition.label }];
       });
       return { language: edition.language, edition: edition.label, articles, error: null };
@@ -92,6 +92,28 @@ export async function searchGlobalVoices(
       };
     }
   }));
+}
+
+const STOP_WORDS = new Set(["a", "an", "and", "are", "for", "from", "in", "is", "of", "on", "or", "the", "to", "with"]);
+
+function headlineMatchesQuery(title: string, query: string) {
+  const normalize = (value: string) => value.normalize("NFKC").toLocaleLowerCase();
+  const tokens = (value: string) => normalize(value).match(/[\p{L}\p{N}]+/gu) ?? [];
+  const queryTerms = tokens(query);
+  const meaningful = queryTerms.filter((term) => term.length > 1 && !STOP_WORDS.has(term));
+  const headline = normalize(title);
+  const quoted = query.trim().match(/^"(.+)"$/u)?.[1];
+  if (quoted) return headlineTokens(headline).includes(headlineTokens(normalize(quoted)));
+  if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(query)) {
+    return meaningful.length > 0 && meaningful.every((term) => headline.includes(term));
+  }
+  if (!meaningful.length) return headline.includes(normalize(query));
+  const titleTerms = new Set(tokens(title));
+  return meaningful.every((term) => titleTerms.has(term));
+}
+
+function headlineTokens(value: string) {
+  return value.match(/[\p{L}\p{N}]+/gu)?.join(" ") ?? "";
 }
 
 function safeEditionUrl(value: unknown, host: string): string | null {

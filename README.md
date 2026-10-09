@@ -7,11 +7,12 @@ Atlas is a focused search engine for current public conversations and reporting 
 ## What a search covers
 
 - Hacker News comments: public Algolia search, recent 30-day window, with local checks that all meaningful query terms appear in the returned title/comment.
-- Global Voices: public multilingual reporting search, recent 30-day window. Results may match story text while displaying only the headline; an edition language does not identify the location or views of readers.
+- Bluesky: optional public AppView search, recent 7-day indexed-post window. It is opt-in; use separate researcher-entered phrases for language variants, and treat missing language metadata as unknown.
+- Global Voices: public multilingual reporting search, recent 30-day window. Atlas locally requires query terms to match the returned headline, and omits body-only matches; an edition language does not identify the location or views of readers.
 - Stack Exchange: selected specialist communities, title matches from the recent 30 days. This is expert Q&A, not a broad forum sample.
 - Lemmy: optional, researcher-selected public instances, recent 7-day window. Federation can duplicate posts; instances and language are not country proxies.
 
-Provider coverage and search behavior differ. An empty result does not establish that a topic is absent. Counts are returned records, not unique people, market attention, or prevalence. Atlas does not silently translate queries or infer contributor geography. Overview highlights are source excerpts or headlines, not a generated consensus; reference IDs map to the citation list below them.
+Provider coverage and search behavior differ. An empty result does not establish that a topic is absent. Counts are returned records, not unique people, market attention, or prevalence. Atlas does not silently translate, infer synonyms, or infer contributor geography; optional alternate phrases are researcher-supplied, searched separately, and shown with their query. Overview highlights are source excerpts or headlines, not a generated consensus; reference IDs map to the citation list below them.
 
 Atlas does not currently establish a U.S. sample, representative country-level opinions, validated sentiment, source independence, financial materiality, or an investment thesis. Use it to discover questions and inspect original sources—not as a substitute for filings, financial statements, valuation work, or independent verification.
 

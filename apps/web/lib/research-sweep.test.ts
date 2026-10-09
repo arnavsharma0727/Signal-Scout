@@ -66,6 +66,60 @@ describe("runResearchSweep", () => {
     expect(fetcher).not.toHaveBeenCalled();
   });
 
+  it("searches only researcher-entered alternate phrases and keeps their provenance separate", async () => {
+    const requested: string[] = [];
+    const fetcher = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      requested.push(url.searchParams.get("query") ?? "");
+      return new Response(JSON.stringify({ hits: [] }));
+    });
+    const results = await runResearchSweep("EV", {
+      hackerNews: true,
+      globalVoices: false,
+      additionalQueries: ["electric vehicle"],
+      lemmy: false,
+      lemmyTermsAccepted: false,
+    }, fetcher, NOW);
+    expect(requested).toEqual(["EV", "electric vehicle"]);
+    expect(results.map(({ query, key }) => [query, key])).toEqual([
+      ["EV", "hacker-news"],
+      ["electric vehicle", "hacker-news:alternate:1"],
+    ]);
+  });
+
+  it("keeps short ticker searches alive and marks Stack Exchange as not searched", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ hits: [] })));
+    const results = await runResearchSweep("EV", {
+      hackerNews: true,
+      globalVoices: false,
+      stackExchangeQueries: [{ site: "economics", query: "EV" }],
+      lemmy: false,
+      lemmyTermsAccepted: false,
+    }, fetcher, NOW);
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(results).toMatchObject([
+      { key: "hacker-news", query: "EV", status: "complete" },
+      { key: "stack-exchange:economics", query: "EV", status: "not-searched", error: expect.stringContaining("requires at least 3") },
+    ]);
+  });
+
+  it("rejects duplicate and excessive alternate phrases before any provider call", async () => {
+    const fetcher = vi.fn();
+    await expect(runResearchSweep("topic", {
+      hackerNews: true,
+      additionalQueries: [" TOPIC "],
+      lemmy: false,
+      lemmyTermsAccepted: false,
+    }, fetcher, NOW)).rejects.toThrow("must be different");
+    await expect(runResearchSweep("topic", {
+      hackerNews: true,
+      additionalQueries: ["one", "two", "three", "four"],
+      lemmy: false,
+      lemmyTermsAccepted: false,
+    }, fetcher, NOW)).rejects.toThrow("no more than three");
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+
   it("withholds Mastodon bodies when the author attached a content warning", async () => {
     const fetcher = vi.fn(async () => new Response(JSON.stringify([{
       id: "15",
@@ -166,10 +220,32 @@ describe("runResearchSweep", () => {
     expect(results[2].evidence[0].evidenceClass).toBe("social discussion");
     expect(results[2].evidence[0].transientPreview).toBe("This post body is transiently previewed, never saved");
     expect(results[2].evidence[0].context ?? "").not.toContain("markets");
+    expect(results[0]).toMatchObject({ query: "markets", asOf: new Date(NOW).toISOString() });
     expect(results[3].evidence[0]).toMatchObject({
       evidenceClass: "editorial discussion",
       context: expect.stringContaining("not a general forum"),
     });
+  });
+
+  it("reports partial localized-edition coverage instead of hiding failed editions", async () => {
+    const fetcher = vi.fn(async () => new Response(JSON.stringify({ editions: [
+      { language: "en", edition: "English", articles: [{ id: "en:1", title: "Market update", url: "https://globalvoices.org/2026/09/29/market-update/", publishedAt: new Date(NOW - 60_000).toISOString() }], error: null },
+      { language: "fr", edition: "French", articles: [], error: "Timed out" },
+    ] }), { status: 200 }));
+    const [result] = await runResearchSweep("market update", {
+      hackerNews: false,
+      globalVoices: true,
+      lemmy: false,
+      lemmyTermsAccepted: false,
+    }, fetcher, NOW);
+    expect(result).toMatchObject({
+      query: "market update",
+      asOf: new Date(NOW).toISOString(),
+      coverageNote: expect.stringContaining("French"),
+      window: expect.stringContaining("1/2 editions"),
+      evidence: [expect.objectContaining({ title: "Market update", language: "en" })],
+    });
+    expect(result.error).toBeNull();
   });
 
   it("does not query Lemmy until its explicit terms and age affirmation is supplied", async () => {

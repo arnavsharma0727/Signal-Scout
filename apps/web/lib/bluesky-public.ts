@@ -6,7 +6,10 @@ export type BlueskyPostCitation = {
   authorHandle: string;
   publishedAt: string;
   language: string;
-  transientPreview: string;
+  transientPreview?: string;
+  contentWarning?: string;
+  /** Exact normalized text matches in this response are represented once. */
+  duplicateCount: number;
 };
 
 type SearchResponse = {
@@ -15,6 +18,7 @@ type SearchResponse = {
     record?: { text?: string; createdAt?: string; langs?: string[] };
     author?: { handle?: string };
     indexedAt?: string;
+    labels?: Array<{ val?: string }>;
   }>;
 };
 
@@ -38,17 +42,32 @@ export async function searchBlueskyPosts(
   const body = await response.json() as SearchResponse;
   if (!Array.isArray(body.posts)) return [];
   const minTime = now - MAX_AGE_MS;
-  return body.posts.flatMap((post) => {
+  const unique = new Map<string, BlueskyPostCitation>();
+  for (const post of body.posts) {
     const uri = post.uri;
     const handle = post.author?.handle?.trim();
     const publishedAt = post.record?.createdAt ?? post.indexedAt;
     const time = publishedAt ? Date.parse(publishedAt) : NaN;
     const text = post.record?.text?.replace(/\s+/g, " ").trim();
-    if (!uri || !handle || !text || !Number.isFinite(time) || time < minTime || time > now) return [];
+    if (!uri || !handle || !text || !Number.isFinite(time) || time < minTime || time > now) continue;
     const match = uri.match(/^at:\/\/([^/]+)\/app\.bsky\.feed\.post\/([^/]+)$/);
-    if (!match) return [];
+    if (!match) continue;
     const url = `https://bsky.app/profile/${encodeURIComponent(handle)}/post/${encodeURIComponent(match[2])}`;
-    return [{
+    const labels = (post.labels ?? []).map(({ val }) => val).filter((value): value is string => typeof value === "string" && value.trim().length > 0);
+    const contentWarning = labels.length ? `Provider label${labels.length === 1 ? "" : "s"}: ${labels.join(", ")}. Preview withheld.` : undefined;
+    const textKey = text.normalize("NFKC").replace(/\s+/g, " ").trim().toLocaleLowerCase();
+    const duplicate = unique.get(textKey);
+    if (duplicate) {
+      duplicate.duplicateCount += 1;
+      if (contentWarning) {
+        duplicate.contentWarning = duplicate.contentWarning
+          ? `${duplicate.contentWarning} ${contentWarning}`
+          : contentWarning;
+        delete duplicate.transientPreview;
+      }
+      continue;
+    }
+    unique.set(textKey, {
       uri,
       url,
       // Content is never returned to callers or retained in the brief.
@@ -56,8 +75,11 @@ export async function searchBlueskyPosts(
       authorHandle: handle,
       publishedAt: new Date(time).toISOString(),
       language: post.record?.langs?.[0] ?? "not provided",
+      duplicateCount: 1,
       // Displayed only in live browser results; callers strip this before selecting a citation.
-      transientPreview: Array.from(text).slice(0, 300).join(""),
-    }];
-  });
+      ...(!contentWarning ? { transientPreview: Array.from(text).slice(0, 300).join("") } : {}),
+      ...(contentWarning ? { contentWarning } : {}),
+    });
+  }
+  return [...unique.values()];
 }

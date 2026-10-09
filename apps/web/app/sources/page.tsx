@@ -190,19 +190,19 @@ export default async function Sources() {
       key: "global-voices",
       enabled: true,
       detail:
-        "Daily keyless RSS collection plus on-demand search through the public WordPress API across twelve localized editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. The provider may match article text while Atlas requests and displays only headline metadata and links through a first-party no-store route. Edition language does not establish author or audience geography. RSS-retained content follows item-level rights checks and attribution; descriptions and story bodies are discarded. Localized editions share one publisher and may include translations; this is reporting, not raw forum discussion, independent outlets, or a representative survey.",
+        "Daily keyless RSS collection plus on-demand search through the public WordPress API across twelve localized editions: English, Spanish, French, Portuguese, Arabic, Russian, Italian, Dutch, Yoruba, Ukrainian, Greek, and Catalan. On-demand search requests headline metadata and links through a first-party no-store route; Atlas locally requires each meaningful query term to match the returned headline so loose body-only API matches are not presented as relevant headlines. Edition language does not establish author or audience geography. RSS-retained content follows item-level rights checks and attribution; descriptions and story bodies are discarded. Localized editions share one publisher and may include translations; this is reporting, not raw forum discussion, independent outlets, or a representative survey.",
     },
     {
-      name: "Bluesky · retired from live search",
+      name: "Bluesky · optional public conversation search",
       key: "bluesky",
-      enabled: false,
-      onDemand: false,
-      referenceUrl: "https://github.com/bluesky-social/atproto/blob/main/lexicons/app/bsky/unspecced/getTrends.json",
-      referenceLabel: "Bluesky getTrends API lexicon",
-      secondaryReferenceUrl: "https://docs.bsky.app/docs/advanced-guides/api-directory",
-      secondaryReferenceLabel: "Bluesky API hosts and authentication",
+      enabled: true,
+      onDemand: true,
+      referenceUrl: "https://docs.bsky.app/docs/api/app-bsky-feed-search-posts",
+      referenceLabel: "Official Bluesky searchPosts API reference",
+      secondaryReferenceUrl: "https://bsky.social/about/support/tos",
+      secondaryReferenceLabel: "Bluesky Terms of Service",
       detail:
-        "Temporarily removed from the active search after live requests to the public AppView returned HTTP 403 from the deployment environment. It is not retried automatically or presented as a working source. Re-enable only after a production-environment smoke test passes.",
+        "Optional, visitor-triggered search through the public AppView with no API key or account. Up to 25 indexed posts from the last 7 days per researcher-entered phrase. Alternate phrases are submitted separately and labeled; Atlas does not infer translations. Post excerpts are transient and provider-labeled posts have their preview withheld. Language may be absent, and a query in one language does not establish the post's language, author location, or audience. This is an incomplete platform index, not a representative sample or a complete firehose; provider access and rate limits may vary.",
     },
     {
       name: "YouTube public comments (candidate)",

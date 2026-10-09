@@ -76,13 +76,25 @@ export async function searchLiveDiscussion(
   }
 
   const body = (await response.json()) as ApiResponse;
+  const oldest = now - 30 * 24 * 60 * 60 * 1000;
   return (body.items ?? []).flatMap((item) => {
+    const createdAt = typeof item.creation_date === "number" ? item.creation_date * 1000 : NaN;
+    const expectedHost = site.endsWith(".stackoverflow")
+      ? `${site}.com`
+      : `${site}.stackexchange.com`;
+    let link: URL;
+    try {
+      link = new URL(typeof item.link === "string" ? item.link : "");
+    } catch {
+      return [];
+    }
     if (
       item.content_license !== LICENSE ||
       typeof item.question_id !== "number" ||
       typeof item.title !== "string" ||
-      typeof item.link !== "string" ||
-      typeof item.creation_date !== "number" ||
+      link.protocol !== "https:" || link.hostname !== expectedHost ||
+      !Number.isFinite(createdAt) || createdAt < oldest || createdAt > now ||
+      !matchesEveryMeaningfulTerm(decodeEntities(item.title), query) ||
       typeof item.owner?.display_name !== "string" ||
       typeof item.owner.link !== "string"
     ) return [];
@@ -90,8 +102,8 @@ export async function searchLiveDiscussion(
     return [{
       id: item.question_id,
       title: decodeEntities(item.title),
-      url: item.link,
-      createdAt: new Date(item.creation_date * 1000).toISOString(),
+      url: link.toString(),
+      createdAt: new Date(createdAt).toISOString(),
       tags: (item.tags ?? []).filter((tag): tag is string => typeof tag === "string"),
       author: item.owner.display_name,
       authorUrl: item.owner.link,
@@ -100,6 +112,26 @@ export async function searchLiveDiscussion(
       licenseUrl: LICENSE_URL,
     }];
   });
+}
+
+const STOP_WORDS = new Set(["a", "an", "and", "are", "for", "from", "in", "is", "of", "on", "or", "the", "to", "with"]);
+
+function matchesEveryMeaningfulTerm(title: string, query: string) {
+  const normalize = (value: string) => value.normalize("NFKC").toLocaleLowerCase();
+  const terms = normalize(query).match(/[\p{L}\p{N}]+/gu) ?? [];
+  const meaningful = terms.filter((term) => term.length > 1 && !STOP_WORDS.has(term));
+  const normalizedTitle = normalize(title);
+  const quoted = query.trim().match(/^"(.+)"$/u)?.[1];
+  if (quoted) {
+    const normalizePhrase = (value: string) => normalize(value).match(/[\p{L}\p{N}]+/gu)?.join(" ") ?? "";
+    return normalizePhrase(normalizedTitle).includes(normalizePhrase(quoted));
+  }
+  if (/[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/u.test(query)) {
+    return meaningful.length > 0 && meaningful.every((term) => normalizedTitle.includes(term));
+  }
+  if (meaningful.length === 0) return normalizedTitle.includes(normalize(query));
+  const titleTerms = new Set(normalizedTitle.match(/[\p{L}\p{N}]+/gu) ?? []);
+  return meaningful.every((term) => titleTerms.has(term));
 }
 
 function decodeEntities(value: string) {

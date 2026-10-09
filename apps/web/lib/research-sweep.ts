@@ -12,6 +12,8 @@ export type ResearchSweepSelection = {
   gdelt?: boolean;
   hackerNews?: boolean;
   globalVoices?: boolean;
+  /** Explicit user-supplied alternatives are searched separately, never silently expanded. */
+  additionalQueries?: readonly string[];
   stackExchangeSite?: string;
   stackExchangeQueries?: readonly { site: string; query: string }[];
   lemmy: boolean;
@@ -30,9 +32,13 @@ export type ResearchSweepSelection = {
 export type ResearchSweepSourceResult = {
   key: string;
   label: string;
+  query: string;
+  asOf: string;
   window: string;
   evidence: ResearchEvidence[];
   error: string | null;
+  coverageNote?: string;
+  status: "complete" | "partial" | "unavailable" | "not-searched";
 };
 
 /**
@@ -46,6 +52,14 @@ export async function runResearchSweep(
   now = Date.now(),
 ): Promise<ResearchSweepSourceResult[]> {
   const query = input.trim();
+  const asOf = new Date(now).toISOString();
+  const additionalQueries = selection.additionalQueries ?? [];
+  if (additionalQueries.length > 3 || additionalQueries.some((term) => term.trim().length < 2 || term.trim().length > 100)) {
+    throw new Error("Add no more than three alternate phrases, each 2–100 characters.");
+  }
+  const queryKeys = [query, ...additionalQueries.map((term) => term.trim())]
+    .map((term) => term.normalize("NFKC").toLocaleLowerCase());
+  if (new Set(queryKeys).size !== queryKeys.length) throw new Error("Each alternate phrase must be different from the main query and other alternatives.");
   const stackExchangeQueries = selection.stackExchangeQueries ?? (selection.stackExchangeSite
     ? [{ site: selection.stackExchangeSite, query }]
     : []);
@@ -61,9 +75,9 @@ export async function runResearchSweep(
   }
   if (stackExchangeQueries.some(({ site, query: term }) =>
     !DISCUSSION_COMMUNITIES.some((community) => community.site === site) ||
-    term.trim().length < 3 || term.trim().length > 80,
-  )) throw new Error("Each Stack Exchange community needs a listed site and its own 3–80 character search phrase.");
-  if (blueskyQueries.length > 3) throw new Error("Choose no more than three separate Bluesky language phrases.");
+    term.trim().length < 2 || term.trim().length > 80,
+  )) throw new Error("Each Stack Exchange community needs a listed site and its own 2–80 character search phrase.");
+  if (blueskyQueries.length > 4) throw new Error("Use the main phrase plus no more than three alternate Bluesky phrases.");
   if (blueskyQueries.some((term) => term.trim().length < 2 || term.trim().length > 100)) {
     throw new Error("Each Bluesky phrase must contain 2–100 characters.");
   }
@@ -102,8 +116,9 @@ export async function runResearchSweep(
 
   const tasks: Promise<ResearchSweepSourceResult>[] = [];
   if (selection.hackerNews) {
-    tasks.push(capture("hacker-news", "Hacker News · tech community", "Relevant comments from the last 30 days · up to 20", async () =>
-      (await searchHackerNewsComments(query, fetcher, now)).map((item) => ({
+    for (const [index, term] of [query, ...additionalQueries.map((value) => value.trim())].entries()) {
+      tasks.push(capture(index === 0 ? "hacker-news" : `hacker-news:alternate:${index}`, index === 0 ? "Hacker News · tech community" : `Hacker News · alternate phrase ${index}`, term, asOf, "Relevant comments from the last 30 days · up to 20", async () =>
+      (await searchHackerNewsComments(term, fetcher, now)).map((item) => ({
         id: `hacker-news:${item.id}`,
         title: item.title,
         url: item.url,
@@ -118,17 +133,19 @@ export async function runResearchSweep(
         sourceOperatorLabel: "Hacker News",
         context: "An English-language technology community; not a cross-country or general-population sample",
       })),
-    ));
+      ));
+    }
   }
   if (selection.globalVoices) {
-    tasks.push((async () => {
-      const key = "global-voices";
-      const label = "Global Voices · multilingual reporting";
+    for (const [index, term] of [query, ...additionalQueries.map((value) => value.trim())].entries()) {
+      tasks.push((async () => {
+      const key = index === 0 ? "global-voices" : `global-voices:alternate:${index}`;
+      const label = index === 0 ? "Global Voices · multilingual reporting" : `Global Voices · alternate phrase ${index}`;
       try {
         const response = await fetcher("/api/research/global-voices", {
           method: "POST",
           headers: { accept: "application/json", "content-type": "application/json" },
-          body: JSON.stringify({ query }),
+          body: JSON.stringify({ query: term }),
         });
         if (!response.ok) throw new Error(response.status === 429
           ? "Global Voices search limit reached. Try again in one minute."
@@ -137,6 +154,7 @@ export async function runResearchSweep(
         if (!Array.isArray(body.editions)) throw new Error("Global Voices returned an unexpected response.");
         const available = body.editions.filter(({ error }) => !error);
         if (!available.length) throw new Error("All Global Voices language editions are temporarily unavailable.");
+        const unavailable = body.editions.filter(({ error }) => error);
         const evidence = available.flatMap(({ edition, language, articles }) => articles.map((article) => ({
           id: `global-voices:${article.id}`,
           title: article.title,
@@ -146,7 +164,7 @@ export async function runResearchSweep(
           language,
           timeLabel: "Published",
           timeValue: article.publishedAt,
-          context: "The provider may match article text even when the headline omits the phrase; edition language does not identify the people or audience represented",
+          context: "Headline matches the submitted phrase; article body was not retrieved. Edition language does not identify the people or audience represented",
           attribution: "Global Voices headline",
           attributionUrl: "https://globalvoices.org/about/global-voices-attribution-policy/",
           sourceOperatorKey: "global-voices",
@@ -155,19 +173,37 @@ export async function runResearchSweep(
         return {
           key,
           label,
-          window: `${available.length}/${body.editions.length} editions · last 30 days · provider may match story text; headline shown`,
+          query: term,
+          asOf,
+          window: `${available.length}/${body.editions.length} editions · last 30 days · headline terms must match; up to 5 per edition`,
           evidence,
           error: null,
+          ...(unavailable.length ? { coverageNote: `${unavailable.length} of ${body.editions.length} language editions were unavailable: ${unavailable.map(({ edition }) => edition).join(", ")}.` } : {}),
+          status: unavailable.length ? "partial" : "complete",
         };
       } catch (cause) {
-        return { key, label, window: "Localized edition search · last 30 days · headline metadata shown", evidence: [], error: cause instanceof Error ? cause.message : "Global Voices search is unavailable." };
+        return { key, label, query: term, asOf, window: "Localized edition search · last 30 days · headline metadata shown", evidence: [], error: cause instanceof Error ? cause.message : "Global Voices search is unavailable.", status: "unavailable" };
       }
-    })());
+      })());
+    }
   }
   for (const { site, query: termInput } of stackExchangeQueries) {
     const term = termInput.trim();
     const community = DISCUSSION_COMMUNITIES.find(({ site: candidate }) => candidate === site)!;
-    tasks.push(capture(`stack-exchange:${site}`, community.label, `Title matches within 30 days · query: ${term}`, async () =>
+    if (term.length < 3) {
+      tasks.push(Promise.resolve({
+        key: `stack-exchange:${site}`,
+        label: community.label,
+        query: term,
+        asOf,
+        window: "Title search · last 30 days",
+        evidence: [],
+        error: "Not searched: this provider requires at least 3 characters. Other selected sources were still searched.",
+        status: "not-searched",
+      }));
+      continue;
+    }
+    tasks.push(capture(`stack-exchange:${site}`, community.label, term, asOf, "Title matches within 30 days", async () =>
       (await searchLiveDiscussion(term, site, fetcher, now)).map((item) => ({
         id: `stackexchange:${item.url}`,
         title: item.title,
@@ -190,7 +226,7 @@ export async function runResearchSweep(
   if (selection.lemmy) {
     for (const host of new Set(lemmyInstances)) {
       const term = selection.lemmyQueries?.find((item) => item.host === host)?.query.trim() ?? query;
-      tasks.push(capture(`lemmy:${host}`, `Lemmy · ${host}`, "Recent posts within 7 days; up to 20 per server view", async () =>
+      tasks.push(capture(`lemmy:${host}`, `Lemmy · ${host}`, term, asOf, "Recent posts within 7 days; up to 20 per server view", async () =>
       (await searchLemmyPosts(term, host, fetcher, now)).map((post) => ({
         id: `lemmy:${post.url}`,
         title: post.title,
@@ -213,7 +249,7 @@ export async function runResearchSweep(
   if (selection.mastodon) {
     const { hashtag, instance } = selection.mastodon;
     const server = MASTODON_INSTANCES.find(({ host }) => host === instance)!;
-    tasks.push(capture("mastodon", `Mastodon · ${server.label}`, "Up to 20 newest public hashtag posts", async () =>
+    tasks.push(capture("mastodon", `Mastodon · ${server.label}`, `#${hashtag}`, asOf, "Up to 20 newest public hashtag posts", async () =>
       (await searchPublicHashtag(hashtag, fetcher, now, server.host)).map((post) => ({
         id: `mastodon:${post.url}`,
         title: `Public post by @${post.authorHandle}`,
@@ -237,7 +273,7 @@ export async function runResearchSweep(
   }
   for (const [index, termInput] of blueskyQueries.entries()) {
     const term = termInput.trim();
-    tasks.push(capture(`bluesky:${index}`, `Bluesky · search ${index + 1}`, `Up to 25 newest indexed posts within 7 days · query: ${term}`, async () =>
+    tasks.push(capture(`bluesky:${index}`, `Bluesky · search ${index + 1}`, term, asOf, "Up to 25 newest indexed posts within 7 days", async () =>
       (await searchBlueskyPosts(term, fetcher, now)).map((post) => ({
         id: `bluesky:${post.uri}`,
         title: post.title,
@@ -250,7 +286,12 @@ export async function runResearchSweep(
         sourceOperatorKey: "bluesky",
         sourceOperatorLabel: "Bluesky",
         transientPreview: post.transientPreview,
-        context: "Visitor-entered language variants are kept as separate searches and are not translated or pooled; indexed subset, not a complete or representative feed",
+        context: [
+          post.duplicateCount > 1
+            ? `Identical normalized text appeared in ${post.duplicateCount} indexed posts and is shown once. Repeated copies are not independent corroboration; author independence is unverified.`
+            : null,
+          post.contentWarning,
+        ].filter(Boolean).join(" ") || "Visitor-entered language variants are kept as separate searches and are not translated or pooled; indexed subset, not a complete or representative feed",
         attribution: `Author: @${post.authorHandle}`,
       })),
     ));
@@ -258,7 +299,7 @@ export async function runResearchSweep(
   if (selection.wikimediaLanguage) {
     const language = selection.wikimediaLanguage;
     const wiki = WIKIMEDIA_TALK_WIKIS.find(({ language: candidate }) => candidate === language)!;
-    tasks.push(capture("wikimedia", wiki.wiki, "Talk pages edited within 90 days; up to 20", async () =>
+    tasks.push(capture("wikimedia", wiki.wiki, query, asOf, "Talk pages edited within 90 days; up to 20", async () =>
       (await searchWikimediaTalk(query, language, fetcher, now)).map((page) => ({
         id: `wikimedia-talk:${page.url}`,
         title: page.title,
@@ -282,18 +323,23 @@ export async function runResearchSweep(
 async function capture(
   key: ResearchSweepSourceResult["key"],
   label: string,
+  query: string,
+  asOf: string,
   window: string,
   search: () => Promise<ResearchEvidence[]>,
 ): Promise<ResearchSweepSourceResult> {
   try {
-    return { key, label, window, evidence: await search(), error: null };
+    return { key, label, query, asOf, window, evidence: await search(), error: null, status: "complete" };
   } catch (cause) {
     return {
       key,
       label,
+      query,
+      asOf,
       window,
       evidence: [],
       error: cause instanceof Error ? cause.message : "This source is temporarily unavailable.",
+      status: "unavailable",
     };
   }
 }

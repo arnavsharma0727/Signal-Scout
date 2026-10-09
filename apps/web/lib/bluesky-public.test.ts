@@ -22,6 +22,7 @@ describe("searchBlueskyPosts", () => {
       publishedAt: new Date(NOW - 1000).toISOString(),
       language: "en",
       transientPreview: "private transient body",
+      duplicateCount: 1,
     }]);
     expect(JSON.stringify(results)).toContain("private transient body");
   });
@@ -34,5 +35,29 @@ describe("searchBlueskyPosts", () => {
     expect(await searchBlueskyPosts("markets", fetcher, NOW)).toEqual([]);
     await expect(searchBlueskyPosts("x".repeat(101), fetcher, NOW)).rejects.toThrow("2–100");
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+
+  it("withholds post text when Bluesky returns content labels", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({ posts: [{
+      uri: "at://did:plc:abc/app.bsky.feed.post/labeled",
+      record: { text: "sensitive transient body", createdAt: new Date(NOW - 1000).toISOString() },
+      author: { handle: "reader.example" },
+      labels: [{ val: "sexual" }],
+    }] })));
+    const [result] = await searchBlueskyPosts("markets", fetcher, NOW);
+    expect(result.transientPreview).toBeUndefined();
+    expect(result.contentWarning).toContain("Preview withheld");
+    expect(JSON.stringify(result)).not.toContain("sensitive transient body");
+  });
+
+  it("collapses exact repeated post text and discloses the duplicate count", async () => {
+    const fetcher = vi.fn(async (_input: RequestInfo | URL) => new Response(JSON.stringify({ posts: [
+      { uri: "at://did:plc:abc/app.bsky.feed.post/first", record: { text: "Same copied post", createdAt: new Date(NOW - 1000).toISOString() }, author: { handle: "one.example" } },
+      { uri: "at://did:plc:abc/app.bsky.feed.post/copy", record: { text: " same   copied POST ", createdAt: new Date(NOW - 2000).toISOString() }, author: { handle: "two.example" } },
+      { uri: "at://did:plc:abc/app.bsky.feed.post/different", record: { text: "Different evidence", createdAt: new Date(NOW - 3000).toISOString() }, author: { handle: "three.example" } },
+    ] })));
+    const results = await searchBlueskyPosts("markets", fetcher, NOW);
+    expect(results).toHaveLength(2);
+    expect(results[0]).toMatchObject({ authorHandle: "one.example", duplicateCount: 2 });
   });
 });
